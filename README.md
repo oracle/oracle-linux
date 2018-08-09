@@ -6,3 +6,11 @@ The purpose of this project is to provide a set of scripts, tools, readme files 
 - Sample scripts to execute various Oracle Cloud operations
 - Scripts to run inside Oracle Cloud instances 
 - Best practices and howto documents
+
+## Contributing
+
+See [CONTRIBUTING](https://github.com/oracle/ol-sample-scripts/blob/master/CONTRIBUTING.md)
+
+## License
+
+See [LICENSE](https://github.com/oracle/ol-sample-scripts/blob/master/LICENSE)
