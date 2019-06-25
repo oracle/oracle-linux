@@ -1,8 +1,8 @@
-# ol-sample-scripts
-The purpose of this project is to provide a set of scripts, tools, readme files and documents for developers using Oracle Linux
- with a focus on Oracle Cloud. 
+# Oracle Linux Sample Scripts
+This repository provide scripts, tools, and examples for developers and operators using Oracle Linux with a focus on Oracle Cloud. 
  
-- Code snippets in python, bash or other languages
+- [Scripts to build Oracle Linux images](tree/master/oracle-linux-image-tools)
+- Code snippets in Python, bash or other languages
 - Sample scripts to execute various Oracle Cloud operations
 - Scripts to run inside Oracle Cloud instances 
 - Best practices and howto documents
