@@ -1,0 +1,3 @@
+# Ignore custom property files
+env.properties.*
+!env.properties.defaults

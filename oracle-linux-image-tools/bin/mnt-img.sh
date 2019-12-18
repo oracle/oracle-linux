@@ -1,19 +1,24 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
-# Copyright © 2019 Oracle Corp., Inc.  All rights reserved.
-# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl
+# Mount VM images
 #
-###################################################################################
-# The utility is a wrapper script that can map the partitions from vm image, 
+# Copyright (c) 1982-2019 Oracle and/or its affiliates. All rights reserved.
+# Licensed under the Universal Permissive License v 1.0 as shown at
+# https://oss.oracle.com/licenses/upl.
+#
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
+#
+################################################################################
+# The utility is a wrapper script that can map the partitions from vm image,
 # and mount them to local directories.
-# Usage:   mntimg.sh  <image file> <mount point>
+# Usage:   mnt-img.sh  <image file> <mount point>
 # Options: -u <image file> umount image file.
 #          -l display all mounted images
 #          -c umount all images
 #          -v show version info.
 #          -d display tracing msgs.
 #          -h show this usage info.
-###################################################################################
+################################################################################
 
 case "$ORACLE_TRACE" in
   T) set -x;;
@@ -47,7 +52,7 @@ umount_img() {
     lvmgroups=$(grep "LVM GROUP" "$f" | awk -F: '{print $2}')
     if [ -f "$image_file" ]; then
       # umount first
-      for dir_name in $mounteddirs; do 
+      for dir_name in $mounteddirs; do
         if [ -d "$dir_name" ] && grep -q "$dir_name" /proc/mounts; then
           if ! umount "$dir_name"; then
             Error "Unable to umount $dir_name."
@@ -113,7 +118,7 @@ while getopts ucldvh OPTION; do
       l)
         ACTION=listall
         ;;
-      d) 
+      d)
         export ORACLE_TRACE=T
         set -v -x
         ;;
@@ -123,7 +128,7 @@ while getopts ucldvh OPTION; do
       h)
         Usage && exit 0
         ;;
-      *) 
+      *)
         Error "Wrong argument" u
         ;;
     esac
@@ -138,7 +143,7 @@ if [ $ACTION = mount -o $ACTION = umount ]; then
   if [ ! -f "$IMAGE_FILE" ]; then
      Error "Image file $IMAGE_FILE does NOT exist" u
   fi
-  
+
   if ! file "$IMAGE_FILE" | grep -q partition; then
      Error "Image file does NOT seem to have partitions."
   fi
