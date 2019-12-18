@@ -1,0 +1,119 @@
+<?xml version="1.0" ?>
+<ovf:Envelope ovf:version="1.1.0" xml:lang="en-US" xmlns="http://schemas.dmtf.org/ovf/envelope/1" xmlns:ovf="http://schemas.dmtf.org/ovf/envelope/1" xmlns:ovfstr="http://schema.dmtf.org/ovf/strings/1" xmlns:ovm="http://schemas.oracle.com/ovm/ovf/1" xmlns:rasd="http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData" xmlns:vssd="http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<!--Reference of all external files-->
+	<ovf:References>
+		<ovf:File ovf:href="System.vmdk" ovf:id="file1" ovf:size="${SIZE}"/>
+	</ovf:References>
+	<ovf:DiskSection ovf:required="true">
+		<ovf:Info>Virtual disks</ovf:Info>
+		<ovf:Disk ovf:capacity="${CAPACITY}" ovf:diskId="system" ovf:fileRef="file1" ovf:format="http://www.vmware.com/interfaces/specifications/vmdk.html#streamOptimized"/>
+	</ovf:DiskSection>
+	<ovf:NetworkSection>
+		<ovf:Info>Logical networks used in the package</ovf:Info>
+		<ovf:Network ovf:id="xennet" ovf:name="xennet">
+			<ovf:Description>The network that this service will be available on</ovf:Description>
+		</ovf:Network>
+	</ovf:NetworkSection>
+	<ovf:VirtualSystemCollection ovf:id="OVM_${OL_RELEASE}U${OL_UPDATE}_x86_64_PVHVM">
+		<ovf:Info>Oracle Linux ${OL_RELEASE} update ${OL_UPDATE} for x86_64</ovf:Info>
+		<ovf:StartupSection>
+			<ovf:Info>Startup/Shutdown order for Virtual Systems</ovf:Info>
+			<ovf:Item ovf:id="OVM_${OL_RELEASE}U${OL_UPDATE}_x86_64_PVHVM1" ovf:order="0" ovf:startAction="powerOn" ovf:startDelay="0" ovf:stopAction="powerOff" ovf:stopDelay="0" ovf:waitingForGuest="true"/>
+		</ovf:StartupSection>
+		<ovf:VirtualSystem ovf:id="OVM_${OL_RELEASE}U${OL_UPDATE}_x86_64_PVHVM1">
+			<ovf:Info>Oracle Linux ${OL_RELEASE} update ${OL_UPDATE} for x86_64</ovf:Info>
+			<ovm:ScalingSection ovf:required="false">
+				<ovf:Info>Scaling info for VirtualSystem OVM_${OL_RELEASE}U${OL_UPDATE}_x86_64_PVHVM1</ovf:Info>
+				<ovm:InstanceCount>1</ovm:InstanceCount>
+				<ovm:MinInstanceCount>1</ovm:MinInstanceCount>
+				<ovm:MaxInstanceCount>64</ovm:MaxInstanceCount>
+			</ovm:ScalingSection>
+			<ovf:ProductSection ovf:class="com.oracle.linux">
+				<ovf:Info>Oracle Linux ${OL_RELEASE}.${OL_UPDATE} for x86_64</ovf:Info>
+				<ovf:Product>Oracle Linux</ovf:Product>
+				<ovf:Version>${OL_RELEASE}.${OL_UPDATE}</ovf:Version>
+				<ovf:FullVersion>${OL_RELEASE}.${OL_UPDATE}_${IMAGE_VERSION}</ovf:FullVersion>
+				<ovf:Property ovf:key="root-password" ovf:password="true" ovf:type="string" ovf:userConfigurable="true">
+					<ovf:Description>Specifies the root password</ovf:Description>
+				</ovf:Property>
+				<ovf:Property ovf:key="network.hostname" ovf:type="string" ovf:userConfigurable="true">
+					<ovf:Description>Specifies the hostname for the appliance</ovf:Description>
+				</ovf:Property>
+				<ovf:Property ovf:key="network.bootproto.0" ovf:type="string" ovf:userConfigurable="true">
+					<ovf:Description>Specifies the network protocol, dhcp/static, for device 0</ovf:Description>
+				</ovf:Property>
+				<ovf:Property ovf:key="network.ipaddr.0" ovf:type="string" ovf:userConfigurable="true">
+					<ovf:Description>Specifies the IP address</ovf:Description>
+				</ovf:Property>
+				<ovf:Property ovf:key="network.netmask.0" ovf:type="string" ovf:userConfigurable="true">
+					<ovf:Description>Specifies the netmask</ovf:Description>
+				</ovf:Property>
+				<ovf:Property ovf:key="network.gateway.0" ovf:type="string" ovf:userConfigurable="true">
+					<ovf:Description>Specifies the gateway</ovf:Description>
+				</ovf:Property>
+				<ovf:Property ovf:key="network.dns-servers.0" ovf:type="string" ovf:userConfigurable="true">
+					<ovf:Description>Specifies the DNS on the deployed network</ovf:Description>
+				</ovf:Property>
+				<ovf:Property ovf:key="network.dns-search-domains.0" ovf:type="string" ovf:userConfigurable="true">
+					<ovf:Description>Specifies the DNS search domains</ovf:Description>
+				</ovf:Property>
+			</ovf:ProductSection>
+			<ovf:OperatingSystemSection ovf:id="109">
+				<ovf:Info>Guest Operating System</ovf:Info>
+				<ovf:Description>${OL_RELEASE}u${OL_UPDATE} for x86_64</ovf:Description>
+			</ovf:OperatingSystemSection>
+			<ovf:VirtualHardwareSection ovf:transport="iso">
+				<ovf:Info>Virtual Hardware: 2048MB, 2 CPU(s), 1 disk, 1 nic</ovf:Info>
+				<ovf:System>
+					<vssd:ElementName>xen</vssd:ElementName>
+					<vssd:InstanceID>1</vssd:InstanceID>
+					<vssd:VirtualSystemType>DMTF:Oracle:X86:OracleVM_Xen:HVM_Linux</vssd:VirtualSystemType>
+				</ovf:System>
+				<ovf:Item>
+					<rasd:Caption>Virtual CPU</rasd:Caption>
+					<rasd:Description>Virtual CPU(s)</rasd:Description>
+					<rasd:ElementName>Virtual_CPU</rasd:ElementName>
+					<rasd:InstanceID>1</rasd:InstanceID>
+					<rasd:ResourceType>3</rasd:ResourceType>
+					<rasd:VirtualQuantity>2</rasd:VirtualQuantity>
+				</ovf:Item>
+				<ovf:Item>
+					<rasd:AllocationUnits>byte * 2^20</rasd:AllocationUnits>
+					<rasd:Caption>2048MB memory</rasd:Caption>
+					<rasd:Description>Memory size</rasd:Description>
+					<rasd:ElementName>Memory</rasd:ElementName>
+					<rasd:InstanceID>2</rasd:InstanceID>
+					<rasd:ResourceType>4</rasd:ResourceType>
+					<rasd:VirtualQuantity>2048</rasd:VirtualQuantity>
+				</ovf:Item>
+				<ovf:Item>
+					<rasd:Caption>Ethernet controller 0</rasd:Caption>
+					<rasd:Connection>xennet</rasd:Connection>
+					<rasd:Description>Ethernet controller 0</rasd:Description>
+					<rasd:ElementName>Ethernet_controller_0</rasd:ElementName>
+					<rasd:InstanceID>3</rasd:InstanceID>
+					<rasd:ResourceType>10</rasd:ResourceType>
+				</ovf:Item>
+				<ovf:Item>
+					<rasd:Address>0</rasd:Address>
+					<rasd:Caption>sataController0</rasd:Caption>
+					<rasd:Description>SATA controller 0</rasd:Description>
+					<rasd:ElementName>sataController0</rasd:ElementName>
+					<rasd:InstanceID>4</rasd:InstanceID>
+					<rasd:ResourceSubType>AHCI</rasd:ResourceSubType>
+					<rasd:ResourceType>20</rasd:ResourceType>
+				</ovf:Item>
+				<ovf:Item>
+					<rasd:AddressOnParent>0</rasd:AddressOnParent>
+					<rasd:Caption>Disk System.vmdk</rasd:Caption>
+					<rasd:Description>Disk System.vmdk</rasd:Description>
+					<rasd:ElementName>Disk_System.vmdk</rasd:ElementName>
+					<rasd:HostResource>ovf:/disk/system</rasd:HostResource>
+					<rasd:InstanceID>5</rasd:InstanceID>
+					<rasd:Parent>4</rasd:Parent>
+					<rasd:ResourceType>17</rasd:ResourceType>
+				</ovf:Item>
+			</ovf:VirtualHardwareSection>
+		</ovf:VirtualSystem>
+	</ovf:VirtualSystemCollection>
+</ovf:Envelope>
