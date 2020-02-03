@@ -15,7 +15,10 @@ The tool currently supports:
   - Microsoft Azure cloud  
     Target packages: WALinuxAgent  
     Image format: VHD
-  - Oracle VM Server  
+  - Oracle Linux Virtualization Manager (OLVM)  
+    Target packages: qemu-guest-agent  
+    Image format: OVA
+  - Oracle VM Server (OVM)  
     Target packages: oracle-template-config + vmapi  
     Image format: OVA
   - Generic (No cloud setup)  
@@ -25,6 +28,8 @@ The tool currently supports:
 # Build instructions
 1. Install packer and VirtualBox:  
   `yum --enablerepo=ol7_developer install packer VirtualBox-6.0`
+1. For `OLVM` images, install the ` qemu-img` package:  
+  `yum install qemu-img`
 1. Clone this repo:  
   `git clone https://github.com/oracle/ol-sample-scripts.git`
 1. The build script need root privileges during the build.
