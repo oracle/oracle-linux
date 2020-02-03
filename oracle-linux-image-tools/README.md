@@ -41,7 +41,7 @@ The tool currently supports:
     - `WORKSPACE`: path of your workspace directory
     - `ISO_URL`: location of the Oracle Linux distribution ISO
     - `ISO_SHA1_CHECKSUM`: SAH1 checksum for the ISO file
-    - `CLOUD`: cloud target (azure, ovm or none)
+    - `CLOUD`: cloud target (azure, olvm, ovm or none)
 1. Run the buider:  
   `./bin/build-image.sh --env ENV_PROPERTY_FILE`
 
