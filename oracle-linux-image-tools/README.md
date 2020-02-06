@@ -15,6 +15,9 @@ The tool currently supports:
   - Microsoft Azure cloud  
     Target packages: WALinuxAgent  
     Image format: VHD
+  - Oracle Cloud Infrastructure (OCI)  
+    Target packages: qemu-guest-agent  
+    Image format: QCOW2
   - Oracle Linux Virtualization Manager (OLVM)  
     Target packages: qemu-guest-agent  
     Image format: OVA
@@ -28,7 +31,7 @@ The tool currently supports:
 # Build instructions
 1. Install packer and VirtualBox:  
   `yum --enablerepo=ol7_developer install packer VirtualBox-6.0`
-1. For `OLVM` images, install the ` qemu-img` package:  
+1. For `OCI` or `OLVM` images, install the ` qemu-img` package:  
   `yum install qemu-img`
 1. Clone this repo:  
   `git clone https://github.com/oracle/ol-sample-scripts.git`
@@ -41,7 +44,7 @@ The tool currently supports:
     - `WORKSPACE`: path of your workspace directory
     - `ISO_URL`: location of the Oracle Linux distribution ISO
     - `ISO_SHA1_CHECKSUM`: SAH1 checksum for the ISO file
-    - `CLOUD`: cloud target (azure, olvm, ovm or none)
+    - `CLOUD`: cloud target (azure, oci, olvm, ovm or none)
 1. Run the buider:  
   `./bin/build-image.sh --env ENV_PROPERTY_FILE`
 
@@ -58,6 +61,31 @@ As user you should only make changes in your local `env.properties` where you ca
 Relevant parameters are documented in the distributed [`env.properties`](env.properties) file.
 
 # Cloud specific notes
+## OCI
+The Oracle Cloud Infrastructure `oci` cloud target generates an `QCOW2` file which can be uploaded in an _Object Storage_ bucket and imported as _Custom Image_.
+This can be done from the Console, or using the [Command Line Interface (CLI)](https://docs.cloud.oracle.com/en-us/iaas/Content/API/Concepts/cliconcepts.htm). E.g.:
+```shell
+# Upload in the Object Storage Bucket
+oci os object put -bn my_bucket \
+  --file /workspace/OL7U7_x86_64-oci-b0/OL7U7_x86_64-oci-b0.qcow
+# Import as Custom image
+oci compute image import from-object -bn my_bucket \
+  --namespace my_namespace \
+  --name OL7U7_x86_64-oci-b0.qcow \
+  --display-name MyImage \
+  --launch-mode PARAVIRTUALIZED \
+  --source-image-type QCOW2
+# Import might take some time, you can monitor the progress with:
+oci compute image get \
+  --image-id my_image_ocid \
+  --query 'data."lifecycle-state"'
+# or
+oci work-requests work-request get \
+  --work-request-id my_work_request_ocid \
+  --query 'data."percent-complete"'
+# my_image_ocid and my_work_request_ocid OCIDs are returned  by the import command
+```
+
 ## OLVM
 The `olvm` cloud target generates an OVA file. The process to import OVA files in the Oracle Linux Virtualization Manager is described in this [blog post](https://blogs.oracle.com/scoter/import-configure-oracle-linux-7-template-for-oracle-linux-kvm).
 
