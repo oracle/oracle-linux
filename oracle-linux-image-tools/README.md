@@ -57,6 +57,12 @@ Files are processed in that order.
 As user you should only make changes in your local `env.properties` where you can override any definition from the previous property files.  
 Relevant parameters are documented in the distributed [`env.properties`](env.properties) file.
 
+# Cloud specific notes
+## OLVM
+The `olvm` cloud target generates an OVA file. The process to import OVA files in the Oracle Linux Virtualization Manager is described in this [blog post](https://blogs.oracle.com/scoter/import-configure-oracle-linux-7-template-for-oracle-linux-kvm).
+
+For cloud-init support, you will need to specify `CLOUD_INIT="Yes"` in your `env.properties` file.
+
 # Builder architecture
 ## Directory structure
 The `build-image` script relies on the following directory structure:

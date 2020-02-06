@@ -100,7 +100,7 @@ distr::kernel_config() {
 #######################################distr::provision()
 distr::common_cfg() {
   local service tty
-  
+
   # Run yum update if flag is set to yes in image build page
   echo_message "Update image: ${UPDATE_TO_LATEST^^}"
   if [[ "${UPDATE_TO_LATEST,,}" = "yes" ]]; then
@@ -265,8 +265,12 @@ distr::cleanup() {
   [ -e /var/log/ovm-template-config.log ] && rm -f /var/log/ovm-template-config.log
   /bin/rm -f /var/log/audit/audit.log*
   [ -e /var/log/audit/audit.log ] && > /var/log/audit/audit.log
-  # cleanup ssh cache files
-  [ -d /root/.ssh ] && /bin/rm -fr /root/.ssh
+  # cleanup ssh config files
+  if [ -z "${SSH_KEY_FILE}" ]; then
+    [ -d /root/.ssh ] && /bin/rm -fr /root/.ssh
+  else
+    find /root/.ssh -type f -not -name authorized_keys -delete
+  fi
   # cleanup vnc cache files
   if [ -d /root/.vnc ]; then
     /bin/rm -f /root/.vnc/*.log

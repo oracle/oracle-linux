@@ -15,15 +15,15 @@
 #
 
 #######################################
-# Provisioning module
+# Configure OVLM instance
 # Globals:
-#   YUM_VERBOSE
+#   None
 # Arguments:
 #   None
 # Returns:
 #   None
 #######################################
-cloud::provision()
+cloud::config()
 {
   echo_message "Setup network"
   # simple eth0 configuration
@@ -37,9 +37,57 @@ cloud::provision()
 	IPV6INIT="no"
 	PERSISTENT_DHCLIENT="1"
 	EOF
+}
 
+#######################################
+# Install QEMU guest agent
+# Globals:
+#   YUM_VERBOSE
+# Arguments:
+#   None
+# Returns:
+#   None
+#######################################
+cloud::install_agent()
+{
   echo_message "Install guest agent"
   yum install -y ${YUM_VERBOSE} qemu-guest-agent
+}
+
+#######################################
+# Install cloud-init, use CLOUD_USER if specified
+# Globals:
+#   YUM_VERBOSE
+# Arguments:
+#   None
+# Returns:
+#   None
+#######################################
+cloud::cloud_init()
+{
+  echo_message "Install cloud-init: ${CLOUD_INIT^^}"
+  if [[ "${CLOUD_INIT,,}" = "yes" ]]; then
+    yum install -y ${YUM_VERBOSE} cloud-init
+    if [[ -n "${CLOUD_USER}" ]]; then
+      sed -i -e "s/\(^\s\+name:\).*/\1 ${CLOUD_USER}/" /etc/cloud/cloud.cfg
+    fi
+  fi
+}
+
+#######################################
+# Provisioning module
+# Globals:
+#   None
+# Arguments:
+#   None
+# Returns:
+#   None
+#######################################
+cloud::provision()
+{
+  cloud::install_agent
+  cloud::cloud_init
+  cloud::config
 }
 
 #######################################
