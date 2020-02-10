@@ -15,7 +15,10 @@ The tool currently supports:
   - Microsoft Azure cloud  
     Target packages: WALinuxAgent  
     Image format: VHD
-  - Oracle VM Server  
+  - Oracle Linux Virtualization Manager (OLVM)  
+    Target packages: qemu-guest-agent  
+    Image format: OVA
+  - Oracle VM Server (OVM)  
     Target packages: oracle-template-config + vmapi  
     Image format: OVA
   - Generic (No cloud setup)  
@@ -25,6 +28,8 @@ The tool currently supports:
 # Build instructions
 1. Install packer and VirtualBox:  
   `yum --enablerepo=ol7_developer install packer VirtualBox-6.0`
+1. For `OLVM` images, install the ` qemu-img` package:  
+  `yum install qemu-img`
 1. Clone this repo:  
   `git clone https://github.com/oracle/ol-sample-scripts.git`
 1. The build script need root privileges during the build.
@@ -36,7 +41,7 @@ The tool currently supports:
     - `WORKSPACE`: path of your workspace directory
     - `ISO_URL`: location of the Oracle Linux distribution ISO
     - `ISO_SHA1_CHECKSUM`: SAH1 checksum for the ISO file
-    - `CLOUD`: cloud target (azure, ovm or none)
+    - `CLOUD`: cloud target (azure, olvm, ovm or none)
 1. Run the buider:  
   `./bin/build-image.sh --env ENV_PROPERTY_FILE`
 
@@ -51,6 +56,12 @@ For a given Oracle Linux distribution and target Cloud, the following properties
 Files are processed in that order.  
 As user you should only make changes in your local `env.properties` where you can override any definition from the previous property files.  
 Relevant parameters are documented in the distributed [`env.properties`](env.properties) file.
+
+# Cloud specific notes
+## OLVM
+The `olvm` cloud target generates an OVA file. The process to import OVA files in the Oracle Linux Virtualization Manager is described in this [blog post](https://blogs.oracle.com/scoter/import-configure-oracle-linux-7-template-for-oracle-linux-kvm).
+
+For cloud-init support, you will need to specify `CLOUD_INIT="Yes"` in your `env.properties` file.
 
 # Builder architecture
 ## Directory structure
