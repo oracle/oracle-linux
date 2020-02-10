@@ -78,6 +78,8 @@ Options:
   --os-version              operating system version
   --image IMAGE             image search pattern in the Marketplace
                             os/os-version are ignored when image is specified
+  --custom IMAGE            image search pattern for Custom images
+                            os/os-version are ignored when custom is specified
   --name NAME               compute VM instance name
   --shape SHAPE             VM shape (default: VM.Standard2.1)
   --ad AD                   Availability Domain (default: AD-1)
@@ -95,14 +97,14 @@ To instantiate a Platform Image, `os` and `os-version` must be provided:
 ```
 $ ./oci-provision.sh --os "Oracle Linux" --os-version "7.7" --name ol77
 +++ oci-provision.sh: Getting latest image for Oracle Linux 7.7
-   oci-provision.sh: Retrieved: Oracle-Linux-7.7-2019.12.18-0
+    oci-provision.sh: Retrieved: Oracle-Linux-7.7-2019.12.18-0
 +++ oci-provision.sh: Retrieving AD name
 +++ oci-provision.sh: Retrieving VCN
 +++ oci-provision.sh: Retrieving subnet
 +++ oci-provision.sh: Provisioning ol77 with VM.Standard2.1
 Action completed. Waiting until the resource has entered state: ('RUNNING',)
 +++ oci-provision.sh: Getting public IP address
-   oci-provision.sh: Public IP is: xxx.xxx.xxx.xxx
+    oci-provision.sh: Public IP is: xxx.xxx.xxx.xxx
 ```
 
 ## Marketplace image
@@ -126,10 +128,27 @@ $ ./oci-provision.sh --image "Developer" --name devel
 +++ oci-provision.sh: Provisioning devel with VM.Standard2.1
 Action completed. Waiting until the resource has entered state: ('RUNNING',)
 +++ oci-provision.sh: Getting public IP address
-   oci-provision.sh: Public IP is: xxx.xxx.xxx.xxx
+    oci-provision.sh: Public IP is: xxx.xxx.xxx.xxx
 ```
 
-## Cloud-init file
+## Custom image
+The `custom` parameter takes precedence over the `os` / `os-version` parameters and is a (case sensitive) search string for a Custom image.
+If more than one image matches the string, the list of matching images is printed, otherwise the image is launched:
+
+```
+$ ./oci-provision.sh --custom "OL7U7" --name ol7-custom
++++ oci-provision.sh: Getting custom image list for OL7U7
+    oci-provision.sh: Selected image: OL7U7_x86_64-oci-b1
++++ oci-provision.sh: Retrieving AD name
++++ oci-provision.sh: Retrieving VCN
++++ oci-provision.sh: Retrieving subnet
++++ oci-provision.sh: Provisioning custom with VM.Standard2.1
+Action completed. Waiting until the resource has entered state: ('RUNNING',)
++++ oci-provision.sh: Getting public IP address
+    oci-provision.sh: Public IP is: xxx.xxx.xxx.xxx
+```
+
+# Cloud-init file
 Additionally, a [Cloud-init](https://cloudinit.readthedocs.org/en/latest/topics/format.html) file can be specified to run custom scripts during instance configuration.
 In its simplest format this file can be a shell script.\
 The `oci-cloud-init.sh` script from this repo is provided as example:

@@ -34,6 +34,8 @@ usage() {
 	  --os-version              operating system version
 	  --image IMAGE             image search pattern in the Marketplace
 	                            os/os-version are ignored when image is specified
+	  --custom IMAGE            image search pattern for Custom images
+	                            os/os-version are ignored when custom is specified
 	  --name NAME               compute VM instance name
 	  --shape SHAPE             VM shape (default: VM.Standard2.1)
 	  --ad AD                   Availability Domain (default: AD-1)
@@ -100,6 +102,11 @@ parse_args () {
         image_name="$2"
         shift; shift
         ;;
+      "--custom")
+        [[ $# -lt 2 ]] && missing_parameter "image name"
+        custom_image_name="$2"
+        shift; shift
+        ;;
       "--name")
         [[ $# -lt 2 ]] && missing_parameter "instance name"
         instance_name="$2"
@@ -142,7 +149,9 @@ parse_args () {
     esac
   done
 
-  [[ ( -z ${operating_system} || -z ${operating_system_version}) && -z ${image_name} ]] && {
+  [[ ( -z ${operating_system} || -z ${operating_system_version}) &&
+	  -z ${image_name} &&
+	  -z ${custom_image_name} ]] && {
     echo "Expecting os or image parameter" >&2
     usage
   }
@@ -175,6 +184,37 @@ get_platform_image () {
   [[ -z "${image_list}" ]] && error "image not found"
   { read ocid_image; read display_name; } <<< "${image_list}"
   echo_message "Retrieved: ${display_name}"
+}
+
+#######################################
+# Get custom image
+# We retrieve the matching custom image
+# If there is more than one match: print the list and exit
+#######################################
+get_custom_image () {
+  local image_list display_name
+
+  echo_header "Getting custom image list for ${custom_image_name}"
+  image_list=$(oci compute image list \
+    --operating-system "Custom" \
+    --shape ${shape} \
+    --sort-by TIMECREATED \
+    --query 'data[?contains("display-name", `'"${custom_image_name}"'`)].join('"'"' '"'"', ["id", "display-name"]) | join(`\n`, @)' \
+    --raw-output)
+
+  [[ -z "${image_list}" ]] && error "No matching custom image not found"
+
+  if [[ $(wc -l <<< "${image_list}") -gt 1 ]]; then
+    echo_message "More than one image match your selection."
+    while read ocid_image display_name; do
+      echo -e "\t${display_name}"
+    done <<< "${image_list}"
+    exit
+  fi
+
+  { read ocid_image display_name; } <<< "${image_list}"
+
+  echo_message "Selected image: ${display_name}"
 }
 
 #######################################
@@ -323,10 +363,12 @@ provision_instance () {
 #######################################
 main () {
   parse_args "$@"
-  if [[ -z "${image_name}" ]]; then
-    get_platform_image
-  else
+  if [[ -n "${image_name}" ]]; then
     get_marketplace_image
+  elif [[ -n "${custom_image_name}" ]]; then
+    get_custom_image
+  else
+    get_platform_image
   fi
   provision_instance
 }
