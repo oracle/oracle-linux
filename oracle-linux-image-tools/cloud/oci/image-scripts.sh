@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Cleanup and package image for OLVM
+# Cleanup and package image for OCI
 #
 # Copyright (c) 1982-2020 Oracle and/or its affiliates. All rights reserved.
 # Licensed under the Universal Permissive License v 1.0 as shown at
@@ -32,29 +32,14 @@ cloud::image_cleanup() {
 #######################################
 # Image packaging - creates a PVM and PVHVM OVA
 # Globals:
-#   CLOUD_DIR CLOUD DISTR_NAME
+#   VM_NAME
 # Arguments:
 #   None
 # Returns:
 #   None
 #######################################
 cloud::image_package() {
-  local mk_envelope="${CLOUD_DIR}/${CLOUD}/mk-envelope.py"
-  # Decompose Build Name into Release/update/platform
-  local build_rel="${DISTR_NAME%U*}"
-  local build_upd="${DISTR_NAME#*U}"
-  local build_upd="${build_upd%%_*}"
-  local build_platform="${DISTR_NAME#*_}"
-
-  qemu-img convert -c -O qcow2 System.img System.qcow
+  # We only need a QCOW2 file
+  qemu-img convert -c -O qcow2 System.img "${VM_NAME}.qcow"
   rm System.img
-
-  ${mk_envelope} \
-    -r "${build_rel}" \
-    -u "${build_upd##U}" \
-    -v "${BUILD_NUMBER}" \
-    -s "${DISK_SIZE_GB}" \
-    -i System.qcow \
-    -c "${CPU_NUM}" \
-    -m "${MEM_SIZE}"
 }
