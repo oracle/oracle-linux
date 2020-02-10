@@ -122,7 +122,7 @@ parse_args () {
         ;;
       "--ad")
         [[ $# -lt 2 ]] && missing_parameter "availability domain"
-        availability_domain="${2^^}"
+        availability_domain="$2"
         shift; shift
         ;;
       "--vcn")
@@ -152,6 +152,7 @@ parse_args () {
   check_argument ad "${availability_domain}"
   check_argument vcn "${vcn_name}"
   check_argument subnet "${subnet_name}"
+  availability_domain=$(tr [:lower:] [:upper:] <<< ${availability_domain})
   [[ ${availability_domain} =~ ^AD-[1-3]$ ]] || error "invalid AD"
 }
 
