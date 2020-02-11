@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 #
-# Proof of concept / Demo of the Oracle Cloud Infrastructure (OCI) Command
-# Line Interface (CLI)
+# Provision instance in Oracle Cloud Infrastructure (OCI)
 #
-# OCI CLI: https://github.com/oracle/oci-cli
+# Copyright (c) 1982-2020 Oracle and/or its affiliates. All rights reserved.
+# Licensed under the Universal Permissive License v 1.0 as shown at
+# https://oss.oracle.com/licenses/upl.
+#
+# Description: Proof of concept / demo script for the Oracle Cloud
+# Infrastructure (OCI) Command Line Interface (CLI).
+#
+# More info on the OCI CLI: https://github.com/oracle/oci-cli
 #
 # This script assumes that you have setup a default compartment id in your
 # oci rc file (~/.oci/oci_cli_rc).

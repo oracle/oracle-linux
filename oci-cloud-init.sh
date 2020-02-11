@@ -1,6 +1,12 @@
 #!/bin/bash
 #
 # Sample cloud-init script for OCI
+#
+# Copyright (c) 1982-2020 Oracle and/or its affiliates. All rights reserved.
+# Licensed under the Universal Permissive License v 1.0 as shown at
+# https://oss.oracle.com/licenses/upl.
+#
+# Description: Run by cloud-init at instance provisioning.
 #   - install lightweight X server (fluxbox) in case we need a GUI
 #   - install python3
 #   - install Docker / docker-compose
