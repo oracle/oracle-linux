@@ -34,7 +34,13 @@ You can list available images with:
 oci compute image list \
   --query 'data [*].{OS: "operating-system", Version:"operating-system-version"}' \
   --output table |
-  awk 'NR<4 {print; next; } /^\|/ {print | "sort -u"}'
+  awk '
+    BEGIN   { uniq = "sort -u" }
+    NR == 1 { hdr = $0 }
+    NR < 4  { print; next }
+    /^\|/   { print | uniq }
+    END     { close(uniq); print hdr}
+  '
 ```
 
 ## Marketplace images
