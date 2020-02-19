@@ -10,7 +10,7 @@ It is quite convenient when you want to quickly create instances in a reproducib
 This small project illustrates usage of the OCI CLI to create instances from the _Platform_ catalog or the _Marketplace_.
 
 # Prerequisites
-1. A computer running Linux or OS-X.
+1. A computer running Linux or macOS.
 1. [OCI CLI](https://docs.cloud.oracle.com/iaas/Content/API/SDKDocs/cliinstall.htm) installed and configured.
 
 # Background information
