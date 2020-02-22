@@ -25,6 +25,11 @@ shape="VM.Standard2.1"
 operating_system="Oracle Linux"
 availability_domain="AD-1"
 
+# Handle DOS type end of line
+if [[ $OSTYPE =~ ^(msys|mingw|cygwin) ]]; then
+  IFS=$' \t\r\n'
+fi
+
 #######################################
 # Convenience functions
 #######################################
