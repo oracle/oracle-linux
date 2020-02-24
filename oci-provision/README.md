@@ -10,7 +10,8 @@ It is quite convenient when you want to quickly create instances in a reproducib
 This small project illustrates usage of the OCI CLI to create instances from the _Platform_ catalog or the _Marketplace_.
 
 # Prerequisites
-1. A computer running Linux or OS-X.
+1. A computer running Linux, macOS or Windows.\
+   Windows users will need a `bash` shell either from the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about) or [Git BASH](https://gitforwindows.org/).
 1. [OCI CLI](https://docs.cloud.oracle.com/iaas/Content/API/SDKDocs/cliinstall.htm) installed and configured.
 
 # Background information
@@ -34,7 +35,13 @@ You can list available images with:
 oci compute image list \
   --query 'data [*].{OS: "operating-system", Version:"operating-system-version"}' \
   --output table |
-  awk 'NR<4 {print; next; } /^\|/ {print | "sort -u"}'
+  awk '
+    BEGIN   { uniq = "sort -u" }
+    NR == 1 { hdr = $0 }
+    NR < 4  { print; next }
+    /^\|/   { print | uniq }
+    END     { close(uniq); print hdr}
+  '
 ```
 
 ## Marketplace images
