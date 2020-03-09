@@ -48,6 +48,9 @@ btrfs /    --subvol --name=root btr_pool\
   if [[ "${ROOT_FS,,}" = "btrfs" ]]; then
     sed -i -e 's!^part / .*$!'"${btrfs}"'!' "${WORKSPACE}/${KS_FILE}"
   fi
+
+  # Pass kernel selection
+  sed -i -e 's!^KERNEL=.*$!KERNEL='"${KERNEL}"'!' "${WORKSPACE}/${KS_FILE}"
 }
 
 #######################################
