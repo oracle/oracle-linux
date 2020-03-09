@@ -31,6 +31,23 @@ distr::remove_rpms() {
 }
 
 #######################################
+# Print kickstart log
+# Globals:
+# Arguments:
+#   None
+# Returns:
+#   None
+#######################################
+distr::ks_log() {
+  if [[ -f "/root/ks-post.log" ]]; then
+    echo_message "Kickstart post log - Start"
+    cat /root/ks-post.log
+    rm /root/ks-post.log
+    echo_message "Kickstart post log - End"
+  fi
+}
+
+#######################################
 # Kernel configuration
 # Globals:
 #   DRACUT_CMD, KERNEL, UPDATE_TO_LATEST, YUM_VERBOSE
@@ -97,7 +114,7 @@ distr::kernel_config() {
 #   None
 # Returns:
 #   None
-#######################################distr::provision()
+#######################################
 distr::common_cfg() {
   local service tty
 
@@ -192,8 +209,9 @@ distr::common_cfg() {
 #   None
 # Returns:
 #   None
-#######################################distr::provision()
+#######################################
 distr::provision() {
+  distr::ks_log
   distr::kernel_config
   distr::common_cfg
 }
