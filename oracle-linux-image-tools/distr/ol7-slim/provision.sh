@@ -31,7 +31,26 @@ distr::remove_rpms() {
 }
 
 #######################################
+# Print kickstart log
+# Globals:
+# Arguments:
+#   None
+# Returns:
+#   None
+#######################################
+distr::ks_log() {
+  if [[ -f "/root/ks-post.log" ]]; then
+    echo_message "Kickstart post log - Start"
+    cat /root/ks-post.log
+    rm /root/ks-post.log
+    echo_message "Kickstart post log - End"
+  fi
+}
+
+#######################################
 # Kernel configuration
+# Assume that we already run the latest selected kernel
+# (Asserted in the kickstart file)
 # Globals:
 #   DRACUT_CMD, KERNEL, UPDATE_TO_LATEST, YUM_VERBOSE
 # Arguments:
@@ -40,9 +59,10 @@ distr::remove_rpms() {
 #   None
 #######################################
 distr::kernel_config() {
-  local kernel new_kernel old_kernel
+  local current_kernel kernel kernels old_kernel
 
   echo_message "Configure kernel: ${KERNEL^^}"
+  echo_message "Running kernel: $(uname -r)"
   # Add virtual drivers for xen,virtualbox and hyperv into the initrd using
   # dracut configuration files so that they get installed into the initrd
   # during fresh kernel installs.
@@ -54,7 +74,7 @@ distr::kernel_config() {
 	add_drivers+=" ahci libahci "
 	EOF
 
-  # Always install latest kernel
+  # Configure repos and remove old kernels
   if [[ "${KERNEL,,}" = "modrhck" ]]; then
     yum-config-manager --enable ol7_MODRHCK >/dev/null
   fi
@@ -62,31 +82,26 @@ distr::kernel_config() {
   if [[ "${KERNEL,,}" = "uek" ]]; then
     kernel="kernel-uek"
     yum install -y ${YUM_VERBOSE} kernel-transition
-    rpm -e kernel
+    yum remove -y ${YUM_VERBOSE} kernel
   else
     kernel="kernel"
-    rpm -e kernel-uek
+    yum remove -y ${YUM_VERBOSE} kernel-uek
   fi
 
-  old_kernel=$(rpm -q ${kernel} --qf "%{VERSION}-%{RELEASE}")
-  yum update -y ${YUM_VERBOSE} ${kernel}
-  new_kernel=$(rpm -q ${kernel} --qf "%{VERSION}-%{RELEASE}\n" |
-    sort --version-sort -r |
-    head -n1)
-  if [[ ${old_kernel} != ${new_kernel} ]]; then
-    rpm -e "${kernel}-${old_kernel}"
-  fi
+  current_kernel=$(uname -r)
+  kernels=$(rpm -q ${kernel} --qf "%{VERSION}-%{RELEASE}.%{ARCH} ")
+  for old_kernel in $kernels; do
+    if [[ ${old_kernel} != ${current_kernel} ]]; then
+      yum remove -y "${kernel}-${old_kernel}"
+    fi
+  done
 
   # Regenerate initrd
-  new_kernel=$(rpm -q ${kernel} --qf "%{VERSION}-%{RELEASE}.%{ARCH}")
-  ${DRACUT_CMD} -f "/boot/initramfs-${new_kernel}.img" "${new_kernel}"
-
-  # Set correct default kernel
-  sed -i -e 's/^DEFAULTKERNEL=.*/DEFAULTKERNEL=${kernel}/' /etc/sysconfig/kernel
+  ${DRACUT_CMD} -f "/boot/initramfs-${current_kernel}.img" "${current_kernel}"
 
   # Ensure grub is properly setup
   grub2-mkconfig -o /boot/grub2/grub.cfg
-  grubby --set-default="/boot/vmlinuz-${new_kernel}"
+  grubby --set-default="/boot/vmlinuz-${current_kernel}"
 }
 
 #######################################
@@ -97,7 +112,7 @@ distr::kernel_config() {
 #   None
 # Returns:
 #   None
-#######################################distr::provision()
+#######################################
 distr::common_cfg() {
   local service tty
 
@@ -192,8 +207,9 @@ distr::common_cfg() {
 #   None
 # Returns:
 #   None
-#######################################distr::provision()
+#######################################
 distr::provision() {
+  distr::ks_log
   distr::kernel_config
   distr::common_cfg
 }
