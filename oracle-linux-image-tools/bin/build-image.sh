@@ -191,6 +191,9 @@ load_env() {
     error "missing private key file: ${SSH_KEY_FILE}"
   readonly SSH_PASSWORD SSH_KEY_FILE SSH_PUB_KEY
 
+  [[ "${LOCK_ROOT,,}" =~ ^(yes)|(no)$ ]] || error "LOCK_ROOT must be yes or no"
+  readonly LOCK_ROOT
+
   [[ -z "${DISTR_NAME}" && -z "${BUILD_NUMBER}" ]] &&
     error "missing distribution name / build number"
   VM_NAME="${DISTR_NAME}-${CLOUD}-b${BUILD_NUMBER}"
