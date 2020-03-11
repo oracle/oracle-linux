@@ -2,7 +2,7 @@
 #
 # image scripts for OL7
 #
-# Copyright (c) 1982-2019 Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1982-2020 Oracle and/or its affiliates. All rights reserved.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl.
 #
@@ -23,7 +23,7 @@
 #   None
 #######################################
 distr::validate() {
-  [[ "${ROOT_FS,,}" =~ ^(xfs)|(btrfs)$ ]] || error "ROOT_FS must be xfs or btrfs"
+[[ "${ROOT_FS,,}" =~ ^(xfs)|(btrfs)|(lvm)$ ]] || error "ROOT_FS must be xfs, btrfs or lvm"
   readonly ROOT_FS
 }
 
@@ -43,10 +43,18 @@ part btrfs.01 --fstype="btrfs"  --ondisk=sda --size=4096 --grow\n\
 btrfs none --label=btr_pool --data=single btrfs.01\n\
 btrfs /    --subvol --name=root btr_pool\
 "
+  local lvm="\
+part pv.01 --ondisk=sda --size=4096 --grow\n\
+volgroup vg_main pv.01\n\
+logvol swap   --fstype="swap" --vgname=vg_main --size=4096 --name=lv_swap\n\
+logvol /      --fstype="xfs"  --vgname=vg_main --size=4096 --name=lv_root --grow\
+"
 
   # Kickstart file is populated for xfs
   if [[ "${ROOT_FS,,}" = "btrfs" ]]; then
     sed -i -e 's!^part / .*$!'"${btrfs}"'!' "${WORKSPACE}/${KS_FILE}"
+  elif [[ "${ROOT_FS,,}" = "lvm" ]]; then
+    sed -i -e '/^part swap/d' -e 's!^part / .*$!'"${lvm}"'!' "${WORKSPACE}/${KS_FILE}"
   fi
 
   # Pass kernel selection

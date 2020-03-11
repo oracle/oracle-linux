@@ -2,7 +2,7 @@
 #
 # Mount VM images
 #
-# Copyright (c) 1982-2019 Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1982-2020 Oracle and/or its affiliates. All rights reserved.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl.
 #
@@ -181,6 +181,10 @@ fi
 # lock
 echo "MOUNTED IMAGE:$IMAGE_FILE $LPDEVICE" > $WORK_HOME/"$ID"
 
+# Get host volume groups
+host_vgs=$(vgs --noheadings -o vg_name)
+guest_vg=0
+
 # map device
 if ! kpartx -a "$LPDEVICE" &>/dev/null; then
   losetup -d "$LPDEVICE"
@@ -190,18 +194,50 @@ fi
 mapped_devices=$(kpartx -l "$LPDEVICE" | grep "$LPDEVICE" | awk '{print $1}')
 ct=1
 for d in $mapped_devices; do
-  mkdir -p "$MOUNT_POINT"/$ct
   file -sL /dev/mapper/"$d"
   # mount ext3, ext4, btrfs, xfs partitions
   if file -sL /dev/mapper/"$d" | egrep -q -i "ext3|ext4|btrfs|xfs"; then
+     mkdir -p "$MOUNT_POINT"/$ct
      mount /dev/mapper/"$d" "$MOUNT_POINT"/$ct
      echo "MOUNTED DIR:/dev/mapper/$d $MOUNT_POINT/$ct" |tee -a $WORK_HOME/"$ID"
      ct=$((ct+1))
+  elif file -sL /dev/mapper/"$d" | egrep -q -i "lvm2"; then
+     echo "LVM detected"
+     guest_vg=1
+     pvscan --cache /dev/mapper/"$d"
   else
      echo "/dev/mapper/$d not mounted - Unknown filesystem."
   fi
-
 done
+
+if [[ ${guest_vg} == 1 ]]; then
+  # Image has LVM
+  # This only works for simple setups (where the whole VG is on the device)
+  # Scan for Volume Groups
+  all_vgs=$(vgscan | grep "Found volume group" | sed -e 's/^[^"]*"\([^"]*\)".*$/\1/')
+  for vg in ${all_vgs}; do
+    # Only consider new VGs
+    if ! grep -w -q "${vg}" <<<${host_vgs}; then
+      # Ensure the VG is active and register it
+      vgchange -ay "${vg}"
+      echo "LVM GROUP:${vg}" | tee -a "${WORK_HOME}/${ID}"
+      lvscan >/dev/null
+      # Search for filesystems in the VG
+      for fs in "/dev/${vg}"/*; do
+        file -sL "${fs}"
+        if file -sL "${fs}" | egrep -q -i "ext3|ext4|btrfs|xfs"; then
+          mkdir -p "${MOUNT_POINT}/${ct}"
+          mount "${fs}" "${MOUNT_POINT}/${ct}"
+          echo "MOUNTED DIR:${fs}  ${MOUNT_POINT}/${ct}" | tee -a "${WORK_HOME}/${ID}"
+          ct=$((ct+1))
+        else
+          echo "${fs} not mounted - Unknown filesystem."
+        fi
+      done
+    fi
+  done
+fi
+
 ;;
 
 ############################################################################
