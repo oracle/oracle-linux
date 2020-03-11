@@ -24,6 +24,9 @@ The tool currently supports:
   - Oracle VM Server (OVM)  
     Target packages: oracle-template-config + vmapi  
     Image format: OVA
+  - Vagrant (VirtualBox provider)  
+    Target packages: VirtualBox guest additions  
+    Image format: box
   - Generic (No cloud setup)  
     Target packages: none  
     Image format: OVA
@@ -33,6 +36,7 @@ The tool currently supports:
   `yum --enablerepo=ol7_developer install packer VirtualBox-6.0`
 1. For `OCI` or `OLVM` images, install the ` qemu-img` package:  
   `yum install qemu-img`
+1. For `Vagrant` box (VirtualBox provider), install [Vagrant](https://vagrantup.com/)
 1. Clone this repo:  
   `git clone https://github.com/oracle/ol-sample-scripts.git`
 1. The build script need root privileges during the build.

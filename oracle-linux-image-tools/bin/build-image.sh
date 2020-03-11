@@ -2,7 +2,7 @@
 #
 # Create minimal Oracle Linux images
 #
-# Copyright (c) 1982-2019 Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1982-2020 Oracle and/or its affiliates. All rights reserved.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl.
 #
@@ -359,8 +359,8 @@ packer_conf() {
 	      "output_directory": "${WORKSPACE}/${VM_NAME}",
 	      "vm_name": "${VM_NAME}",
 	      "hard_drive_interface": "sata",
-        "disk_size": "${DISK_SIZE_MB}",
-	      "guest_additions_mode": "disable",
+	      "disk_size": "${DISK_SIZE_MB}",
+	      "guest_additions_mode": "attach",
 	      "format": "ova",
 	      "headless": "true",
 	      "ssh_username": "root",

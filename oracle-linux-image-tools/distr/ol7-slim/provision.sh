@@ -231,14 +231,18 @@ distr::cleanup() {
   find /boot -name "*.orabackup*" -exec rm -rf {} \;
 
   echo_message "Remove leftover firewall rules"
-  sed -i -e '/-p 50/d' /etc/sysconfig/iptables
-  sed -i -e '/-p 51/d' /etc/sysconfig/iptables
-  sed -i -e '/--dport 5353/d' /etc/sysconfig/iptables
-  sed -i -e '/--dport 631/d' /etc/sysconfig/iptables
-  sed -i -e '/-p 50/d' /etc/sysconfig/ip6tables
-  sed -i -e '/-p 51/d' /etc/sysconfig/ip6tables
-  sed -i -e '/--dport 5353/d' /etc/sysconfig/ip6tables
-  sed -i -e '/--dport 631/d' /etc/sysconfig/ip6tables
+  if [[ -f /etc/sysconfig/iptables ]]; then
+    sed -i -e '/-p 50/d' /etc/sysconfig/iptables
+    sed -i -e '/-p 51/d' /etc/sysconfig/iptables
+    sed -i -e '/--dport 5353/d' /etc/sysconfig/iptables
+    sed -i -e '/--dport 631/d' /etc/sysconfig/iptables
+  fi
+  if [[ -f /etc/sysconfig/ip6tables ]]; then
+    sed -i -e '/-p 50/d' /etc/sysconfig/ip6tables
+    sed -i -e '/-p 51/d' /etc/sysconfig/ip6tables
+    sed -i -e '/--dport 5353/d' /etc/sysconfig/ip6tables
+    sed -i -e '/--dport 631/d' /etc/sysconfig/ip6tables
+  fi
 
   echo_message "Remove MAC addresses"
   for f in /etc/sysconfig/network-scripts/ifcfg-eth*; do
