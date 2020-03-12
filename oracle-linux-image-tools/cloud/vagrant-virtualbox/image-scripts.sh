@@ -25,7 +25,7 @@
 # Returns:
 #   None
 #######################################
-cloud::image_cleanup() {
+cloud::validate() {
   [[ ${VAGRANT_VIRTUALBOX_CPU_NUM} =~ ^[0-9]*$ ]]  || error "vagrant cpu count is not numeric"
   [[ ${VAGRANT_VIRTUALBOX_MEM_SIZE} =~ ^[0-9]*$ ]]  || error "vagrant memory is not numeric"
   [[ ${VAGRANT_VIRTUALBOX_EXTRA_DISK_GB} =~ ^[0-9]*$ ]]  || error "vagrant disk size is not numeric"
