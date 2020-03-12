@@ -2,7 +2,7 @@
 #
 # Packer provisioning script for OL7
 #
-# Copyright (c) 1982-2019 Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1982-2020 Oracle and/or its affiliates. All rights reserved.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl.
 #
@@ -189,8 +189,7 @@ distr::common_cfg() {
     NetworkManager-config-server \
     NetworkManager-libnm \
     NetworkManager-tui
-  # Remove firewalld; it is required to be present for install/image building.
-  distr::remove_rpms firewalld
+
   # Remove others pkgs
   distr::remove_rpms \
     iwl7265-firmware \
@@ -232,14 +231,18 @@ distr::cleanup() {
   find /boot -name "*.orabackup*" -exec rm -rf {} \;
 
   echo_message "Remove leftover firewall rules"
-  sed -i -e '/-p 50/d' /etc/sysconfig/iptables
-  sed -i -e '/-p 51/d' /etc/sysconfig/iptables
-  sed -i -e '/--dport 5353/d' /etc/sysconfig/iptables
-  sed -i -e '/--dport 631/d' /etc/sysconfig/iptables
-  sed -i -e '/-p 50/d' /etc/sysconfig/ip6tables
-  sed -i -e '/-p 51/d' /etc/sysconfig/ip6tables
-  sed -i -e '/--dport 5353/d' /etc/sysconfig/ip6tables
-  sed -i -e '/--dport 631/d' /etc/sysconfig/ip6tables
+  if [[ -f /etc/sysconfig/iptables ]]; then
+    sed -i -e '/-p 50/d' /etc/sysconfig/iptables
+    sed -i -e '/-p 51/d' /etc/sysconfig/iptables
+    sed -i -e '/--dport 5353/d' /etc/sysconfig/iptables
+    sed -i -e '/--dport 631/d' /etc/sysconfig/iptables
+  fi
+  if [[ -f /etc/sysconfig/ip6tables ]]; then
+    sed -i -e '/-p 50/d' /etc/sysconfig/ip6tables
+    sed -i -e '/-p 51/d' /etc/sysconfig/ip6tables
+    sed -i -e '/--dport 5353/d' /etc/sysconfig/ip6tables
+    sed -i -e '/--dport 631/d' /etc/sysconfig/ip6tables
+  fi
 
   echo_message "Remove MAC addresses"
   for f in /etc/sysconfig/network-scripts/ifcfg-eth*; do
@@ -247,6 +250,7 @@ distr::cleanup() {
   done
 
   echo_message "Yum cleanup"
+  > /etc/yum/vars/ociregion
   yum clean all --enablerepo=\*
   rm -rf /var/cache/yum/*
   rm -rf /var/lib/yum/*
@@ -281,12 +285,20 @@ distr::cleanup() {
   [ -e /var/log/ovm-template-config.log ] && rm -f /var/log/ovm-template-config.log
   /bin/rm -f /var/log/audit/audit.log*
   [ -e /var/log/audit/audit.log ] && > /var/log/audit/audit.log
+
+  # Lock root user
+  if [[ "${LOCK_ROOT,,}" = "yes" ]]; then
+    passwd -d root
+    passwd -l root
+  fi
+
   # cleanup ssh config files
   if [ -z "${SSH_KEY_FILE}" ]; then
     [ -d /root/.ssh ] && /bin/rm -fr /root/.ssh
   else
     find /root/.ssh -type f -not -name authorized_keys -delete
   fi
+
   # cleanup vnc cache files
   if [ -d /root/.vnc ]; then
     /bin/rm -f /root/.vnc/*.log
@@ -321,6 +333,7 @@ distr::cleanup() {
 
   echo_message "Save list of installed packages"
   rpm -qa --qf "%{name}.%{arch}\n"  | sort -u > /home/rpm.list
+  uname -r > /home/kernel.txt
 
   echo_message "Relabel SELinux"
   genhomedircon

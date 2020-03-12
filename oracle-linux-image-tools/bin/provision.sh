@@ -2,7 +2,7 @@
 #
 # Packer main provisioning script
 #
-# Copyright (c) 1982-2019 Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1982-2020 Oracle and/or its affiliates. All rights reserved.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl.
 #
@@ -33,6 +33,11 @@ echo_header() {
 
 echo_message() {
   echo "--- $@ ---"
+}
+
+echo_error() {
+  echo "--- $@ ---" >&2
+  exit 1
 }
 
 #######################################
