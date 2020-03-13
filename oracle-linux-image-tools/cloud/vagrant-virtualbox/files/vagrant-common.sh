@@ -130,11 +130,7 @@ For additional packages, updates, documentation and community help, see:
 vagrant::cleanup()
 {
   distr::remove_rpms usermode \
-    rhn-check.noarch \
-    rhnsd.x86_64 \
-    rhn-setup.noarch \
-    yum-plugin-ulninfo \
-    yum-rhn-plugin \
+    rhn\* \
     psmisc \
     m2crypto \
     checkpolicy \
