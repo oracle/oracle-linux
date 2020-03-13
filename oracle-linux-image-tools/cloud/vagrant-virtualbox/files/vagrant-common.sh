@@ -88,18 +88,20 @@ EOF
   # Set SELinux to enforcing
   sed -i -e 's/^SELINUX\s*=.*/SELINUX=enforcing/' /etc/selinux/config
 
-  # Install additional Packages
+  # Install additional release packages and enable repos
   yum install -y ${YUM_VERBOSE} wget \
-    oracle-epel-release-el7 \
-    oraclelinux-developer-release-el7 \
     oracle-softwarecollection-release-el7
-
-  # Enable optional repos
   yum-config-manager --enable  ol7_addons >/dev/null
-  yum-config-manager --enable  ol7_preview >/dev/null
-  yum-config-manager --enable  ol7_developer >/dev/null
-  yum-config-manager --enable  ol7_developer_EPEL >/dev/null
   yum-config-manager --enable  ol7_optional_latest >/dev/null
+
+  # Install developer release packages and enable repos
+  if [[ "${VAGRANT_DEVELOPER_REPOS,,}" = "yes" ]]; then
+    yum install -y ${YUM_VERBOSE} oracle-epel-release-el7 \
+      oraclelinux-developer-release-el7
+    yum-config-manager --enable  ol7_preview >/dev/null
+    yum-config-manager --enable  ol7_developer >/dev/null
+    yum-config-manager --enable  ol7_developer_EPEL >/dev/null
+  fi
 
   # Add login banner
   echo "
