@@ -27,6 +27,9 @@ The tool currently supports:
   - Vagrant (VirtualBox provider)  
     Target packages: VirtualBox guest additions  
     Image format: box
+  - Vagrant (libvirt provider)  
+    Target packages: nfs-utils  
+    Image format: box
   - Generic (No cloud setup)  
     Target packages: none  
     Image format: OVA
@@ -38,6 +41,7 @@ The tool currently supports:
    - For `OCI` or `OLVM` images, install the ` qemu-img` package:  
     `yum install qemu-img`
    - For `Vagrant` box (VirtualBox provider), install [HashiCorp Vagrant](https://vagrantup.com/)
+   - For `Vagrant` box (libvirt provider), download the [create_box.sh](https://github.com/vagrant-libvirt/vagrant-libvirt/blob/master/tools/create_box.sh) third party script from the [vagrant-libvirt](https://github.com/vagrant-libvirt/vagrant-libvirt) project or install [HashiCorp Vagrant](https://vagrantup.com/) and the [vagrant-libvirt](https://github.com/vagrant-libvirt/vagrant-libvirt) plugin
 1. Clone this repo:  
   `git clone https://github.com/oracle/ol-sample-scripts.git`
 1. The build script need root privileges during the build.
