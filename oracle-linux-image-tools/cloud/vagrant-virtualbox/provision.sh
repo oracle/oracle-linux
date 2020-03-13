@@ -44,7 +44,13 @@ cloud::install_agent()
 {
   echo_message "Install guest agent"
   local additions="/mnt/VBoxLinuxAdditions.run"
-  yum install -y ${YUM_VERBOSE} make gcc bzip2 kernel-uek-devel
+  yum install -y ${YUM_VERBOSE} make gcc bzip2
+
+  if [[ "${KERNEL,,}" = "uek" ]]; then
+    yum install -y ${YUM_VERBOSE} kernel-uek-devel
+  else
+    yum install -y ${YUM_VERBOSE} kernel-devel
+  fi
 
   # Search for guest additions on cd devices
   for cdrom in /dev/sr*; do
