@@ -251,7 +251,6 @@ distr::cleanup() {
 
   echo_message "Yum cleanup"
   > /etc/yum/vars/ociregion
-  yum clean all --enablerepo=\*
   rm -rf /var/cache/yum/*
   rm -rf /var/lib/yum/*
   find /etc/ -name "./*.uln-*" -exec rm -rf {} \;
