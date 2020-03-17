@@ -194,7 +194,6 @@ fi
 mapped_devices=$(kpartx -l "$LPDEVICE" | grep "$LPDEVICE" | awk '{print $1}')
 ct=1
 for d in $mapped_devices; do
-  file -sL /dev/mapper/"$d"
   # mount ext3, ext4, btrfs, xfs partitions
   if file -sL /dev/mapper/"$d" | egrep -q -i "ext3|ext4|btrfs|xfs"; then
      mkdir -p "$MOUNT_POINT"/$ct
@@ -206,7 +205,8 @@ for d in $mapped_devices; do
      guest_vg=1
      pvscan --cache /dev/mapper/"$d"
   else
-     echo "/dev/mapper/$d not mounted - Unknown filesystem."
+     echo "/dev/mapper/$d not mounted - Unknown filesystem:"
+     file -sL /dev/mapper/"$d"
   fi
 done
 
@@ -224,14 +224,14 @@ if [[ ${guest_vg} == 1 ]]; then
       lvscan >/dev/null
       # Search for filesystems in the VG
       for fs in "/dev/${vg}"/*; do
-        file -sL "${fs}"
         if file -sL "${fs}" | egrep -q -i "ext3|ext4|btrfs|xfs"; then
           mkdir -p "${MOUNT_POINT}/${ct}"
           mount "${fs}" "${MOUNT_POINT}/${ct}"
           echo "MOUNTED DIR:${fs}  ${MOUNT_POINT}/${ct}" | tee -a "${WORK_HOME}/${ID}"
           ct=$((ct+1))
         else
-          echo "${fs} not mounted - Unknown filesystem."
+          echo "${fs} not mounted - Unknown filesystem:"
+          file -sL "${fs}"
         fi
       done
     fi
