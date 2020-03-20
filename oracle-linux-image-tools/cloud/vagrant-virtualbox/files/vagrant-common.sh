@@ -88,6 +88,9 @@ EOF
   # Set SELinux to enforcing
   sed -i -e 's/^SELINUX\s*=.*/SELINUX=enforcing/' /etc/selinux/config
 
+  # Disabling firewalld on vagrant boxes
+  systemctl disable firewalld --now
+
   # Install additional release packages and enable repos
   yum install -y ${YUM_VERBOSE} wget \
     oracle-softwarecollection-release-el7
