@@ -1,6 +1,6 @@
 """OCI Compute main class.
 
-The OciInfra class executes the OCI related tasks.
+The OciCompute class executes the OCI related tasks.
 
 Copyright (c) 1982-2020 Oracle and/or its affiliates. All rights reserved.
 Licensed under the Universal Permissive License v 1.0 as shown at
@@ -85,7 +85,7 @@ class OciCompute(object):
     def _get_availability_domain(self, compartment_id, availability_domain):
         """Retrieve the Availability Domain.
 
-        Paramters:
+        Parameters:
             availability_domain: Availability Domain like 'AD-1'
             compartment_id: Compartment OCID
         """
@@ -104,7 +104,7 @@ class OciCompute(object):
     def _get_subnet(self, compartment_id, vcn_name, subnet_name):
         """Retrieve the Availability Domain.
 
-        Paramters:
+        Parameters:
             vcn: VCN display name
             subnet_name: subnet display name
             compartment_id: Compartment OCID
