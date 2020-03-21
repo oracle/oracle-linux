@@ -99,7 +99,10 @@ def cli(ctx, verbose, config_file, profile, rc_file):
     required=True,
     help='The OCID of the compartment',
 )
-@cli.command(name='list-platform')
+@cli.command(
+    name='list-platform',
+    help='List Platform Images',
+)
 @click.pass_context
 def list_platform(ctx, compartment_id):
     oci = ctx.obj['oci']
@@ -120,7 +123,10 @@ def list_platform(ctx, compartment_id):
     required=True,
     help='The OCID of the compartment',
 )
-@cli.command(name='list-custom')
+@cli.command(
+    name='list-custom',
+    help='List Custom Images',
+)
 @click.pass_context
 def list_custom(ctx, compartment_id):
     oci = ctx.obj['oci']
@@ -129,6 +135,23 @@ def list_custom(ctx, compartment_id):
         table = AsciiTable(
             [('Display name', 'Time created')] + images)
         table.title = 'Custom images'
+        click.echo(table.table)
+    else:
+        click.echo('No image found', err=True)
+
+
+@cli.command(
+    name='list-market',
+    help='List free Marketplace Images',
+)
+@click.pass_context
+def list_market(ctx):
+    oci = ctx.obj['oci']
+    listings = oci.list_market()
+    if listings:
+        table = AsciiTable(
+            [('Publisher', 'Name')] + listings)
+        table.title = 'Free Marketplace images'
         click.echo(table.table)
     else:
         click.echo('No image found', err=True)
@@ -205,7 +228,10 @@ def list_custom(ctx, compartment_id):
     required=True,
     help='The display name of the created image',
 )
-@cli.command(name='provision-platform')
+@cli.command(
+    name='provision-platform',
+    help='Provision a Platform Image'
+)
 @click.pass_context
 def provision_platform(ctx,
                        display_name,
@@ -229,6 +255,212 @@ def provision_platform(ctx,
                                       subnet_name,
                                       ssh_authorized_keys_file,
                                       cloud_init_file)
+    if not instance:
+        ctx.exit(1)
+
+    vnic = oci.get_vnic(compartment_id, instance)
+    if not vnic:
+        ctx.exit(1)
+
+    table = AsciiTable((('Private IP', vnic.private_ip),
+                        ('Public IP', vnic.public_ip)))
+    table.inner_heading_row_border = False
+    table.title = 'Instance provisioned'
+    click.echo(table.table)
+
+
+@click.option(
+    '--cloud-init-file',
+    default=lambda: get_default_rc('cloud-init-file'),
+    show_default=RcFile.get_default('cloud-init-file'),
+    type=ExpandedPath(),
+    help='A file that will be used by Cloud-init',
+)
+@click.option(
+    '--ssh-authorized-keys-file',
+    default=lambda: get_default_rc('ssh-authorized-keys-file'),
+    show_default=RcFile.get_default('ssh-authorized-keys-file'),
+    required=True,
+    type=ExpandedPath(),
+    help='A file containing one or more public SSH keys to access the instance',
+)
+@click.option(
+    '--subnet-name',
+    default=lambda: get_default_rc('subnet-name'),
+    show_default=RcFile.get_default('subnet-name'),
+    required=True,
+    help='The subnet where the VNIC attached to this instance will be created',
+)
+@click.option(
+    '--vcn-name',
+    default=lambda: get_default_rc('vcn-name'),
+    show_default=RcFile.get_default('vcn-name'),
+    required=True,
+    help='The VCN attached to this instance',
+)
+@click.option(
+    '--availability-domain',
+    default=lambda: get_default_rc('availability-domain'),
+    show_default=RcFile.get_default('availability-domain'),
+    required=True,
+    help='The availability domain of the instance',
+)
+@click.option(
+    '--shape',
+    default=lambda: get_default_rc('shape'),
+    show_default=RcFile.get_default('shape'),
+    required=True,
+    help='The shape of the instance',
+)
+@click.option(
+    '--custom-image-name',
+    default=lambda: get_default_rc('custom-image-name'),
+    show_default=RcFile.get_default('custom-image-name'),
+    required=True,
+    help="The custom image name",
+)
+@click.option(
+    '--compartment-id',
+    default=lambda: get_default_rc('compartment-id'),
+    show_default=RcFile.get_default('compartment-id'),
+    required=True,
+    help='The OCID of the compartment',
+)
+@click.option(
+    '--display-name',
+    default=lambda: get_default_rc('display-name'),
+    show_default=RcFile.get_default('display-name'),
+    required=True,
+    help='The display name of the created image (case sensitive pattern matching)',
+)
+@cli.command(
+    name='provision-custom',
+    help='Provision a Custom Image',
+)
+@click.pass_context
+def provision_custom(ctx,
+                     display_name,
+                     compartment_id,
+                     custom_image_name,
+                     shape,
+                     availability_domain,
+                     vcn_name,
+                     subnet_name,
+                     ssh_authorized_keys_file,
+                     cloud_init_file):
+    oci = ctx.obj['oci']
+    instance = oci.provision_custom(display_name,
+                                    compartment_id,
+                                    custom_image_name,
+                                    shape,
+                                    availability_domain,
+                                    vcn_name,
+                                    subnet_name,
+                                    ssh_authorized_keys_file,
+                                    cloud_init_file)
+    if not instance:
+        ctx.exit(1)
+
+    vnic = oci.get_vnic(compartment_id, instance)
+    if not vnic:
+        ctx.exit(1)
+
+    table = AsciiTable((('Private IP', vnic.private_ip),
+                        ('Public IP', vnic.public_ip)))
+    table.inner_heading_row_border = False
+    table.title = 'Instance provisioned'
+    click.echo(table.table)
+
+
+@click.option(
+    '--cloud-init-file',
+    default=lambda: get_default_rc('cloud-init-file'),
+    show_default=RcFile.get_default('cloud-init-file'),
+    type=ExpandedPath(),
+    help='A file that will be used by Cloud-init',
+)
+@click.option(
+    '--ssh-authorized-keys-file',
+    default=lambda: get_default_rc('ssh-authorized-keys-file'),
+    show_default=RcFile.get_default('ssh-authorized-keys-file'),
+    required=True,
+    type=ExpandedPath(),
+    help='A file containing one or more public SSH keys to access the instance',
+)
+@click.option(
+    '--subnet-name',
+    default=lambda: get_default_rc('subnet-name'),
+    show_default=RcFile.get_default('subnet-name'),
+    required=True,
+    help='The subnet where the VNIC attached to this instance will be created',
+)
+@click.option(
+    '--vcn-name',
+    default=lambda: get_default_rc('vcn-name'),
+    show_default=RcFile.get_default('vcn-name'),
+    required=True,
+    help='The VCN attached to this instance',
+)
+@click.option(
+    '--availability-domain',
+    default=lambda: get_default_rc('availability-domain'),
+    show_default=RcFile.get_default('availability-domain'),
+    required=True,
+    help='The availability domain of the instance',
+)
+@click.option(
+    '--shape',
+    default=lambda: get_default_rc('shape'),
+    show_default=RcFile.get_default('shape'),
+    required=True,
+    help='The shape of the instance',
+)
+@click.option(
+    '--market-image-name',
+    default=lambda: get_default_rc('market-image-name'),
+    show_default=RcFile.get_default('market-image-name'),
+    required=True,
+    help="The marketplace image name",
+)
+@click.option(
+    '--compartment-id',
+    default=lambda: get_default_rc('compartment-id'),
+    show_default=RcFile.get_default('compartment-id'),
+    required=True,
+    help='The OCID of the compartment',
+)
+@click.option(
+    '--display-name',
+    default=lambda: get_default_rc('display-name'),
+    show_default=RcFile.get_default('display-name'),
+    required=True,
+    help='The display name of the created image (case sensitive pattern matching)',
+)
+@cli.command(
+    name='provision-market',
+    help='Provision a free Martketplace Image',
+)
+@click.pass_context
+def provision_market(ctx,
+                     display_name,
+                     compartment_id,
+                     market_image_name,
+                     shape,
+                     availability_domain,
+                     vcn_name,
+                     subnet_name,
+                     ssh_authorized_keys_file,
+                     cloud_init_file):
+    oci = ctx.obj['oci']
+    instance = oci.provision_market(display_name,
+                                    compartment_id,
+                                    market_image_name,
+                                    shape,
+                                    availability_domain,
+                                    vcn_name,
+                                    subnet_name,
+                                    ssh_authorized_keys_file,
+                                    cloud_init_file)
     if not instance:
         ctx.exit(1)
 
