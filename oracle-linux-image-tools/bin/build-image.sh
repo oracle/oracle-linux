@@ -2,7 +2,7 @@
 #
 # Create minimal Oracle Linux images
 #
-# Copyright (c) 1982-2020 Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019,2020 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl.
 #
@@ -249,15 +249,15 @@ stage_files() {
   # Cloud files into cloud subdir
   mkdir -p "${WORKSPACE}/${PACKER_FILES}/cloud/distr"
   if [[ -d "${CLOUD_DIR}/${CLOUD}/${FILES_DIR}" ]]; then
-    cp -R "${CLOUD_DIR}/${CLOUD}/${FILES_DIR}/." "${WORKSPACE}/${PACKER_FILES}/cloud"
+    cp -RL "${CLOUD_DIR}/${CLOUD}/${FILES_DIR}/." "${WORKSPACE}/${PACKER_FILES}/cloud"
   fi
   if [[ -d "${CLOUD_DIR}/${CLOUD}/${DISTR}/${FILES_DIR}" ]]; then
-    cp -R "${CLOUD_DIR}/${CLOUD}/${DISTR}/${FILES_DIR}/." "${WORKSPACE}/${PACKER_FILES}/cloud/distr"
+    cp -RL "${CLOUD_DIR}/${CLOUD}/${DISTR}/${FILES_DIR}/." "${WORKSPACE}/${PACKER_FILES}/cloud/distr"
   fi
   # Distr files into distr subdir
   mkdir "${WORKSPACE}/${PACKER_FILES}/distr"
   if [[ -d "${DISTR_DIR}/${DISTR}/${FILES_DIR}" ]]; then
-    cp -R "${DISTR_DIR}/${DISTR}/${FILES_DIR}/." "${WORKSPACE}/${PACKER_FILES}/distr"
+    cp -RL "${DISTR_DIR}/${DISTR}/${FILES_DIR}/." "${WORKSPACE}/${PACKER_FILES}/distr"
   fi
 
   # Provisioners

@@ -2,7 +2,7 @@
 #
 # Packer provisioning script for OL7
 #
-# Copyright (c) 1982-2020 Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019,2020 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl.
 #
@@ -251,7 +251,6 @@ distr::cleanup() {
 
   echo_message "Yum cleanup"
   > /etc/yum/vars/ociregion
-  yum clean all --enablerepo=\*
   rm -rf /var/cache/yum/*
   rm -rf /var/lib/yum/*
   find /etc/ -name "./*.uln-*" -exec rm -rf {} \;

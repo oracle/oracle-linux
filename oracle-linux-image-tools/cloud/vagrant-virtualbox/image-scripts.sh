@@ -2,7 +2,7 @@
 #
 # Cleanup and package image for the "vagrant-virtualbox" image
 #
-# Copyright (c) 1982-2020 Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl.
 #
@@ -25,10 +25,11 @@
 # Returns:
 #   None
 #######################################
-cloud::image_cleanup() {
+cloud::validate() {
   [[ ${VAGRANT_VIRTUALBOX_CPU_NUM} =~ ^[0-9]*$ ]]  || error "vagrant cpu count is not numeric"
   [[ ${VAGRANT_VIRTUALBOX_MEM_SIZE} =~ ^[0-9]*$ ]]  || error "vagrant memory is not numeric"
   [[ ${VAGRANT_VIRTUALBOX_EXTRA_DISK_GB} =~ ^[0-9]*$ ]]  || error "vagrant disk size is not numeric"
+  [[ ${VAGRANT_DEVELOPER_REPOS,,} =~ ^(yes)|(no)$ ]] || error "VAGRANT_DEVELOPER_REPOS must be Yes or No"
 }
 
 #######################################

@@ -27,6 +27,9 @@ The tool currently supports:
   - Vagrant (VirtualBox provider)  
     Target packages: VirtualBox guest additions  
     Image format: box
+  - Vagrant (libvirt provider)  
+    Target packages: nfs-utils  
+    Image format: box
   - Generic (No cloud setup)  
     Target packages: none  
     Image format: OVA
@@ -34,9 +37,11 @@ The tool currently supports:
 # Build instructions
 1. Install packer and VirtualBox:  
   `yum --enablerepo=ol7_developer install packer VirtualBox-6.0`
-1. For `OCI` or `OLVM` images, install the ` qemu-img` package:  
-  `yum install qemu-img`
-1. For `Vagrant` box (VirtualBox provider), install [Vagrant](https://vagrantup.com/)
+1. Cloud specific requirements:
+   - For `OCI` or `OLVM` images, install the ` qemu-img` package:  
+    `yum install qemu-img`
+   - For `Vagrant` box (VirtualBox provider), install [HashiCorp Vagrant](https://vagrantup.com/)
+   - For `Vagrant` box (libvirt provider), download the [`create_box.sh`](https://github.com/vagrant-libvirt/vagrant-libvirt/blob/master/tools/create_box.sh) third party script from the [`vagrant-libvirt`](https://github.com/vagrant-libvirt/vagrant-libvirt) project or install [HashiCorp Vagrant](https://vagrantup.com/) and the [`vagrant-libvirt`](https://github.com/vagrant-libvirt/vagrant-libvirt) plugin
 1. Clone this repo:  
   `git clone https://github.com/oracle/ol-sample-scripts.git`
 1. The build script need root privileges during the build.
