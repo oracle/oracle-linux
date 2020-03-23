@@ -1,8 +1,8 @@
-"""Oracle Cloud Infrastructure Python SDK demo.
+"""OCI Compute - and Oracle Cloud Infrastructure Python SDK use case.
 
-Setup file for the project
+Project setup file.
 
-Copyright (c) 1982-2019 Oracle and/or its affiliates. All rights reserved.
+Copyright (c) 2020 Oracle and/or its affiliates.
 Licensed under the Universal Permissive License v 1.0 as shown at
 https://oss.oracle.com/licenses/upl.
 
@@ -20,7 +20,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 setup(
     name='oci-compute',
     version='0.0.1',
-    description='OCI Demo',
+    description='List and provision OCI Compute images',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/oracle/ol-sample-scripts',
@@ -44,13 +44,12 @@ setup(
     extras_require={
         'test': [
             'flake8',
+            'flake8-colors'
             'flake8-comprehensions',
             'flake8-docstrings',
             'flake8-import-order',
             'pep8-naming==0.5.0',
-            'pytest',
-            'mock',
-            'coverage',
+            'pydocstyle==3.0.0',
             'tox',
         ],
     },
