@@ -320,30 +320,6 @@ class OciCompute(object):
                                      ssh_authorized_keys_file=ssh_authorized_keys_file,
                                      cloud_init_file=cloud_init_file)
 
-    def _get_listing_details(self, listing_id):
-        """Return package and AppCatalogListingResourceVersion for a listing."""
-        # Get latest package for the listing
-        packages = self._marketplace_client.list_packages(listing_id, sort_by='TIMERELEASED', sort_order='DESC').data
-        if not packages:
-            self._echo_error('Could not get package for this listing')
-            return None
-        package = packages[0]
-
-        # Get package detailed info
-        package = self._marketplace_client.get_package(package.listing_id, package.package_version).data
-        if not package:
-            self._echo_error('Could not get package details')
-            return None
-
-        # Query the app catalog for shape/region compatibility
-        app_catalog_listing_resource_version = self._compute_client.get_app_catalog_listing_resource_version(
-            package.app_catalog_listing_id, package.app_catalog_listing_resource_version).data
-        if not app_catalog_listing_resource_version:
-            self._echo_error('Could not get details from the App Catalog')
-            return None
-
-        return (package, app_catalog_listing_resource_version)
-
     def provision_market(self,
                          display_name,
                          compartment_id,
