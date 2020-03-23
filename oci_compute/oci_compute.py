@@ -112,6 +112,104 @@ class OciCompute(object):
             self._echo_message_kv('Subnet', subnet.display_name)
             return subnet
 
+    def _market_agreements(self,
+                           compartment_id,
+                           listing_id,
+                           version):
+        """Ensure image Terms Of Use are accepted.
+
+        For Marketplace images, the various Terms Of Use need to be accepted.
+        This method search for already accepted TOU and prompt for acceptance if
+        needed.
+
+        Parameters:
+            compartment_id: the unique identifier for the compartment.
+            listing_id: the unique identifier for the listing.
+            version: the version of the package.
+
+        Returns:
+            True if TOU are accepted. False otherwise.
+
+        """
+        self._echo_header('Checking agreements acceptance')
+        agreements = self._marketplace_client.list_agreements(listing_id, version).data
+        accepted_agreements = self._marketplace_client.list_accepted_agreements(
+            compartment_id,
+            listing_id=listing_id,
+            package_version=version).data
+        not_accepted = []
+        for agreement in agreements:
+            agreement_match = [accepted_agreement
+                               for accepted_agreement in accepted_agreements
+                               if agreement.id == accepted_agreement.agreement_id]
+            if not agreement_match:
+                not_accepted.append(agreement)
+
+        if not_accepted:
+            self._echo_message('This image is subject to the following agreement(s):', force=True)
+            for agreement in not_accepted:
+                self._echo_message('- {}'.format(agreement.prompt), force=True)
+                self._echo_message('  Link: {}'.format(agreement.content_url), force=True)
+            if confirm('I have reviewed and accept the above agreement(s)'):
+                self._echo_message('Accepting agreement(s)')
+                for agreement in not_accepted:
+                    agreement_detail = self._marketplace_client.get_agreement(
+                        listing_id,
+                        version,
+                        agreement.id).data
+                    accepted_agreement_details = oci.marketplace.models.CreateAcceptedAgreementDetails(
+                        agreement_id=agreement.id,
+                        compartment_id=compartment_id,
+                        listing_id=listing_id,
+                        package_version=version,
+                        signature=agreement_detail.signature)
+                    self._marketplace_client.create_accepted_agreement(accepted_agreement_details)
+            else:
+                self._echo_error('Agreements not accepted')
+                return False
+        else:
+            self._echo_message('Agreements already accepted')
+        return True
+
+    def _app_catalog_subscribe(self,
+                               compartment_id,
+                               listing_id,
+                               resource_version):
+        """Subscribe to the image in the Application Catalog.
+
+        For Marketplace images, we also need to subscribe to the image in the
+        Application Catalog. We do not prompt for the TOU as we already agreed
+        in the Marketplace.
+
+        Parameters:
+            compartment_id: the unique identifier for the compartment.
+            listing_id: the OCID of the listing.
+            resource_version: Listing Resource Version.
+
+        """
+        self._echo_header('Checking Application Catalog subscription')
+        app_catalog_subscriptions = self._compute_client.list_app_catalog_subscriptions(
+            compartment_id=compartment_id,
+            listing_id=listing_id
+        ).data
+        if app_catalog_subscriptions:
+            self._echo_message('Already subscribed')
+        else:
+            self._echo_message('Subscribing')
+            app_catalog_listing_agreements = self._compute_client.get_app_catalog_listing_agreements(
+                listing_id=listing_id,
+                resource_version=resource_version).data
+            app_catalog_subscription_detail = oci.core.models.CreateAppCatalogSubscriptionDetails(
+                compartment_id=compartment_id,
+                listing_id=app_catalog_listing_agreements.listing_id,
+                listing_resource_version=app_catalog_listing_agreements.listing_resource_version,
+                oracle_terms_of_use_link=app_catalog_listing_agreements.oracle_terms_of_use_link,
+                eula_link=app_catalog_listing_agreements.eula_link,
+                signature=app_catalog_listing_agreements.signature,
+                time_retrieved=app_catalog_listing_agreements.time_retrieved
+            )
+            self._compute_client.create_app_catalog_subscription(app_catalog_subscription_detail).data
+
     def _provision_image(self,
                          image,
                          compartment_id,
@@ -363,7 +461,9 @@ class OciCompute(object):
             self._echo_error('Could not get package details')
             return None
 
-        # Query the app catalog for shape/region compatibility
+        # Query the Application Catalog for shape/region compatibility
+        # Note that the listing_id/version are different in the Marketplace and
+        # in the Application Catalog!
         app_catalog_listing_resource_version = self._compute_client.get_app_catalog_listing_resource_version(
             package.app_catalog_listing_id,
             package.app_catalog_listing_resource_version).data
@@ -381,69 +481,20 @@ class OciCompute(object):
             self._echo_error('This image is not compatible with the selected shape')
             return None
 
-        self._echo_header('Checking agreements acceptance')
-        agreements = self._marketplace_client.list_agreements(package.listing_id, package.version).data
-        accepted_agreements = self._marketplace_client.list_accepted_agreements(
+        # Accept Marketplace Terms of Use
+        if not self._market_agreements(compartment_id, package.listing_id, package.version):
+            return None
+
+        # Subscribe to the listing in the Application Catalog
+        self._app_catalog_subscribe(
             compartment_id,
-            listing_id=package.listing_id,
-            package_version=package.version).data
-        not_accepted = []
-        for agreement in agreements:
-            agreement_match = [accepted_agreement
-                               for accepted_agreement in accepted_agreements
-                               if agreement.id == accepted_agreement.agreement_id]
-            if not agreement_match:
-                not_accepted.append(agreement)
+            app_catalog_listing_resource_version.listing_id,
+            app_catalog_listing_resource_version.listing_resource_version)
 
-        if not_accepted:
-            self._echo_message('This image is subject to the following agreement(s):', force=True)
-            for agreement in not_accepted:
-                self._echo_message('- {}'.format(agreement.prompt), force=True)
-                self._echo_message('  Link: {}'.format(agreement.content_url), force=True)
-            if confirm('I have reviewed and accept the above agreement(s)'):
-                self._echo_message('Accepting agreement(s)')
-                for agreement in not_accepted:
-                    agreement_detail = self._marketplace_client.get_agreement(
-                        package.listing_id,
-                        package.version,
-                        agreement.id).data
-                    accepted_agreement_details = oci.marketplace.models.CreateAcceptedAgreementDetails(
-                        agreement_id=agreement.id,
-                        compartment_id=compartment_id,
-                        listing_id=package.listing_id,
-                        package_version=package.version,
-                        signature=agreement_detail.signature)
-                    self._marketplace_client.create_accepted_agreement(accepted_agreement_details)
-            else:
-                self._echo_error('Agreements not accepted')
-                return None
-        else:
-            self._echo_message('Agreements already accepted')
-
-        self._echo_header('Checking Application Catalog subscription')
-        app_catalog_subscriptions = self._compute_client.list_app_catalog_subscriptions(
-            compartment_id=compartment_id,
-            listing_id=app_catalog_listing_resource_version.listing_id
-        ).data
-        if app_catalog_subscriptions:
-            self._echo_message('Already subscribed')
-        else:
-            self._echo_message('Subscribing')
-            app_catalog_listing_agreements = self._compute_client.get_app_catalog_listing_agreements(
-                listing_id=app_catalog_listing_resource_version.listing_id,
-                resource_version=app_catalog_listing_resource_version.listing_resource_version).data
-            app_catalog_subscription_detail = oci.core.models.CreateAppCatalogSubscriptionDetails(
-                compartment_id=compartment_id,
-                listing_id=app_catalog_listing_agreements.listing_id,
-                listing_resource_version=app_catalog_listing_agreements.listing_resource_version,
-                oracle_terms_of_use_link=app_catalog_listing_agreements.oracle_terms_of_use_link,
-                eula_link=app_catalog_listing_agreements.eula_link,
-                signature=app_catalog_listing_agreements.signature,
-                time_retrieved=app_catalog_listing_agreements.time_retrieved
-            )
-            self._compute_client.create_app_catalog_subscription(app_catalog_subscription_detail).data
-
+        # Retrieve image from the Application Catalog
         image = self._compute_client.get_image(app_catalog_listing_resource_version.listing_resource_id).data
+
+        # Actual provisioning
         return self._provision_image(image,
                                      compartment_id=compartment_id,
                                      display_name=display_name,
