@@ -41,18 +41,6 @@ setup(
         'oci>=2.10',
         'terminaltables>=3.1',
     ],
-    extras_require={
-        'test': [
-            'flake8',
-            'flake8-colors'
-            'flake8-comprehensions',
-            'flake8-docstrings',
-            'flake8-import-order',
-            'pep8-naming==0.5.0',
-            'pydocstyle==3.0.0',
-            'tox',
-        ],
-    },
     entry_points={
         'console_scripts': [
             'oci-compute=oci_compute.cli:cli',
