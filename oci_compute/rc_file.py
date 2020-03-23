@@ -1,8 +1,8 @@
 """OCI Compute rc file helper.
 
-RcFile helper class to get default values from the oci-infra rc file.
+RcFile helper class to get default values from the oci_compute rc file.
 
-Copyright (c) 1982-2020 Oracle and/or its affiliates. All rights reserved.
+Copyright (c) 2020 Oracle and/or its affiliates.
 Licensed under the Universal Permissive License v 1.0 as shown at
 https://oss.oracle.com/licenses/upl.
 
