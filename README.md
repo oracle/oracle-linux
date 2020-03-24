@@ -7,7 +7,7 @@ A python script to provision compute instances on [Oracle Cloud Infrastructure](
 
 The [OCI CLI](https://docs.cloud.oracle.com/iaas/Content/API/Concepts/cliconcepts.htm) is easy to use for simple tasks, but has limits when it comes to handling output from the `oci` command. The [Python SDK](https://docs.cloud.oracle.com/en-us/iaas/Content/API/SDKDocs/pythonsdk.htm) offers more flexibility but the API may seem complex at first.
 
-This project illustrates the use of the SDK to list and provision Compute instances in OCI.
+This project illustrates the use of the SDK to list, provision, start, shutdown and terminate Compute instances in OCI.
 
 # Prerequisites
 
@@ -100,7 +100,7 @@ Note that the sections must also exist in the `~/.oci/config` configuration file
 
 # Usage
 
-The script support the `list` and `provision` commands:
+The script support the `instance`, `list` and `provision` commands:
 
 ```
 $ oci-compute --help
@@ -122,6 +122,7 @@ Options:
   --help              Show this message and exit.
 
 Commands:
+  instance   Manage compute instances.
   list       List available images.
   provision  Provision image.
 
@@ -151,6 +152,24 @@ Commands:
 ```
 
 The `provision` command accepts a `--cloud-init-file` parameter which will be run at instance provisioning.
+
+The `instance` command allows you to list, start, shutdown and terminate instances:
+```
+$ oci-compute instance --help
+Usage: oci-compute instance [OPTIONS] COMMAND [ARGS]...
+
+  Manage compute instances.
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+list       List compute instances
+shutdown   Shutdown compute instances
+start      Start compute instances
+terminate  Terminate compute instances
+
+```
 
 # Sample session
 ```
@@ -196,5 +215,22 @@ I have reviewed and accept the above agreement(s) [y/N]: y
 +------------+-----------------+
 $ ssh opc@xxx.xxx.xxx.xxx
 Last login: Mon Mar 23 10:15:11 2020
-[opc@dev ~]$
+[opc@dev ~]$ exit
+logout
+Connection to xxx.xxx.xxx.xxx closed.
+$ oci-compute instance list
++Compute Instances---+-------------------------+---------+------------+-----------------+
+| Name        | AD   | Time Created            | State   | Private IP | Public IP       |
++-------------+------+-------------------------+---------+------------+-----------------+
+| dev         | AD-1 | 2020-03-23 10:12:44 UTC | Running | 10.0.0.13  | xxx.xxx.xxx.xxx |
++-------------+------+-------------------------+---------+------------+-----------------+
+$ oci-compute instance terminate --display-name dev
++Instance: dev-------------------------+
+| Created    | 2020-03-23 10:12:44 UTC |
+| Private IP | 10.0.0.13               |
+| Public IP  | 1xxx.xxx.xxx.xxx        |
++------------+-------------------------+
+Terminate this instance [y/N]: y
+Termination requested
+$
 ```

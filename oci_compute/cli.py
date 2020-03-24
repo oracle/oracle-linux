@@ -55,7 +55,7 @@ def get_default_rc(variable):
 
 
 # Options common to all provisioners
-_provision_options = [
+provision_options = [
     click.option(
         '--cloud-init-file',
         default=lambda: get_default_rc('cloud-init-file'),
@@ -115,12 +115,36 @@ _provision_options = [
     ),
 ]
 
+# Options common to instance commands
+instance_options = [
+    click.option(
+        '--force',
+        is_flag=True,
+        help='Do NOT ask for confirmation (potentially dangerous!)'
+    ),
+    click.option(
+        '--display-name',
+        default=None,
+        required=True,
+        help='The display name of the instance',
+    ),
+    click.option(
+        '--compartment-id',
+        default=lambda: get_default_rc('compartment-id'),
+        show_default=RcFile.get_default('compartment-id'),
+        required=True,
+        help='The OCID of the compartment',
+    ),
+]
 
-def provision_options(func):
-    """Define decorator for common provisioning options."""
-    for option in reversed(_provision_options):
-        func = option(func)
-    return func
+
+def shared_options(option_list):
+    """Define decorator for common options."""
+    def _shared_options(func):
+        for option in reversed(option_list):
+            func = option(func)
+        return func
+    return _shared_options
 
 
 def display_ip(ctx, compartment_id, instance):
@@ -271,7 +295,7 @@ def provision(ctx):
     pass
 
 
-@provision_options
+@shared_options(provision_options)
 @click.option(
     '--operating-system-version',
     default=lambda: get_default_rc('operating-system-version'),
@@ -316,7 +340,7 @@ def provision_platform(ctx,
     display_ip(ctx, compartment_id, instance)
 
 
-@provision_options
+@shared_options(provision_options)
 @click.option(
     '--image-name',
     default=lambda: get_default_rc('custom-image-name'),
@@ -352,7 +376,7 @@ def provision_custom(ctx,
     display_ip(ctx, compartment_id, instance)
 
 
-@provision_options
+@shared_options(provision_options)
 @click.option(
     '--image-name',
     default=lambda: get_default_rc('market-image-name'),
@@ -384,6 +408,102 @@ def provision_market(ctx,
                                     ssh_authorized_keys_file,
                                     cloud_init_file)
     display_ip(ctx, compartment_id, instance)
+
+
+""" Instance command.
+"""
+
+
+@cli.group()
+@click.pass_context
+def instance(ctx):
+    """Manage compute instances."""
+    pass
+
+
+@click.option(
+    '--display-name',
+    default=None,
+    required=False,
+    help='The display name of the instance to list (default: all instances)',
+)
+@click.option(
+    '--compartment-id',
+    default=lambda: get_default_rc('compartment-id'),
+    show_default=RcFile.get_default('compartment-id'),
+    required=True,
+    help='The OCID of the compartment',
+)
+@instance.command(
+    name='list',
+    help='List compute instances',
+)
+@click.pass_context
+def instance_list(ctx, compartment_id, display_name):
+    oci = ctx.obj['oci']
+    instances = oci.instance_list(compartment_id, display_name)
+    if instances:
+        table = AsciiTable(
+            [('Name', 'AD', 'Time Created', 'State', 'Private IP', 'Public IP')]
+            + sorted(instance[1:] for instance in instances))
+        table.title = 'Compute Instances'
+        click.echo(table.table)
+    else:
+        click.echo('No instance found', err=True)
+
+
+def instance_action(action_name, action, oci, compartment_id, display_name, force):
+    instances = oci.instance_list(compartment_id, display_name)
+
+    if not instances:
+        click.echo('No instance found', err=True)
+    else:
+        for instance_id, display_name, ad, time_created, state, private_ip, public_ip in instances:
+            table = AsciiTable((
+                ('Created', time_created),
+                ('Private IP', private_ip),
+                ('Public IP', public_ip)))
+            table.inner_heading_row_border = False
+            table.title = 'Instance: ' + display_name
+            click.echo(table.table)
+            if force or click.confirm('{} this instance'.format(action_name.title())):
+                action(instance_id)
+                click.echo('{} requested'.format(action_name.title()))
+            else:
+                click.echo("Good thing I asked; I won't {} {}...".format(action_name.lower(), display_name))
+
+
+@shared_options(instance_options)
+@instance.command(
+    name='terminate',
+    help='Terminate compute instances',
+)
+@click.pass_context
+def instance_terminate(ctx, compartment_id, display_name, force):
+    oci = ctx.obj['oci']
+    instance_action('terminate', oci.instance_terminate, oci, compartment_id, display_name, force)
+
+
+@shared_options(instance_options)
+@instance.command(
+    name='start',
+    help='Start compute instances',
+)
+@click.pass_context
+def instance_start(ctx, compartment_id, display_name, force):
+    oci = ctx.obj['oci']
+    instance_action('start', oci.instance_start, oci, compartment_id, display_name, force)
+
+
+@shared_options(instance_options)
+@instance.command(
+    name='shutdown',
+    help='Shutdown compute instances',
+)
+@click.pass_context
+def instance_shutdown(ctx, compartment_id, display_name, force):
+    oci = ctx.obj['oci']
+    instance_action('shutdown', oci.instance_shutdown, oci, compartment_id, display_name, force)
 
 
 """Main.

@@ -328,11 +328,16 @@ class OciCompute(object):
             self._echo_error('Could not retrieve VNIC attachments')
             return None
 
-        vnic_attachment = vnic_attachments[0]
-        self._echo_message_kv('NIC attached - Index', vnic_attachment.nic_index)
-
-        self._echo_header('Retrieving VNIC data')
-        vnic = self._virtual_network_client.get_vnic(vnic_attachment.vnic_id).data
+        # Walk through attachments to find primary. If no primary found (should
+        # not happen) returns last one.
+        vnic = None
+        for vnic_attachment in vnic_attachments:
+            try:
+                vnic = self._virtual_network_client.get_vnic(vnic_attachment.vnic_id).data
+            except oci.exceptions.ServiceError:
+                vnic = None
+            if vnic and vnic.is_primary:
+                break
 
         if not vnic:
             self._echo_error('  Could not retrieve VNIC data')
@@ -504,3 +509,60 @@ class OciCompute(object):
                                      subnet_name=subnet_name,
                                      ssh_authorized_keys_file=ssh_authorized_keys_file,
                                      cloud_init_file=cloud_init_file)
+
+    def instance_list(self, compartment_id, display_name=None):
+        """List Compute Instances.
+
+        Parameters:
+            compartment_id: the compartment OCID
+            display_name: A filter to return only resources that match the
+                          given display name exactly
+
+        """
+        response = oci.pagination.list_call_get_all_results(
+            self._compute_client.list_instances,
+            compartment_id,
+            display_name=display_name)
+        instances = []
+        for instance in response.data:
+            if instance.lifecycle_state == 'TERMINATED':
+                continue
+            vnic = self.get_vnic(compartment_id, instance)
+            instances.append((
+                instance.id,
+                instance.display_name,
+                instance.availability_domain[-4:],
+                instance.time_created.strftime("%Y-%m-%d %H:%M:%S %Z"),
+                instance.lifecycle_state.title(),
+                vnic.private_ip if vnic else 'None',
+                vnic.public_ip if vnic else 'None'
+            ))
+
+        return instances
+
+    def instance_terminate(self, instance_id):
+        """Terminate Compute Instance.
+
+        Parameters:
+            instance_id: the OCID of the instance
+
+        """
+        self._compute_client.terminate_instance(instance_id, preserve_boot_volume=False)
+
+    def instance_start(self, instance_id):
+        """Start Compute Instance.
+
+        Parameters:
+            instance_id: the OCID of the instance
+
+        """
+        self._compute_client.instance_action(instance_id, action='START')
+
+    def instance_shutdown(self, instance_id):
+        """Shutdown Compute Instance.
+
+        Parameters:
+            instance_id: the OCID of the instance
+
+        """
+        self._compute_client.instance_action(instance_id, action='SOFTSTOP')

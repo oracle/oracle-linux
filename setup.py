@@ -19,7 +19,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='oci-compute',
-    version='0.0.2',
+    version='0.1.1',
     description='List and provision OCI Compute images',
     long_description=long_description,
     long_description_content_type='text/markdown',
