@@ -11,7 +11,7 @@ SPDX-License-Identifier: UPL-1.0
 from os.path import basename
 import sys
 
-from click import confirm, secho
+from click import confirm, echo, secho
 import oci
 
 
@@ -45,19 +45,24 @@ class OciCompute(object):
         if self._verbose or force:
             secho('+++ {}: {}'.format(self._cli, message), fg='green')
 
-    def _echo_message(self, message, force=False):
+    def _echo_message(self, message, force=False, nl=True):
         """Display message in verbose/forced mode."""
         if self._verbose or force:
-            secho('    {}: {}'.format(self._cli, message))
+            echo('    {}: {}'.format(self._cli, message), nl=nl)
 
     def _echo_message_kv(self, key, value, force=False):
         """Display key/value pair in verbose/forced mode."""
         if self._verbose or force:
-            secho('    {}: {:25}: {}'.format(self._cli, key, value))
+            echo('    {}: {:25}: {}'.format(self._cli, key, value))
 
     def _echo_error(self, message):
         """Display error message."""
         secho('+++ {}: {}'.format(self._cli, message), fg='red', err=True)
+
+    def _echo(self, message='', force=False, nl=True):
+        """Display raw message in verbose/forced mode."""
+        if self._verbose or force:
+            echo(message, nl=nl)
 
     def _get_availability_domain(self, compartment_id, availability_domain):
         """Retrieve matching Availability Domain name.
@@ -81,6 +86,10 @@ class OciCompute(object):
         else:
             self._echo_error('No AD found matching "{}"'.format(availability_domain))
             return None
+
+    def _wait_callback(self, times, result):
+        """Wait animation for oci.wait_until."""
+        self._echo('.', nl=False)
 
     def _get_subnet(self, compartment_id, vcn_name, subnet_name):
         """Retrieve the matching subnet in a VCN.
@@ -258,9 +267,12 @@ class OciCompute(object):
 
         compute_client_composite_operations = oci.core.ComputeClientCompositeOperations(self._compute_client)
 
+        self._echo_message('Waiting for Running state', nl=False)
         response = compute_client_composite_operations.launch_instance_and_wait_for_state(
             launch_instance_details,
-            wait_for_states=[oci.core.models.Instance.LIFECYCLE_STATE_RUNNING])
+            wait_for_states=[oci.core.models.Instance.LIFECYCLE_STATE_RUNNING],
+            waiter_kwargs={'wait_callback': self._wait_callback})
+        self._echo()
         instance = response.data
 
         if not instance:
@@ -540,29 +552,64 @@ class OciCompute(object):
 
         return instances
 
-    def instance_terminate(self, instance_id):
+    def instance_terminate(self, instance_id, wait=False):
         """Terminate Compute Instance.
 
         Parameters:
             instance_id: the OCID of the instance
+            wait: wait for completion (True/False)
 
         """
-        self._compute_client.terminate_instance(instance_id, preserve_boot_volume=False)
+        self._echo_header('Termination initiated')
+        if wait:
+            compute_client_composite_operations = oci.core.ComputeClientCompositeOperations(self._compute_client)
+            self._echo_message('Waiting for termination', nl=False)
+            compute_client_composite_operations.terminate_instance_and_wait_for_state(
+                instance_id=instance_id,
+                wait_for_states=[oci.core.models.Instance.LIFECYCLE_STATE_TERMINATED],
+                waiter_kwargs={'wait_callback': self._wait_callback})
+            self._echo()
+        else:
+            self._compute_client.terminate_instance(instance_id, preserve_boot_volume=False)
 
-    def instance_start(self, instance_id):
+    def instance_start(self, instance_id, wait=False):
         """Start Compute Instance.
 
         Parameters:
             instance_id: the OCID of the instance
+            wait: wait for completion (True/False)
 
         """
-        self._compute_client.instance_action(instance_id, action='START')
+        self._echo_header('Startup initiated')
+        if wait:
+            compute_client_composite_operations = oci.core.ComputeClientCompositeOperations(self._compute_client)
+            self._echo_message('Waiting for Running state', nl=False)
+            compute_client_composite_operations.instance_action_and_wait_for_state(
+                instance_id=instance_id,
+                action='START',
+                wait_for_states=[oci.core.models.Instance.LIFECYCLE_STATE_RUNNING],
+                waiter_kwargs={'wait_callback': self._wait_callback})
+            self._echo()
+        else:
+            self._compute_client.instance_action(instance_id, action='START')
 
-    def instance_shutdown(self, instance_id):
+    def instance_shutdown(self, instance_id, wait=False):
         """Shutdown Compute Instance.
 
         Parameters:
             instance_id: the OCID of the instance
+            wait: wait for completion (True/False)
 
         """
-        self._compute_client.instance_action(instance_id, action='SOFTSTOP')
+        self._echo_header('Shutdown initiated')
+        if wait:
+            compute_client_composite_operations = oci.core.ComputeClientCompositeOperations(self._compute_client)
+            self._echo_message('Waiting for Stopped state', nl=False)
+            compute_client_composite_operations.instance_action_and_wait_for_state(
+                instance_id=instance_id,
+                action='SOFTSTOP',
+                wait_for_states=[oci.core.models.Instance.LIFECYCLE_STATE_STOPPED],
+                waiter_kwargs={'wait_callback': self._wait_callback})
+            self._echo()
+        else:
+            self._compute_client.instance_action(instance_id, action='SOFTSTOP')

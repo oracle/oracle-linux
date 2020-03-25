@@ -123,6 +123,11 @@ instance_options = [
         help='Do NOT ask for confirmation (potentially dangerous!)'
     ),
     click.option(
+        '--wait',
+        is_flag=True,
+        help='Wait for completion (Default is to return immediately)'
+    ),
+    click.option(
         '--display-name',
         default=None,
         required=True,
@@ -452,7 +457,7 @@ def instance_list(ctx, compartment_id, display_name):
         click.echo('No instance found', err=True)
 
 
-def instance_action(action_name, action, oci, compartment_id, display_name, force):
+def instance_action(action_name, action, oci, compartment_id, display_name, wait, force):
     instances = oci.instance_list(compartment_id, display_name)
 
     if not instances:
@@ -464,11 +469,13 @@ def instance_action(action_name, action, oci, compartment_id, display_name, forc
                 ('Private IP', private_ip),
                 ('Public IP', public_ip)))
             table.inner_heading_row_border = False
-            table.title = 'Instance: ' + display_name
+            table.title = '{} instance: {}'.format(action_name.title(), display_name)
             click.echo(table.table)
             if force or click.confirm('{} this instance'.format(action_name.title())):
-                action(instance_id)
-                click.echo('{} requested'.format(action_name.title()))
+                action(instance_id, wait)
+                click.echo('{} {}'.format(
+                    action_name.title(),
+                    'completed' if wait else 'requested'))
             else:
                 click.echo("Good thing I asked; I won't {} {}...".format(action_name.lower(), display_name))
 
@@ -479,9 +486,9 @@ def instance_action(action_name, action, oci, compartment_id, display_name, forc
     help='Terminate compute instances',
 )
 @click.pass_context
-def instance_terminate(ctx, compartment_id, display_name, force):
+def instance_terminate(ctx, compartment_id, display_name, wait, force):
     oci = ctx.obj['oci']
-    instance_action('terminate', oci.instance_terminate, oci, compartment_id, display_name, force)
+    instance_action('terminate', oci.instance_terminate, oci, compartment_id, display_name, wait, force)
 
 
 @shared_options(instance_options)
@@ -490,9 +497,9 @@ def instance_terminate(ctx, compartment_id, display_name, force):
     help='Start compute instances',
 )
 @click.pass_context
-def instance_start(ctx, compartment_id, display_name, force):
+def instance_start(ctx, compartment_id, display_name, wait, force):
     oci = ctx.obj['oci']
-    instance_action('start', oci.instance_start, oci, compartment_id, display_name, force)
+    instance_action('start', oci.instance_start, oci, compartment_id, display_name, wait, force)
 
 
 @shared_options(instance_options)
@@ -501,9 +508,9 @@ def instance_start(ctx, compartment_id, display_name, force):
     help='Shutdown compute instances',
 )
 @click.pass_context
-def instance_shutdown(ctx, compartment_id, display_name, force):
+def instance_shutdown(ctx, compartment_id, display_name, wait, force):
     oci = ctx.obj['oci']
-    instance_action('shutdown', oci.instance_shutdown, oci, compartment_id, display_name, force)
+    instance_action('shutdown', oci.instance_shutdown, oci, compartment_id, display_name, wait, force)
 
 
 """Main.
