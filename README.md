@@ -5,9 +5,12 @@ A python script to provision compute instances on [Oracle Cloud Infrastructure](
 
 # About
 
-The [OCI CLI](https://docs.cloud.oracle.com/iaas/Content/API/Concepts/cliconcepts.htm) is easy to use for simple tasks, but has limits when it comes to handling output from the `oci` command. The [Python SDK](https://docs.cloud.oracle.com/en-us/iaas/Content/API/SDKDocs/pythonsdk.htm) offers more flexibility but the API may seem complex at first.
+This project illustrates the use of the [OCI Python SDK](https://docs.cloud.oracle.com/en-us/iaas/Content/API/SDKDocs/pythonsdk.htm) to list, provision, start, shutdown and terminate OCI compute instances.
 
-This project illustrates the use of the SDK to list, provision, start, shutdown and terminate Compute instances in OCI.
+Interaction with OCI from the command line can easily be achieved using the [OCI CLI](https://docs.cloud.oracle.com/iaas/Content/API/Concepts/cliconcepts.htm).
+It is the perfect tool for most tasks, but handling output from the OCI CLI in shell scripts can be cumbersome for complex queries.
+The [OCI Python SDK](https://docs.cloud.oracle.com/en-us/iaas/Content/API/SDKDocs/pythonsdk.htm) offers more flexibility but the API may seem complex at first.
+This project is a practical example on how to use the SDK for managing compute instances.
 
 # Prerequisites
 
@@ -132,7 +135,7 @@ You can list/provision images from the following three sources:
 - Platform Images: pre-built images for Oracle Cloud Infrastructure.
 - Custom images: images created or imported into your Oracle Cloud Infrastructure environment.
 - Marketplace Images: pre-built Oracle enterprise images and solutions as well as Trusted third-party images published by Oracle partners.  
-  For these images:
+  For the Marketplace images:
   - you will need to review and accept the terms of use for the image the first time you provision it.
   - the script will only list/provision free of charge images.
 
