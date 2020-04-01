@@ -430,7 +430,7 @@ run_packer() {
   echo_message "Invoke Packer"
   local errexit="$(shopt -po errexit)"
   set +e
-  /usr/bin/packer build -on-error=ask ${VM_NAME}.json
+  packer build -on-error=ask ${VM_NAME}.json
   packer_status=$?
   eval "${errexit}"
 
