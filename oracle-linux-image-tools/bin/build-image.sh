@@ -210,6 +210,9 @@ load_env() {
   [[ "${SETUP_SWAP,,}" =~ ^(yes)|(no)$ ]] || error "SETUP_SWAP must be yes or no"
   readonly SETUP_SWAP
 
+  [[ "${X2APIC,,}" =~ ^(on)|(off)$ ]] || error "X2APIC must be on or off"
+  readonly X2APIC="${X2APIC,,}"
+
   # Source image scripts
   if [[ -r "${DISTR_DIR}/${DISTR}/${IMAGE_SCRIPTS}" ]]; then
     source "${DISTR_DIR}/${DISTR}/${IMAGE_SCRIPTS}"
@@ -332,6 +335,7 @@ stage_kickstart() {
 #   SSH_PASSWORD SSH_KEY_FILE
 #   VM_NAME
 #   WORKSPACE PACKER_FILES BIN_DIR PROVISION_SCRIPT
+#   X2APIC
 # Arguments:
 #   None
 # Returns:
@@ -376,6 +380,7 @@ packer_conf() {
 	      "shutdown_command": "$SHUTDOWN_CMD",
 	      "vboxmanage":
 	      [
+	        ["modifyvm", "{{.Name}}", "--x2apic", "${X2APIC}"],
 	        ["modifyvm", "{{.Name}}", "--memory", ${MEM_SIZE}],
 	        ["modifyvm", "{{.Name}}", "--cpus", ${CPU_NUM}]
 	      ]
