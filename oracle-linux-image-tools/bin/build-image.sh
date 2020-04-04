@@ -326,7 +326,6 @@ stage_kickstart() {
 # Generate Packer config file
 # Globals:
 #   DISK_SIZE_MB MEM_SIZE CPU_NUM
-#   HOST_IP HOST_PORT
 #   ISO_URL ISO_SHA1_CHECKSUM
 #   KS_FILE
 #   SHUTDOWN_CMD
@@ -343,7 +342,7 @@ packer_conf() {
 
   local q='"'
   # KS_CONFIG is expanded in BOOT_COMMAND
-  local KS_CONFIG="http://${HOST_IP}:${HOST_PORT}/${KS_FILE}"
+  local KS_CONFIG="http://{{ .HTTPIP }}:{{ .HTTPPort }}/${KS_FILE}"
   local boot_command=$(eval echo "\"${BOOT_COMMAND}\"")
 
   cat > "${WORKSPACE}/${VM_NAME}.json" <<-EOF
@@ -368,6 +367,7 @@ packer_conf() {
 	      ${SSH_KEY_FILE:+${q}ssh_private_key_file${q}: ${q}$SSH_KEY_FILE${q},}
 	      "ssh_port": 22,
 	      "ssh_wait_timeout": "30m",
+        "http_directory": "${WORKSPACE}",
 	      "boot_wait": "20s",
 	      "boot_command":
 	      [
@@ -400,7 +400,6 @@ packer_conf() {
 #######################################
 # Run packer
 # Globals:
-#   HOST_PORT
 #   VM_NAME
 #   WORKSPACE
 # Arguments:
@@ -411,31 +410,13 @@ packer_conf() {
 run_packer() {
   echo_header "Run Packer"
 
-  local py_ver=$(python -c 'import sys; print(sys.version_info[0])')
-  local module packer_status server_pid
-
-  echo_message "Spawn HTTP server"
-  if [[ ${py_ver} = 2 ]]; then
-    module=SimpleHTTPServer
-  elif [[ ${py_ver} = 3 ]]; then
-    module=http.server
-  else
-    error "Cannot determine python version"
-  fi
-
   cd ${WORKSPACE}
-  python -m ${module} ${HOST_PORT} &
-  server_pid=$!
-
-  echo_message "Invoke Packer"
+  local packer_status
   local errexit="$(shopt -po errexit)"
   set +e
   /usr/bin/packer build -on-error=ask ${VM_NAME}.json
   packer_status=$?
   eval "${errexit}"
-
-  echo_message "Stop HTTP server"
-  kill ${server_pid}
 
   [[ ${packer_status} -ne 0 ]] && error "Packer didn't complete successfully"
 
