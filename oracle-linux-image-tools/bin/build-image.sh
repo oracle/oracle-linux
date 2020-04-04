@@ -213,6 +213,9 @@ load_env() {
   [[ "${X2APIC,,}" =~ ^(on)|(off)$ ]] || error "X2APIC must be on or off"
   readonly X2APIC="${X2APIC,,}"
 
+  [[ "${SERIAL_CONSOLE,,}" =~ ^(yes)|(no)$ ]] || error "SERIAL_CONSOLE must be yes or no"
+  readonly SERIAL_CONSOLE
+
   # Source image scripts
   if [[ -r "${DISTR_DIR}/${DISTR}/${IMAGE_SCRIPTS}" ]]; then
     source "${DISTR_DIR}/${DISTR}/${IMAGE_SCRIPTS}"
@@ -331,6 +334,7 @@ stage_kickstart() {
 #   DISK_SIZE_MB MEM_SIZE CPU_NUM
 #   ISO_URL ISO_SHA1_CHECKSUM
 #   KS_FILE
+#   SERIAL_CONSOLE
 #   SHUTDOWN_CMD
 #   SSH_PASSWORD SSH_KEY_FILE
 #   VM_NAME
@@ -347,6 +351,12 @@ packer_conf() {
   local q='"'
   # KS_CONFIG is expanded in BOOT_COMMAND
   local KS_CONFIG="http://{{ .HTTPIP }}:{{ .HTTPPort }}/${KS_FILE}"
+  local CONSOLE=""
+  local modifyvm_console=""
+  if [[ "${SERIAL_CONSOLE,,}" = "yes" ]]; then
+    CONSOLE=" console=tty0 console=ttyS0"
+    modifyvm_console='["modifyvm", "{{.Name}}", "--uart1", "0x3f8", 4, "--uartmode1", "file", "'"${WORKSPACE}/${VM_NAME}"'/serial-console.txt"],'
+  fi
   local boot_command=$(eval echo "\"${BOOT_COMMAND}\"")
 
   cat > "${WORKSPACE}/${VM_NAME}.json" <<-EOF
@@ -380,6 +390,7 @@ packer_conf() {
 	      "shutdown_command": "$SHUTDOWN_CMD",
 	      "vboxmanage":
 	      [
+	        ${modifyvm_console}
 	        ["modifyvm", "{{.Name}}", "--x2apic", "${X2APIC}"],
 	        ["modifyvm", "{{.Name}}", "--memory", ${MEM_SIZE}],
 	        ["modifyvm", "{{.Name}}", "--cpus", ${CPU_NUM}]
