@@ -394,6 +394,11 @@ packer_conf() {
 	        ["modifyvm", "{{.Name}}", "--x2apic", "${X2APIC}"],
 	        ["modifyvm", "{{.Name}}", "--memory", ${MEM_SIZE}],
 	        ["modifyvm", "{{.Name}}", "--cpus", ${CPU_NUM}]
+	      ],
+	      "vboxmanage_post":
+	      [
+	        ["modifyvm", "{{.Name}}", "--uart1", "off", "--uartmode1", "disconnected"],
+	        ["modifyvm", "{{.Name}}", "--x2apic", "on"]
 	      ]
 	    }
 	  ],
