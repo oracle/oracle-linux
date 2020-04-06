@@ -43,4 +43,5 @@ cloud::image_package() {
   vboxmanage convertfromraw System.img --format VMDK "${vmdk}" --variant Stream
   rm System.img
   tar cvf "${VM_NAME}.ova" "${VM_NAME}.ovf" "${vmdk}"
+  rm "${vmdk}"
 }

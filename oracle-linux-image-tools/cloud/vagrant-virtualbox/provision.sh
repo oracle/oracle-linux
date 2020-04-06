@@ -44,7 +44,7 @@ cloud::install_agent()
 {
   echo_message "Install guest agent"
   local additions="/mnt/VBoxLinuxAdditions.run"
-  yum install -y ${YUM_VERBOSE} make gcc bzip2
+  yum install -y ${YUM_VERBOSE} make gcc bzip2 tar
 
   if [[ "${KERNEL,,}" = "uek" ]]; then
     yum install -y ${YUM_VERBOSE} kernel-uek-devel
