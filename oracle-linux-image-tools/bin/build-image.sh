@@ -416,6 +416,17 @@ packer_conf() {
 	  ]
 	}
 	EOF
+
+  # Packer config specific to distr / cloud / cloud_distr level
+  if [[ "$(type -t distr::packer_conf)" = 'function' ]]; then
+    distr::packer_conf "${WORKSPACE}/${VM_NAME}.json"
+  fi
+  if [[ "$(type -t cloud::packer_conf)" = 'function' ]]; then
+    cloud::packer_conf "${WORKSPACE}/${VM_NAME}.json"
+  fi
+  if [[ "$(type -t cloud_distr::packer_conf)" = 'function' ]]; then
+    cloud_distr::packer_conf "${WORKSPACE}/${VM_NAME}.json"
+  fi
 }
 
 #######################################
