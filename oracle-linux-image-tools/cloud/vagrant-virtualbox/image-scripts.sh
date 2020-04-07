@@ -33,6 +33,30 @@ cloud::validate() {
 }
 
 #######################################
+# Packer configuration
+# Globals:
+#   VAGRANT_GUEST_ADDITIONS_URL
+#   VAGRANT_GUEST_ADDITIONS_SHA256
+# Arguments:
+#   Packer configuration file
+# Returns:
+#   None
+#######################################
+cloud::packer_conf() {
+  if [[ -n "${VAGRANT_GUEST_ADDITIONS_URL}" && -n "${VAGRANT_GUEST_ADDITIONS_SHA256}" ]]; then
+    ex -s "$1" <<-EOF
+	/"disk_size": /
+	:append
+	      "guest_additions_url": "${VAGRANT_GUEST_ADDITIONS_URL}",
+	      "guest_additions_sha256": "${VAGRANT_GUEST_ADDITIONS_SHA256}",
+	.
+	:update
+	:quit
+	EOF
+  fi
+}
+
+#######################################
 # Cleanup actions run directly on the image
 # Globals:
 #   None
