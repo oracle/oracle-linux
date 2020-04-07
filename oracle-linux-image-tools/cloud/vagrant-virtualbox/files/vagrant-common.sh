@@ -31,8 +31,8 @@ vagrant::config()
 
   # sshd: disable password authentication and DNS checks
   ex -s /etc/ssh/sshd_config <<EOF
-:%substitute/^\(PasswordAuthentication\) yes$/\1 no/
-:%substitute/^#\(UseDNS\) yes$/&\r\1 no/
+:%substitute/^\(PasswordAuthentication\) .*$/\1 no/
+:%substitute/^#\?\(UseDNS\) .*$/\1 no/
 :update
 :quit
 EOF
@@ -92,18 +92,24 @@ EOF
   systemctl disable firewalld --now
 
   # Install additional release packages and enable repos
-  yum install -y ${YUM_VERBOSE} wget \
-    oracle-softwarecollection-release-el7
-  yum-config-manager --enable  ol7_addons >/dev/null
-  yum-config-manager --enable  ol7_optional_latest >/dev/null
+  yum install -y ${YUM_VERBOSE} wget
+  if [[ "${ORACLE_RELEASE}" = "7" ]]; then
+    yum install -y ${YUM_VERBOSE} oracle-softwarecollection-release-el7
+    yum-config-manager --enable  ol7_addons >/dev/null
+    yum-config-manager --enable  ol7_optional_latest >/dev/null
+  fi
 
   # Install developer release packages and enable repos
   if [[ "${VAGRANT_DEVELOPER_REPOS,,}" = "yes" ]]; then
-    yum install -y ${YUM_VERBOSE} oracle-epel-release-el7 \
-      oraclelinux-developer-release-el7
-    yum-config-manager --enable  ol7_preview >/dev/null
-    yum-config-manager --enable  ol7_developer >/dev/null
-    yum-config-manager --enable  ol7_developer_EPEL >/dev/null
+    if [[ "${ORACLE_RELEASE}" = "7" ]]; then
+      yum install -y ${YUM_VERBOSE} oracle-epel-release-el7 \
+        oraclelinux-developer-release-el7
+      yum-config-manager --enable  ol7_preview >/dev/null
+      yum-config-manager --enable  ol7_developer >/dev/null
+      yum-config-manager --enable  ol7_developer_EPEL >/dev/null
+    elif  [[ "${ORACLE_RELEASE}" = "8" ]]; then
+      dnf install -y oracle-epel-release-el8
+    fi
   fi
 
   # Add login banner
