@@ -144,7 +144,7 @@ if [ $ACTION = mount -o $ACTION = umount ]; then
      Error "Image file $IMAGE_FILE does NOT exist" u
   fi
 
-  if ! file "$IMAGE_FILE" | grep -q partition; then
+  if ! file "$IMAGE_FILE" | grep -q 'partition\|DOS/MBR'; then
      Error "Image file does NOT seem to have partitions."
   fi
 fi
