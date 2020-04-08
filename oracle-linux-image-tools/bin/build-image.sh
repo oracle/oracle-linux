@@ -446,7 +446,7 @@ run_packer() {
   local packer_status
   local errexit="$(shopt -po errexit)"
   set +e
-  /usr/bin/packer build -on-error=ask ${VM_NAME}.json
+  "${PACKER}" build ${PACKER_BUILD_OPTIONS} ${VM_NAME}.json
   packer_status=$?
   eval "${errexit}"
 
