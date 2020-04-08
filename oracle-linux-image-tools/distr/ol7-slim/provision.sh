@@ -117,6 +117,9 @@ distr::kernel_config() {
 distr::common_cfg() {
   local service tty
 
+  # Disable ol7_ociyum_config (Orabug 31106231)
+  yum-config-manager --disable ol7_ociyum_config >/dev/null 2>&1
+
   # Run yum update if flag is set to yes in image build page
   echo_message "Update image: ${UPDATE_TO_LATEST^^}"
   if [[ "${UPDATE_TO_LATEST,,}" = "yes" ]]; then
