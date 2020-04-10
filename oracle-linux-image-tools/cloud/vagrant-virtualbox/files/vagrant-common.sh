@@ -116,7 +116,7 @@ The Oracle Linux End-User License Agreement can be viewed here:
 
 For additional packages, updates, documentation and community help, see:
 
-  * http://yum.oracle.com/
+  * https://yum.oracle.com/
   " > /etc/motd
 
 }
