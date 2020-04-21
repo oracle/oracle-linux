@@ -10,7 +10,7 @@ This project illustrates the use of the [OCI Python SDK](https://docs.cloud.orac
 Interaction with OCI from the command line can easily be achieved using the [OCI CLI](https://docs.cloud.oracle.com/iaas/Content/API/Concepts/cliconcepts.htm).
 It is the perfect tool for most tasks, but handling output from the OCI CLI in shell scripts can be cumbersome for complex queries.
 The [OCI Python SDK](https://docs.cloud.oracle.com/en-us/iaas/Content/API/SDKDocs/pythonsdk.htm) offers more flexibility but the API may seem complex at first.
-This project is a practical example on how to use the SDK for managing compute instances.
+This project is a practical example of how to use the SDK for managing compute instances.
 
 # Prerequisites
 
@@ -42,7 +42,7 @@ You don't have _activate_ the virtual environment to run `oci-compute`.
 
 ## User level / system wide install
 
-Alternatively you can install the package at user level or system wide. The later is strongly discouraged as it can potentially update system libraries.
+Alternatively you can install the package at user level or system wide. The latter is strongly discouraged as it can potentially update system libraries.
 
 For a user level installation:
 
