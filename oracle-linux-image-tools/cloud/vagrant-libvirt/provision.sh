@@ -15,6 +15,7 @@
 #
 
 # Load vagrant common scripts
+# shellcheck disable=SC1091
 source /tmp/packer_files/cloud/vagrant-common.sh
 
 #######################################
@@ -43,7 +44,7 @@ cloud::config()
 cloud::install_agent()
 {
   echo_message "Install NFS client"
-  yum install -y ${YUM_VERBOSE} nfs-utils
+  yum install -y "${YUM_VERBOSE}" nfs-utils
 }
 
 #######################################

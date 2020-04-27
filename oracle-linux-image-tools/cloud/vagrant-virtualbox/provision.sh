@@ -15,6 +15,7 @@
 #
 
 # Load vagrant common scripts
+# shellcheck disable=SC1091
 source /tmp/packer_files/cloud/vagrant-common.sh
 
 #######################################
@@ -44,12 +45,12 @@ cloud::install_agent()
 {
   echo_message "Install guest agent"
   local additions="/mnt/VBoxLinuxAdditions.run"
-  yum install -y ${YUM_VERBOSE} make gcc bzip2 tar
+  yum install -y "${YUM_VERBOSE}" make gcc bzip2 tar
 
   if [[ "${KERNEL,,}" = "uek" ]]; then
-    yum install -y ${YUM_VERBOSE} kernel-uek-devel
+    yum install -y "${YUM_VERBOSE}" kernel-uek-devel
   else
-    yum install -y ${YUM_VERBOSE} kernel-devel
+    yum install -y "${YUM_VERBOSE}" kernel-devel
   fi
 
   # Search for guest additions on cd devices

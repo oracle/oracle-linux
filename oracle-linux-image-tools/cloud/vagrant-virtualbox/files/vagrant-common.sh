@@ -46,7 +46,8 @@ OPTIONS="-u0"
 EOF
 
   # Default insecure vagrant key
-  mkdir -m 0700 -p /home/vagrant/.ssh
+  mkdir -p /home/vagrant/.ssh
+  chmod 0700 /home/vagrant/.ssh
   echo "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key" >> /home/vagrant/.ssh/authorized_keys
   chmod 600 /home/vagrant/.ssh/authorized_keys
   chown -R vagrant:vagrant /home/vagrant/.ssh
@@ -82,7 +83,8 @@ EOF
   echo 'omit_drivers+=" floppy "' > /etc/dracut.conf.d/nofloppy.conf
   restorecon /etc/dracut.conf.d/nofloppy.conf
   # Regenerate initrd
-  local current_kernel=$(uname -r)
+  local current_kernel
+  current_kernel=$(uname -r)
   ${DRACUT_CMD} -f "/boot/initramfs-${current_kernel}.img" "${current_kernel}"
 
   # Set SELinux to enforcing
@@ -92,9 +94,9 @@ EOF
   systemctl disable firewalld --now
 
   # Install additional release packages and enable repos
-  yum install -y ${YUM_VERBOSE} wget
+  yum install -y "${YUM_VERBOSE}" wget
   if [[ "${ORACLE_RELEASE}" = "7" ]]; then
-    yum install -y ${YUM_VERBOSE} oracle-softwarecollection-release-el7
+    yum install -y "${YUM_VERBOSE}" oracle-softwarecollection-release-el7
     yum-config-manager --enable  ol7_addons >/dev/null
     yum-config-manager --enable  ol7_optional_latest >/dev/null
   fi
@@ -102,7 +104,7 @@ EOF
   # Install developer release packages and enable repos
   if [[ "${VAGRANT_DEVELOPER_REPOS,,}" = "yes" ]]; then
     if [[ "${ORACLE_RELEASE}" = "7" ]]; then
-      yum install -y ${YUM_VERBOSE} oracle-epel-release-el7 \
+      yum install -y "${YUM_VERBOSE}" oracle-epel-release-el7 \
         oraclelinux-developer-release-el7
       yum-config-manager --enable  ol7_preview >/dev/null
       yum-config-manager --enable  ol7_developer >/dev/null
@@ -114,7 +116,7 @@ EOF
 
   # Add login banner
   echo "
-Welcome to Oracle Linux Server release `cat /etc/os-release | grep ^VERSION= | grep -o "[0-9].[0-9]"` (GNU/Linux $(uname -r))
+Welcome to Oracle Linux Server release $(grep ^VERSION= /etc/os-release | grep -o "[0-9].[0-9]") (GNU/Linux $(uname -r))
 
 The Oracle Linux End-User License Agreement can be viewed here:
 
