@@ -44,17 +44,17 @@ distr::kickstart() {
   local lvm="\
 part pv.01 --ondisk=sda --size=4096 --grow\n\
 volgroup vg_main pv.01\n\
-logvol swap   --fstype="swap" --vgname=vg_main --size=4096 --name=lv_swap\n\
-logvol /      --fstype="xfs"  --vgname=vg_main --size=4096 --name=lv_root --grow\
+logvol swap   --fstype=\"swap\" --vgname=vg_main --size=4096 --name=lv_swap\n\
+logvol /      --fstype=\"xfs\"  --vgname=vg_main --size=4096 --name=lv_root --grow\
 "
 
   # Kickstart file is populated for xfs
   if [[ "${ROOT_FS,,}" = "lvm" ]]; then
-    sed -i -e '/^part swap/d' -e 's!^part / .*$!'"${lvm}"'!' "${WORKSPACE}/${KS_FILE}"
+    sed -i -e '/^part swap/d' -e 's!^part / .*$!'"${lvm}"'!' "${ks_file}"
   fi
 
   # Pass kernel selection
-  sed -i -e 's!^KERNEL=.*$!KERNEL='"${KERNEL}"'!' "${WORKSPACE}/${KS_FILE}"
+  sed -i -e 's!^KERNEL=.*$!KERNEL='"${KERNEL}"'!' "${ks_file}"
 }
 
 #######################################

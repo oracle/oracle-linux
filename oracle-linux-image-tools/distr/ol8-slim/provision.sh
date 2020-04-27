@@ -16,6 +16,7 @@
 
 # Constants
 readonly DRACUT_CMD="dracut --no-early-microcode --force"
+# shellcheck disable=SC2034
 readonly ORACLE_RELEASE=8
 
 #######################################
@@ -63,6 +64,7 @@ distr::ks_log() {
 distr::kernel_config() {
   local current_kernel kernel kernels old_kernel
 
+  # shellcheck disable=SC2153
   echo_message "Configure kernel: ${KERNEL^^}"
   echo_message "Running kernel: $(uname -r)"
   # Add virtual drivers for xen,virtualbox and hyperv into the initrd using
@@ -94,7 +96,7 @@ distr::kernel_config() {
   current_kernel=$(uname -r)
   kernels=$(rpm -q ${kernel} --qf "%{VERSION}-%{RELEASE}.%{ARCH} ")
   for old_kernel in $kernels; do
-    if [[ ${old_kernel} != ${current_kernel} ]]; then
+    if [[ ${old_kernel} != "${current_kernel}" ]]; then
       distr::remove_rpms "${kernel}-${old_kernel}"
     fi
   done
@@ -240,7 +242,7 @@ distr::cleanup() {
   done
 
   echo_message "Dnf cleanup"
-  > /etc/dnf/vars/ociregion
+  : > /etc/dnf/vars/ociregion
   rm -rf /var/cache/dnf/*
   rm -rf /var/lib/dnf/*
   find /etc/ -name "./*.uln-*" -exec rm -rf {} \;
@@ -248,34 +250,35 @@ distr::cleanup() {
   # Cleanup and regenerate /etc/machine-id
   # Todo -- already done in provisioning!
   echo_message "Reset machine id"
-  > /etc/machine-id
-  grep -q setup-machine-id /usr/lib/systemd/system/systemd-firstboot.service
-  [ $? -ne 0 ] && sed -i.old -e "/^ExecStart=/s/$/ --setup-machine-id/" /usr/lib/systemd/system/systemd-firstboot.service
+  : > /etc/machine-id
+  if ! grep -q setup-machine-id /usr/lib/systemd/system/systemd-firstboot.service; then
+    sed -i.old -e "/^ExecStart=/s/$/ --setup-machine-id/" /usr/lib/systemd/system/systemd-firstboot.service
+  fi
 
   echo_message "Cleanup all log files"
   rm -f /var/log/anaconda.* /var/log/oraclevm-template.log
   rm -f /tmp/ks*
   rm -f /root/install.log /root/install.log.syslog /root/anaconda-ks.cfg
-  > /etc/resolv.conf
+  : > /etc/resolv.conf
   /bin/rm -f /etc/resolv.conf.*
   /bin/rm -f /var/lib/dhclient/*
-  [ -e /var/log/acpid ] &&  > /var/log/acpid
-  [ -e /var/log/messages ] && > /var/log/messages
-  [ -e /var/log/btmp ] && > /var/log/btmp
-  [ -e /var/log/grubby ] && > /var/log/grubby
-  [ -e /var/log/secure ] &&  > /var/log/secure
-  [ -e /var/log/wtmp ] && > /var/log/wtmp
-  [ -e /var/log/boot.log ] &&  > /var/log/boot.log
-  [ -e /var/log/dracut.log ] &&  > /var/log/dracut.log
-  [ -e /var/log/tuned/tuned.log ] &&  > /var/log/tuned/tuned.log
-  [ -e /var/log/maillog ] &&  > /var/log/maillog
-  [ -e /var/log/lastlog ] &&  > /var/log/lastlog
-  [ -e /var/log/dnf.log ] &&  > /var/log/dnf.log
-  [ -e /var/log/dnf.librepo.log ] &&  > /var/log/dnf.librepo.log
-  [ -e /var/log/dnf.rpm.log ] &&  > /var/log/dnf.rpm.log
+  [ -e /var/log/acpid ] &&  : > /var/log/acpid
+  [ -e /var/log/messages ] && : > /var/log/messages
+  [ -e /var/log/btmp ] && : > /var/log/btmp
+  [ -e /var/log/grubby ] && : > /var/log/grubby
+  [ -e /var/log/secure ] &&  : > /var/log/secure
+  [ -e /var/log/wtmp ] && : > /var/log/wtmp
+  [ -e /var/log/boot.log ] &&  : > /var/log/boot.log
+  [ -e /var/log/dracut.log ] &&  : > /var/log/dracut.log
+  [ -e /var/log/tuned/tuned.log ] &&  : > /var/log/tuned/tuned.log
+  [ -e /var/log/maillog ] &&  : > /var/log/maillog
+  [ -e /var/log/lastlog ] &&  : > /var/log/lastlog
+  [ -e /var/log/dnf.log ] &&  : > /var/log/dnf.log
+  [ -e /var/log/dnf.librepo.log ] &&  : > /var/log/dnf.librepo.log
+  [ -e /var/log/dnf.rpm.log ] &&  : > /var/log/dnf.rpm.log
   [ -e /var/log/ovm-template-config.log ] && rm -f /var/log/ovm-template-config.log
   /bin/rm -f /var/log/audit/audit.log*
-  [ -e /var/log/audit/audit.log ] && > /var/log/audit/audit.log
+  [ -e /var/log/audit/audit.log ] && : > /var/log/audit/audit.log
 
   # Lock root user
   if [[ "${LOCK_ROOT,,}" = "yes" ]]; then
@@ -300,7 +303,7 @@ distr::cleanup() {
   rm -rf /var/log/setroubleshoot/setroubleshootd.log
   rm -rf /var/log/spooler
   # cleanup bash history
-  [ -e  /root/.bash_history ] && > /root/.bash_history
+  [ -e  /root/.bash_history ] && : > /root/.bash_history
   rm -f /root/.viminfo
   rm -rf /.autorelabel
   rm -rf /var/log/mail/statistics
@@ -313,7 +316,7 @@ distr::cleanup() {
   rm -f /etc/udev/rules.d/70-persistent-net.rules
   rm -f /etc/udev/rules.d/70-persistent-cd.rules
 
-  find /var/log -type f | while read f; do echo -ne '' > "$f"; done;
+  find /var/log -type f | while read -r f; do echo -ne '' > "$f"; done;
   find /etc/ -name "*.old" -exec rm -f {} \;
   rm -f /etc/sysconfig/network-scripts/ifcfg-enp*
   rm -rf /lost+found/*
