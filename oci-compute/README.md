@@ -30,7 +30,7 @@ The preferred way of installing the `oci-compute` package is to install it in a 
 git clone https://github.com/oracle/ol-sample-scripts.git
 cd ol-sample-script/oci-compute
 # Create and activate the virtualenv
-python3 -m venv
+python3 -m venv venv
 source venv/bin/activate
 # Install the package
 pip3 install .
@@ -127,7 +127,7 @@ Options:
 Commands:
   instance   Manage compute instances.
   list       List available images.
-  provision  Provision image.
+  provision  Provision instance.
 
 ```
 
