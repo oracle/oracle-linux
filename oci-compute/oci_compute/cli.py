@@ -296,7 +296,7 @@ def list_market(ctx):
 @cli.group()
 @click.pass_context
 def provision(ctx):
-    """Provision image."""
+    """Provision instance."""
     pass
 
 
