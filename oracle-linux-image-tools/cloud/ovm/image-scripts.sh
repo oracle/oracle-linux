@@ -2,11 +2,12 @@
 #
 # Cleanup and package image for OVM
 #
-# Copyright (c) 2019 Oracle and/or its affiliates.
+# Copyright (c) 2019,2020 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl.
 #
-# Description: this module provides 2 functions:
+# Description: this module provides 3 functions:
+#   cloud::validate: optional parameter validation
 #   cloud::image_cleanup: cloud specific actions to cleanup the image
 #     This function is optional
 #   cloud::image_package: Package the raw image for the target cloud.
@@ -14,6 +15,19 @@
 #
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 #
+
+#######################################
+# Parameter validation
+# Globals:
+#   ORACLE_RELEASE
+# Arguments:
+#   None
+# Returns:
+#   None
+#######################################
+cloud::validate() {
+  [[ ${ORACLE_RELEASE} == "7" ]]  || error "OVM cloud image builder is only supported with OL7"
+}
 
 #######################################
 # Cleanup actions run directly on the image
@@ -44,7 +58,6 @@ cloud::image_package() {
   local build_rel="${DISTR_NAME%U*}"
   local build_upd="${DISTR_NAME#*U}"
   local build_upd="${build_upd%%_*}"
-  local build_platform="${DISTR_NAME#*_}"
 
   vboxmanage convertfromraw System.img --format VMDK System.vmdk  --variant Stream
   rm System.img
