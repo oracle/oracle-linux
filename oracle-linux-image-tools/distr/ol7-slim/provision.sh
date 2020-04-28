@@ -16,7 +16,6 @@
 
 # Constants
 readonly DRACUT_CMD="dracut --no-early-microcode --force"
-readonly ORACLE_RELEASE=7
 
 #######################################
 # Invoke yum to remove packages

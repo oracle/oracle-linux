@@ -16,8 +16,6 @@
 
 # Constants
 readonly DRACUT_CMD="dracut --no-early-microcode --force"
-# shellcheck disable=SC2034
-readonly ORACLE_RELEASE=8
 
 #######################################
 # Invoke dnf to remove packages
