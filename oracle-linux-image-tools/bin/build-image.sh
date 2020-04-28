@@ -196,7 +196,7 @@ load_env() {
 
   [[ -z "${DISTR_NAME}" && -z "${BUILD_NUMBER}" ]] &&
     error "missing distribution name / build number"
-  if [[ -z "{VM_NAME}" ]]; then
+  if [[ -z "${VM_NAME}" ]]; then
     VM_NAME="${DISTR_NAME}-${CLOUD}-b${BUILD_NUMBER}"
   fi
   KS_FILE="${VM_NAME}-ks.cfg"
