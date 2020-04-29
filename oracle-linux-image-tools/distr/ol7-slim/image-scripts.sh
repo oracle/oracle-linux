@@ -83,17 +83,10 @@ distr::image_cleanup() {
   cp "${root_fs}"/home/kernel.txt "${WORKSPACE}/${VM_NAME}/${VM_NAME}.kernel"
 
   sudo chroot "${root_fs}" /bin/bash <<-EOF
-	rm -f /var/log/wtmp
-	touch /var/log/wtmp
-	chcon -u system_u -r object_r -t wtmp_t /var/log/wtmp
+  : > /var/log/wtmp
+  : > /var/log/lastlog
 	rm -f /var/log/audit/audit.log
 	rm -f /var/log/tuned/tuned.log
-	rm -f /var/log/lastlog
-	touch /var/log/lastlog
-	chmod 644 /var/log/lastlog
-	chcon -u system_u -r object_r -t lastlog_t /var/log/lastlog
-	chown root.utmp /var/log/wtmp
-	chmod 664 /var/log/wtmp
 	rm -rf /root/.gemrc /root/.gem
 	rm -rf /var/spool/root /var/spool/mail/root
 	rm -rf /var/lib/NetworkManager
