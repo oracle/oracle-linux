@@ -12,7 +12,6 @@ The tool currently supports:
   - Oracle Linux 7 update 8 -- Slim  
     A minimal set of packages is installed
   - Oracle Linux 8 update 1 -- Slim
-    (Work in progress)
 - Clouds:
   - Microsoft Azure cloud  
     Target packages: WALinuxAgent  
