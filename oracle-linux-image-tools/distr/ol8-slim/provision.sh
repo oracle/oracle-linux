@@ -70,7 +70,7 @@ distr::kernel_config() {
   # during fresh kernel installs.
   # This makes it is easy to move VM images between these virtual environments
   if [[ "${KERNEL,,}" = "uek" ]]; then
-    local virtio="virtio_blk virtio_net virtio_pci virtio_balloon"
+    local virtio="virtio_blk virtio_net virtio_pci virtio_scsi virtio_balloon"
   else
     local virtio="virtio_blk virtio_net virtio_balloon"
   fi
