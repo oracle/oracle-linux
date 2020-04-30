@@ -25,6 +25,8 @@
 distr::validate() {
 [[ "${ROOT_FS,,}" =~ ^(xfs)|(btrfs)|(lvm)$ ]] || error "ROOT_FS must be xfs, btrfs or lvm"
   readonly ROOT_FS
+  [[ "${UEK_RELEASE}" =~ ^[56]$ ]] || error "UEK_RELEASE must be 5 or 6"
+    readonly UEK_RELEASE
 }
 
 #######################################
@@ -39,26 +41,27 @@ distr::validate() {
 distr::kickstart() {
   local ks_file="$1"
   local btrfs="\
-part btrfs.01 --fstype="btrfs"  --ondisk=sda --size=4096 --grow\n\
+part btrfs.01 --fstype=\"btrfs\"  --ondisk=sda --size=4096 --grow\n\
 btrfs none --label=btr_pool --data=single btrfs.01\n\
 btrfs /    --subvol --name=root btr_pool\
 "
   local lvm="\
 part pv.01 --ondisk=sda --size=4096 --grow\n\
 volgroup vg_main pv.01\n\
-logvol swap   --fstype="swap" --vgname=vg_main --size=4096 --name=lv_swap\n\
-logvol /      --fstype="xfs"  --vgname=vg_main --size=4096 --name=lv_root --grow\
+logvol swap   --fstype=\"swap\" --vgname=vg_main --size=4096 --name=lv_swap\n\
+logvol /      --fstype=\"xfs\"  --vgname=vg_main --size=4096 --name=lv_root --grow\
 "
 
   # Kickstart file is populated for xfs
   if [[ "${ROOT_FS,,}" = "btrfs" ]]; then
-    sed -i -e 's!^part / .*$!'"${btrfs}"'!' "${WORKSPACE}/${KS_FILE}"
+    sed -i -e 's!^part / .*$!'"${btrfs}"'!' "${ks_file}"
   elif [[ "${ROOT_FS,,}" = "lvm" ]]; then
-    sed -i -e '/^part swap/d' -e 's!^part / .*$!'"${lvm}"'!' "${WORKSPACE}/${KS_FILE}"
+    sed -i -e '/^part swap/d' -e 's!^part / .*$!'"${lvm}"'!' "${ks_file}"
   fi
 
   # Pass kernel selection
-  sed -i -e 's!^KERNEL=.*$!KERNEL='"${KERNEL}"'!' "${WORKSPACE}/${KS_FILE}"
+  sed -i -e 's!^KERNEL=.*$!KERNEL='"${KERNEL}"'!' "${ks_file}"
+  sed -i -e 's!^UEK_RELEASE=.*$!UEK_RELEASE='"${UEK_RELEASE}"'!' "${ks_file}"
 }
 
 #######################################

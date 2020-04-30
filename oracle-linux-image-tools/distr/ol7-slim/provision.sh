@@ -27,7 +27,7 @@ readonly DRACUT_CMD="dracut --no-early-microcode --force"
 #   None
 #######################################
 distr::remove_rpms() {
-  yum -C -y ${YUM_VERBOSE} remove "$@" --setopt="clean_requirements_on_remove=1"
+  yum -C -y "${YUM_VERBOSE}" remove "$@" --setopt="clean_requirements_on_remove=1"
 }
 
 #######################################
@@ -61,6 +61,7 @@ distr::ks_log() {
 distr::kernel_config() {
   local current_kernel kernel kernels old_kernel
 
+  # shellcheck disable=SC2153
   echo_message "Configure kernel: ${KERNEL^^}"
   echo_message "Running kernel: $(uname -r)"
   # Add virtual drivers for xen,virtualbox and hyperv into the initrd using
@@ -75,23 +76,25 @@ distr::kernel_config() {
 	EOF
 
   # Configure repos and remove old kernels
+  yum-config-manager --disable ol7_UEKR\* >/dev/null
   if [[ "${KERNEL,,}" = "modrhck" ]]; then
     yum-config-manager --enable ol7_MODRHCK >/dev/null
   fi
 
   if [[ "${KERNEL,,}" = "uek" ]]; then
     kernel="kernel-uek"
-    yum install -y ${YUM_VERBOSE} kernel-transition
-    yum remove -y ${YUM_VERBOSE} kernel
+    yum-config-manager --enable "ol7_UEKR${UEK_RELEASE}" >/dev/null
+    yum install -y "${YUM_VERBOSE}" kernel-transition
+    yum remove -y "${YUM_VERBOSE}" kernel
   else
     kernel="kernel"
-    yum remove -y ${YUM_VERBOSE} kernel-uek
+    yum remove -y "${YUM_VERBOSE}" kernel-uek
   fi
 
   current_kernel=$(uname -r)
   kernels=$(rpm -q ${kernel} --qf "%{VERSION}-%{RELEASE}.%{ARCH} ")
   for old_kernel in $kernels; do
-    if [[ ${old_kernel} != ${current_kernel} ]]; then
+    if [[ ${old_kernel} != "${current_kernel}" ]]; then
       yum remove -y "${kernel}-${old_kernel}"
     fi
   done
@@ -122,10 +125,10 @@ distr::common_cfg() {
   # Run yum update if flag is set to yes in image build page
   echo_message "Update image: ${UPDATE_TO_LATEST^^}"
   if [[ "${UPDATE_TO_LATEST,,}" = "yes" ]]; then
-    yum update -y ${YUM_VERBOSE}
+    yum update -y "${YUM_VERBOSE}"
   elif [[ "${UPDATE_TO_LATEST,,}" = "security" ]]; then
-    yum install -y ${YUM_VERBOSE} yum-plugin-security
-    yum update --security -y ${YUM_VERBOSE}
+    yum install -y "${YUM_VERBOSE}" yum-plugin-security
+    yum update --security -y "${YUM_VERBOSE}"
   fi
 
   # TODO: Do we really want to use RH servers?
@@ -253,7 +256,7 @@ distr::cleanup() {
   done
 
   echo_message "Yum cleanup"
-  > /etc/yum/vars/ociregion
+  : > /etc/yum/vars/ociregion
   rm -rf /var/cache/yum/*
   rm -rf /var/lib/yum/*
   find /etc/ -name "./*.uln-*" -exec rm -rf {} \;
@@ -261,32 +264,32 @@ distr::cleanup() {
   # Cleanup and regenerate /etc/machine-id
   # Todo -- already done in provisioning!
   echo_message "Reset machine id"
-  > /etc/machine-id
-  grep -q setup-machine-id /usr/lib/systemd/system/systemd-firstboot.service
-  [ $? -ne 0 ] && sed -i.old -e "/^ExecStart=/s/$/ --setup-machine-id/" /usr/lib/systemd/system/systemd-firstboot.service
-
+  : > /etc/machine-id
+  if ! grep -q setup-machine-id /usr/lib/systemd/system/systemd-firstboot.service; then
+    sed -i.old -e "/^ExecStart=/s/$/ --setup-machine-id/" /usr/lib/systemd/system/systemd-firstboot.service
+  fi
   echo_message "Cleanup all log files"
   rm -f /var/log/anaconda.* /var/log/oraclevm-template.log
   rm -f /tmp/ks*
   rm -f /root/install.log /root/install.log.syslog /root/anaconda-ks.cfg
-  > /etc/resolv.conf
+  : > /etc/resolv.conf
   /bin/rm -f /etc/resolv.conf.*
   /bin/rm -f /var/lib/dhclient/*
-  [ -e /var/log/acpid ] &&  > /var/log/acpid
-  [ -e /var/log/messages ] && > /var/log/messages
-  [ -e /var/log/btmp ] && > /var/log/btmp
-  [ -e /var/log/grubby ] && > /var/log/grubby
-  [ -e /var/log/secure ] &&  > /var/log/secure
-  [ -e /var/log/wtmp ] && > /var/log/wtmp
-  [ -e /var/log/boot.log ] &&  > /var/log/boot.log
-  [ -e /var/log/dracut.log ] &&  > /var/log/dracut.log
-  [ -e /var/log/tuned/tuned.log ] &&  > /var/log/tuned/tuned.log
-  [ -e /var/log/maillog ] &&  > /var/log/maillog
-  [ -e /var/log/lastlog ] &&  > /var/log/lastlog
-  [ -e /var/log/yum.log ] &&  > /var/log/yum.log
+  [ -e /var/log/acpid ] &&  : > /var/log/acpid
+  [ -e /var/log/messages ] && : > /var/log/messages
+  [ -e /var/log/btmp ] && : > /var/log/btmp
+  [ -e /var/log/grubby ] && : > /var/log/grubby
+  [ -e /var/log/secure ] &&  : > /var/log/secure
+  [ -e /var/log/wtmp ] && : > /var/log/wtmp
+  [ -e /var/log/boot.log ] &&  : > /var/log/boot.log
+  [ -e /var/log/dracut.log ] &&  : > /var/log/dracut.log
+  [ -e /var/log/tuned/tuned.log ] &&  : > /var/log/tuned/tuned.log
+  [ -e /var/log/maillog ] &&  : > /var/log/maillog
+  [ -e /var/log/lastlog ] &&  : > /var/log/lastlog
+  [ -e /var/log/yum.log ] &&  : > /var/log/yum.log
   [ -e /var/log/ovm-template-config.log ] && rm -f /var/log/ovm-template-config.log
   /bin/rm -f /var/log/audit/audit.log*
-  [ -e /var/log/audit/audit.log ] && > /var/log/audit/audit.log
+  [ -e /var/log/audit/audit.log ] && : > /var/log/audit/audit.log
 
   # Lock root user
   if [[ "${LOCK_ROOT,,}" = "yes" ]]; then
@@ -311,7 +314,7 @@ distr::cleanup() {
   rm -rf /var/log/setroubleshoot/setroubleshootd.log
   rm -rf /var/log/spooler
   # cleanup bash history
-  [ -e  /root/.bash_history ] && > /root/.bash_history
+  [ -e  /root/.bash_history ] && : > /root/.bash_history
   rm -f /root/.viminfo
   rm -rf /.autorelabel
   rm -rf /var/log/mail/statistics
@@ -325,7 +328,7 @@ distr::cleanup() {
   rm -f /etc/udev/rules.d/70-persistent-net.rules
   rm -f /etc/udev/rules.d/70-persistent-cd.rules
 
-  find /var/log -type f | while read f; do echo -ne '' > "$f"; done;
+  find /var/log -type f | while read -r f; do echo -ne '' > "$f"; done;
   find /etc/ -name "*.old" -exec rm -f {} \;
   rm -f /etc/sysconfig/network-scripts/ifcfg-enp*
   rm -rf /lost+found/*
