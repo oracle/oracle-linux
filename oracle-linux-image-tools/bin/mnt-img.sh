@@ -69,7 +69,7 @@ umount_img() {
       # unmount any automounted paths
       for p in $(kpartx -l "$lp_device" |awk '{print $1}')
       do
-        umount /dev/mapper/$p 2>/dev/null
+        umount "/dev/mapper/$p" 2>/dev/null
       done
       kpartx -d "$lp_device"
       losetup -d "$lp_device"
@@ -85,7 +85,7 @@ list_mnt() {
       echo "--------------------------------------------------------------------"
       grep "MOUNTED IMAGE" "$f"
       # umount first
-      grep "MOUNTED DIR" "$f"| while read line; do
+      grep "MOUNTED DIR" "$f"| while read -r line; do
         echo " |- $line"
       done
       grep "LVM GROUP" "$f"
@@ -139,7 +139,7 @@ shift
 MOUNT_POINT="$1"
 
 # check arguments
-if [ $ACTION = mount -o $ACTION = umount ]; then
+if [[ $ACTION = mount || $ACTION = umount ]]; then
   if [ ! -f "$IMAGE_FILE" ]; then
      Error "Image file $IMAGE_FILE does NOT exist" u
   fi
@@ -195,12 +195,12 @@ mapped_devices=$(kpartx -l "$LPDEVICE" | grep "$LPDEVICE" | awk '{print $1}')
 ct=1
 for d in $mapped_devices; do
   # mount ext3, ext4, btrfs, xfs partitions
-  if file -sL /dev/mapper/"$d" | egrep -q -i "ext3|ext4|btrfs|xfs"; then
+  if file -sL /dev/mapper/"$d" | grep -E -q -i "ext3|ext4|btrfs|xfs"; then
      mkdir -p "$MOUNT_POINT"/$ct
      mount /dev/mapper/"$d" "$MOUNT_POINT"/$ct
      echo "MOUNTED DIR:/dev/mapper/$d $MOUNT_POINT/$ct" |tee -a $WORK_HOME/"$ID"
      ct=$((ct+1))
-  elif file -sL /dev/mapper/"$d" | egrep -q -i "lvm2"; then
+  elif file -sL /dev/mapper/"$d" | grep -E -q -i "lvm2"; then
      echo "LVM detected"
      guest_vg=1
      pvscan --cache /dev/mapper/"$d"
@@ -217,14 +217,14 @@ if [[ ${guest_vg} == 1 ]]; then
   all_vgs=$(vgscan | grep "Found volume group" | sed -e 's/^[^"]*"\([^"]*\)".*$/\1/')
   for vg in ${all_vgs}; do
     # Only consider new VGs
-    if ! grep -w -q "${vg}" <<<${host_vgs}; then
+    if ! grep -w -q "${vg}" <<<"${host_vgs}"; then
       # Ensure the VG is active and register it
       vgchange -ay "${vg}"
       echo "LVM GROUP:${vg}" | tee -a "${WORK_HOME}/${ID}"
       lvscan >/dev/null
       # Search for filesystems in the VG
       for fs in "/dev/${vg}"/*; do
-        if file -sL "${fs}" | egrep -q -i "ext3|ext4|btrfs|xfs"; then
+        if file -sL "${fs}" | grep -E -q -i "ext3|ext4|btrfs|xfs"; then
           mkdir -p "${MOUNT_POINT}/${ct}"
           mount "${fs}" "${MOUNT_POINT}/${ct}"
           echo "MOUNTED DIR:${fs}  ${MOUNT_POINT}/${ct}" | tee -a "${WORK_HOME}/${ID}"
@@ -242,7 +242,7 @@ fi
 
 ############################################################################
 umountall)
-for f in $WORK_HOME/*; do
+for f in "$WORK_HOME"/*; do
     umount_img "$f"
 done
 ;;
@@ -259,7 +259,7 @@ umount_img $WORK_HOME/"$ID"
 ############################################################################
 # list all mounted images
 listall)
-for f in $WORK_HOME/*; do
+for f in "$WORK_HOME"/*; do
     list_mnt "$f"
 done
 ;;
