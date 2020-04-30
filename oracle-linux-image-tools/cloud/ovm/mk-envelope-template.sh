@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
+# shellcheck disable=2016
 #
 # Creates OVF Envelope template for OL templates
 # This script requires the open-ovf tools
 #
-# Copyright (c) 2019 Oracle and/or its affiliates.
+# Copyright (c) 2019,2020 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl.
 #
@@ -239,7 +240,8 @@ touch System.vmdk
 
 sed -i -e '/ResourceType>17/ i \                                         <rasd:Parent>4</rasd:Parent>' "$OVF_FILE"
 
-n=2;
+other_disks=''
+n=2
 for d in ${other_disks}
 do
   id=${d##*/}

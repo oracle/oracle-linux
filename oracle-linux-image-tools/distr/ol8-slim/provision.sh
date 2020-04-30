@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
-# Packer provisioning script for OL7
+# Packer provisioning script for OL8
 #
 # Copyright (c) 2019,2020 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl.
 #
-# Description: provision an OL7 image. This module provides 2 functions,
+# Description: provision an OL8 image. This module provides 2 functions,
 # both are optional.
 #   distr::provision: provision the instance
 #   distr::cleanup: instance cleanup before shutdown
@@ -18,16 +18,17 @@
 readonly DRACUT_CMD="dracut --no-early-microcode --force"
 
 #######################################
-# Invoke yum to remove packages
+# Invoke dnf to remove packages
 # Globals:
-#   YUM_VERBOSE
+#   None
 # Arguments:
 #   List of packages to be removed
 # Returns:
 #   None
 #######################################
 distr::remove_rpms() {
-  yum -C -y "${YUM_VERBOSE}" remove "$@" --setopt="clean_requirements_on_remove=1"
+  # clean_requirements_on_remove is default with dnf
+  dnf -C -y remove "$@"
 }
 
 #######################################
@@ -52,7 +53,7 @@ distr::ks_log() {
 # Assume that we already run the latest selected kernel
 # (Asserted in the kickstart file)
 # Globals:
-#   DRACUT_CMD, KERNEL, UPDATE_TO_LATEST, YUM_VERBOSE
+#   DRACUT_CMD, KERNEL, UPDATE_TO_LATEST
 # Arguments:
 #   None
 # Returns:
@@ -68,34 +69,33 @@ distr::kernel_config() {
   # dracut configuration files so that they get installed into the initrd
   # during fresh kernel installs.
   # This makes it is easy to move VM images between these virtual environments
+  if [[ "${KERNEL,,}" = "uek" ]]; then
+    local virtio="virtio_blk virtio_net virtio_pci virtio_scsi virtio_balloon"
+  else
+    local virtio="virtio_blk virtio_net virtio_balloon"
+  fi
   cat > /etc/dracut.conf.d/01-dracut-vm.conf <<-EOF
 	add_drivers+=" xen_netfront xen_blkfront "
-	add_drivers+=" virtio_blk virtio_net virtio virtio_pci virtio_balloon "
+	add_drivers+=" ${virtio} "
 	add_drivers+=" hyperv_keyboard hv_netvsc hid_hyperv hv_utils hv_storvsc hyperv_fb "
 	add_drivers+=" ahci libahci "
 	EOF
 
   # Configure repos and remove old kernels
-  yum-config-manager --disable ol7_UEKR\* >/dev/null
-  if [[ "${KERNEL,,}" = "modrhck" ]]; then
-    yum-config-manager --enable ol7_MODRHCK >/dev/null
-  fi
-
   if [[ "${KERNEL,,}" = "uek" ]]; then
     kernel="kernel-uek"
-    yum-config-manager --enable "ol7_UEKR${UEK_RELEASE}" >/dev/null
-    yum install -y "${YUM_VERBOSE}" kernel-transition
-    yum remove -y "${YUM_VERBOSE}" kernel
+    dnf config-manager --set-enabled ol8_UEKR6
+    distr::remove_rpms kernel
   else
     kernel="kernel"
-    yum remove -y "${YUM_VERBOSE}" kernel-uek
+    distr::remove_rpms kernel-uek
   fi
 
   current_kernel=$(uname -r)
   kernels=$(rpm -q ${kernel} --qf "%{VERSION}-%{RELEASE}.%{ARCH} ")
   for old_kernel in $kernels; do
     if [[ ${old_kernel} != "${current_kernel}" ]]; then
-      yum remove -y "${kernel}-${old_kernel}"
+      distr::remove_rpms "${kernel}-${old_kernel}"
     fi
   done
 
@@ -110,7 +110,7 @@ distr::kernel_config() {
 #######################################
 # Common configuration
 # Globals:
-#   UPDATE_TO_LATEST, YUM_VERBOSE
+#   UPDATE_TO_LATEST
 # Arguments:
 #   None
 # Returns:
@@ -119,21 +119,13 @@ distr::kernel_config() {
 distr::common_cfg() {
   local service tty
 
-  # Disable ol7_ociyum_config (Orabug 31106231)
-  yum-config-manager --disable ol7_ociyum_config >/dev/null 2>&1
-
-  # Run yum update if flag is set to yes in image build page
+  # Run dnf update if flag is set to yes in image build page
   echo_message "Update image: ${UPDATE_TO_LATEST^^}"
   if [[ "${UPDATE_TO_LATEST,,}" = "yes" ]]; then
-    yum update -y "${YUM_VERBOSE}"
+    dnf update -y
   elif [[ "${UPDATE_TO_LATEST,,}" = "security" ]]; then
-    yum install -y "${YUM_VERBOSE}" yum-plugin-security
-    yum update --security -y "${YUM_VERBOSE}"
+    dnf update --security -y
   fi
-
-  # TODO: Do we really want to use RH servers?
-  sed -i -e '/^server .*/d' /etc/chrony.conf
-  sed -i -e '/joining the pool/a \server 0.rhel.pool.ntp.org iburst \n\server 1.rhel.pool.ntp.org iburst \n\server 2.rhel.pool.ntp.org iburst \n\server 3.rhel.pool.ntp.org iburst' /etc/chrony.conf
 
   # If you want to remove rsyslog and just use journald, remove this!
   echo_message "Disabling persistent journal"
@@ -145,6 +137,7 @@ distr::common_cfg() {
   ln -s /lib/systemd/system/multi-user.target /etc/systemd/system/default.target
 
   echo_message "Disable services"
+  # NetworkManager.service
   for service in \
     kdump.service \
     ntpd.service \
@@ -154,8 +147,7 @@ distr::common_cfg() {
     rhnsd.service \
     sendmail.service \
     sntp.service \
-    syslog.target \
-    NetworkManager.service
+    syslog.target
   do
     # Most of these aren't enabled, errors are expected...
     echo_message "    ${service}"
@@ -171,12 +163,12 @@ distr::common_cfg() {
   echo_message "Clear network persistent data"
   rm -f /etc/udev/rules.d/70-persistent-net.rules
 
-  echo_message "Configure yum"
+  echo_message "Configure dnf"
   # bypass update kernel-uek-headers
-  echo "exclude=kernel-uek-headers" >> /etc/yum.conf
+  echo "exclude=kernel-uek-headers" >> /etc/dnf/dnf.conf
   # fix "Metadata file does not match checksum" for public-yum
   # https://forums.oracle.com/thread/2550364
-  echo "http_caching=none" >> /etc/yum.conf
+  echo "http_caching=none" >> /etc/dnf/dnf.conf
 
   echo_message "Enable login on serial console ports"
   for tty in "hvc0" "ttyS0" "ttyS0"
@@ -189,14 +181,6 @@ distr::common_cfg() {
   sed -i -e 's@^ExecStart=.*@ExecStart=/usr/bin/systemd-firstboot --prompt-locale --prompt-timezone --prompt-root-password --setup-machine-id@g' /usr/lib/systemd/system/systemd-firstboot.service
 
   echo_message "Remove unneeded RPMs"
-  distr::remove_rpms \
-    NetworkManager \
-    NetworkManager-team \
-    NetworkManager-config-server \
-    NetworkManager-libnm \
-    NetworkManager-tui
-
-  # Remove others pkgs
   distr::remove_rpms \
     iwl7265-firmware \
     mozjs17 \
@@ -255,10 +239,10 @@ distr::cleanup() {
      [ -e "$f" ] && sed -i '/^HWADDR=/d' "$f"
   done
 
-  echo_message "Yum cleanup"
-  : > /etc/yum/vars/ociregion
-  rm -rf /var/cache/yum/*
-  rm -rf /var/lib/yum/*
+  echo_message "Dnf cleanup"
+  : > /etc/dnf/vars/ociregion
+  rm -rf /var/cache/dnf/*
+  rm -rf /var/lib/dnf/*
   find /etc/ -name "./*.uln-*" -exec rm -rf {} \;
 
   # Cleanup and regenerate /etc/machine-id
@@ -268,6 +252,7 @@ distr::cleanup() {
   if ! grep -q setup-machine-id /usr/lib/systemd/system/systemd-firstboot.service; then
     sed -i.old -e "/^ExecStart=/s/$/ --setup-machine-id/" /usr/lib/systemd/system/systemd-firstboot.service
   fi
+
   echo_message "Cleanup all log files"
   rm -f /var/log/anaconda.* /var/log/oraclevm-template.log
   rm -f /tmp/ks*
@@ -286,7 +271,9 @@ distr::cleanup() {
   [ -e /var/log/tuned/tuned.log ] &&  : > /var/log/tuned/tuned.log
   [ -e /var/log/maillog ] &&  : > /var/log/maillog
   [ -e /var/log/lastlog ] &&  : > /var/log/lastlog
-  [ -e /var/log/yum.log ] &&  : > /var/log/yum.log
+  [ -e /var/log/dnf.log ] &&  : > /var/log/dnf.log
+  [ -e /var/log/dnf.librepo.log ] &&  : > /var/log/dnf.librepo.log
+  [ -e /var/log/dnf.rpm.log ] &&  : > /var/log/dnf.rpm.log
   [ -e /var/log/ovm-template-config.log ] && rm -f /var/log/ovm-template-config.log
   /bin/rm -f /var/log/audit/audit.log*
   [ -e /var/log/audit/audit.log ] && : > /var/log/audit/audit.log
@@ -323,7 +310,6 @@ distr::cleanup() {
   rm -rf /poweroff
   rm -rf /tmp/*
   rm -f /etc/ssh/ssh_host_*
-  rm -rf /var/lib/yum/*
   rm -rf /root/*
   rm -f /etc/udev/rules.d/70-persistent-net.rules
   rm -f /etc/udev/rules.d/70-persistent-cd.rules

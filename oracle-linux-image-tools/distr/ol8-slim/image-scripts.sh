@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 #
-# image scripts for OL7
+# image scripts for OL8
 #
-# Copyright (c) 2019,2020 Oracle and/or its affiliates.
+# Copyright (c) 2020 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl.
 #
-# Description: this module provides a single function:
+# Description: this module provides the following function:
+#   distr::validate: basic parameter validation
+#   distr::kickstart: hook for kickstart file updates
 #   distr::image_cleanup: distribution specific actions to cleanup the image
-#     This function is optional
+# All functions are optional
 #
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 #
@@ -23,10 +25,8 @@
 #   None
 #######################################
 distr::validate() {
-[[ "${ROOT_FS,,}" =~ ^(xfs)|(btrfs)|(lvm)$ ]] || error "ROOT_FS must be xfs, btrfs or lvm"
+[[ "${ROOT_FS,,}" =~ ^(xfs)|(lvm)$ ]] || error "ROOT_FS must be xfs or lvm"
   readonly ROOT_FS
-  [[ "${UEK_RELEASE}" =~ ^[56]$ ]] || error "UEK_RELEASE must be 5 or 6"
-    readonly UEK_RELEASE
 }
 
 #######################################
@@ -40,11 +40,7 @@ distr::validate() {
 #######################################
 distr::kickstart() {
   local ks_file="$1"
-  local btrfs="\
-part btrfs.01 --fstype=\"btrfs\"  --ondisk=sda --size=4096 --grow\n\
-btrfs none --label=btr_pool --data=single btrfs.01\n\
-btrfs /    --subvol --name=root btr_pool\
-"
+
   local lvm="\
 part pv.01 --ondisk=sda --size=4096 --grow\n\
 volgroup vg_main pv.01\n\
@@ -53,15 +49,12 @@ logvol /      --fstype=\"xfs\"  --vgname=vg_main --size=4096 --name=lv_root --gr
 "
 
   # Kickstart file is populated for xfs
-  if [[ "${ROOT_FS,,}" = "btrfs" ]]; then
-    sed -i -e 's!^part / .*$!'"${btrfs}"'!' "${ks_file}"
-  elif [[ "${ROOT_FS,,}" = "lvm" ]]; then
+  if [[ "${ROOT_FS,,}" = "lvm" ]]; then
     sed -i -e '/^part swap/d' -e 's!^part / .*$!'"${lvm}"'!' "${ks_file}"
   fi
 
   # Pass kernel selection
   sed -i -e 's!^KERNEL=.*$!KERNEL='"${KERNEL}"'!' "${ks_file}"
-  sed -i -e 's!^UEK_RELEASE=.*$!UEK_RELEASE='"${UEK_RELEASE}"'!' "${ks_file}"
 }
 
 #######################################

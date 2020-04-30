@@ -84,7 +84,8 @@ cloud::image_package() {
   local cpu="${VAGRANT_VIRTUALBOX_CPU_NUM:-$CPU_NUM}"
   local memory="${VAGRANT_VIRTUALBOX_MEM_SIZE:-$MEM_SIZE}"
   # convert back to VMDK
-  local vmdk=$(grep "ovf:href" "${VM_NAME}.ovf" | sed -r -e 's/.*ovf:href="([^"]+)".*/\1/')
+  local vmdk
+  vmdk=$(grep "ovf:href" "${VM_NAME}.ovf" | sed -r -e 's/.*ovf:href="([^"]+)".*/\1/')
   vboxmanage convertfromraw System.img --format VMDK "${vmdk}" --variant Stream
   rm System.img
   # re-create the OVA file
@@ -94,12 +95,12 @@ cloud::image_package() {
   vboxmanage import "${VM_NAME}.ova" \
     --vsys 0 --vmname "${VM_NAME}" \
     --vsys 0 --ostype "Oracle_64" \
-    --vsys 0 --cpus $cpu \
-    --vsys 0 --memory $memory
+    --vsys 0 --cpus "$cpu" \
+    --vsys 0 --memory "$memory"
   rm "${VM_NAME}.ova"
   # Add additional disk
   if [[ -n $VAGRANT_VIRTUALBOX_EXTRA_DISK_GB ]]; then
-    local disk_size_mb=$(( ${VAGRANT_VIRTUALBOX_EXTRA_DISK_GB} * 1024 ))
+    local disk_size_mb=$(( VAGRANT_VIRTUALBOX_EXTRA_DISK_GB * 1024 ))
     vboxmanage createhd --filename ./extra_disk.vdi --size $disk_size_mb --format VDI --variant fixed
     vboxmanage storageattach "${VM_NAME}" --storagectl "SATA Controller" --port 1 --device 0 --type hdd --medium ./extra_disk.vdi
   fi

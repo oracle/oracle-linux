@@ -2,7 +2,7 @@
 #
 # Creates OVF Envelope file for OL templates
 #
-# Copyright (c) 2019 Oracle and/or its affiliates.
+# Copyright (c) 2019,2020 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl.
 #
@@ -13,7 +13,7 @@
 #
 
 readonly PGM=$(basename "$0")
-readonly PGM_DIR=$( cd "$(dirname "$0")" ; pwd -P )
+readonly PGM_DIR=$( cd "$(dirname "$0")" && pwd -P )
 
 help() {
   echo ""
@@ -92,7 +92,7 @@ sed -e "s/\\\${OL_RELEASE}/${OL_RELEASE}/" \
   -e "s/\\\${IMAGE_VERSION}/${IMAGE_VERSION}/" \
   -e "s/\\\${SIZE}/${SIZE}/" \
   -e "s/\\\${CAPACITY}/${CAPACITY}/" \
-  < ${PGM_DIR}/OVM_TEMPLATE.ovf > "${BASE_NAME}.ovf"
+  < "${PGM_DIR}"/OVM_TEMPLATE.ovf > "${BASE_NAME}.ovf"
 
 # Create manifest file
 rm -f "${BASE_NAME}.mf"

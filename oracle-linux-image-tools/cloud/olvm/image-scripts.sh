@@ -44,7 +44,6 @@ cloud::image_package() {
   local build_rel="${DISTR_NAME%U*}"
   local build_upd="${DISTR_NAME#*U}"
   local build_upd="${build_upd%%_*}"
-  local build_platform="${DISTR_NAME#*_}"
 
   qemu-img convert -c -O qcow2 System.img System.qcow
   rm System.img

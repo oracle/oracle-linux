@@ -2,7 +2,7 @@
 #
 # Packer provisioning script for OVM
 #
-# Copyright (c) 2019 Oracle and/or its affiliates.
+# Copyright (c) 2019,2020 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl.
 #
@@ -66,7 +66,7 @@ cloud::ovm_cfg()
 cloud::install_vmapilibxenstore()
 {
   echo_message "Install OVM API and LibXenStore"
-  yum install --enablerepo ol7_addons -y ${YUM_VERBOSE} libovmapi \
+  yum install --enablerepo ol7_addons -y "${YUM_VERBOSE}" libovmapi \
     libovmapi-devel \
     ovmd \
     ovm-template-config \
@@ -83,7 +83,7 @@ cloud::install_vmapilibxenstore()
 
   sed -i -e 's/^INITIAL_CONFIG.*/INITIAL_CONFIG=yes/' /etc/sysconfig/ovm-template-initial-config
 
-  yum install --enablerepo ol7_addons -y ${YUM_VERBOSE} libxenstore
+  yum install --enablerepo ol7_addons -y "${YUM_VERBOSE}" libxenstore
 }
 
 #######################################

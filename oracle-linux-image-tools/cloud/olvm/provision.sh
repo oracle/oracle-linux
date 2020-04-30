@@ -51,7 +51,7 @@ cloud::config()
 cloud::install_agent()
 {
   echo_message "Install guest agent"
-  yum install -y ${YUM_VERBOSE} qemu-guest-agent
+  yum install -y "${YUM_VERBOSE}" qemu-guest-agent
 }
 
 #######################################
@@ -67,7 +67,7 @@ cloud::cloud_init()
 {
   echo_message "Install cloud-init: ${CLOUD_INIT^^}"
   if [[ "${CLOUD_INIT,,}" = "yes" ]]; then
-    yum install -y ${YUM_VERBOSE} cloud-init
+    yum install -y "${YUM_VERBOSE}" cloud-init
     if [[ -n "${CLOUD_USER}" ]]; then
       sed -i -e "s/\(^\s\+name:\).*/\1 ${CLOUD_USER}/" /etc/cloud/cloud.cfg
     fi

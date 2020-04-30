@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1090
 #
 # Packer main provisioning script
 #
@@ -16,6 +17,7 @@ set -e
 # Constants
 readonly PACKER_FILES="/tmp/packer_files"
 readonly ENV_FILE="${PACKER_FILES}/env.properties"
+# shellcheck disable=SC2034
 readonly YUM_VERBOSE="-d1"
 
 #######################################
@@ -28,15 +30,15 @@ readonly YUM_VERBOSE="-d1"
 #   None
 #######################################
 echo_header() {
-  echo "=== $@ ==="
+  echo "=== $* ==="
 }
 
 echo_message() {
-  echo "--- $@ ---"
+  echo "--- $* ---"
 }
 
 echo_error() {
-  echo "--- $@ ---" >&2
+  echo "--- $* ---" >&2
   exit 1
 }
 

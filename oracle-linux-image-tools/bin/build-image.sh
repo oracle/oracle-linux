@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1090
 #
 # Create minimal Oracle Linux images
 #
@@ -56,7 +57,7 @@ usage() {
 #   None
 #######################################
 echo_header() {
-  echo "$(tput setaf 2)+++ ${PGM}: $@$(tput sgr 0)"
+  echo "$(tput setaf 2)+++ ${PGM}: $*$(tput sgr 0)"
 }
 
 #######################################
@@ -69,7 +70,7 @@ echo_header() {
 #   None
 #######################################
 echo_message() {
-  echo "    ${PGM}: $@"
+  echo "    ${PGM}: $*"
 }
 
 #######################################
@@ -82,7 +83,7 @@ echo_message() {
 #   None
 #######################################
 error() {
-  echo "$(tput setaf 1)+++ ${PGM}: $@$(tput sgr 0)" >&2
+  echo "$(tput setaf 1)+++ ${PGM}: $*$(tput sgr 0)" >&2
   exit 1
 }
 
@@ -156,7 +157,7 @@ load_env() {
   [[ -d "${CLOUD_DIR}/${CLOUD}" ]] || error "no such cloud: ${CLOUD}"
 
   # Generate global env file
-  rm -rf "${WORKSPACE}/${PACKER_FILES}"
+  rm -rf "${WORKSPACE:?}/${PACKER_FILES}"
   mkdir "${WORKSPACE}/${PACKER_FILES}"
   readonly GLOBAL_ENV_FILE="${WORKSPACE}/${PACKER_FILES}/${ENV_FILE}"
   for file in \
@@ -196,7 +197,9 @@ load_env() {
 
   [[ -z "${DISTR_NAME}" && -z "${BUILD_NUMBER}" ]] &&
     error "missing distribution name / build number"
-  VM_NAME="${DISTR_NAME}-${CLOUD}-b${BUILD_NUMBER}"
+  if [[ -z "${VM_NAME}" ]]; then
+    VM_NAME="${DISTR_NAME}-${CLOUD}-b${BUILD_NUMBER}"
+  fi
   KS_FILE="${VM_NAME}-ks.cfg"
   readonly DISTR_NAME BUILD_NUMBER VM_NAME
 
@@ -204,7 +207,7 @@ load_env() {
     error "${WORKSPACE}/${VM_NAME} already exists"
 
   [[ ${DISK_SIZE_GB} =~ ^[0-9]+$ ]] || error "disk size is not numeric"
-  DISK_SIZE_MB=$(( ${DISK_SIZE_GB} * 1024 ))
+  DISK_SIZE_MB=$(( DISK_SIZE_GB * 1024 ))
   readonly DISK_SIZE_GB DISK_SIZE_MB
 
   [[ "${SETUP_SWAP,,}" =~ ^(yes)|(no)$ ]] || error "SETUP_SWAP must be yes or no"
@@ -311,7 +314,7 @@ stage_kickstart() {
 
   if [[ -n "${SSH_PUB_KEY}" ]]; then
     sed -i -e \
-      's!^rootpw .*$!&\'$'\n'"sshkey --username root \"${SSH_PUB_KEY}\"!" \
+      $'s!^rootpw .*$!&\\\nsshkey --username root "'"${SSH_PUB_KEY}"'"!' \
       "${WORKSPACE}/${KS_FILE}"
   fi
 
@@ -350,14 +353,19 @@ packer_conf() {
 
   local q='"'
   # KS_CONFIG is expanded in BOOT_COMMAND
+  # shellcheck disable=SC2034
   local KS_CONFIG="http://{{ .HTTPIP }}:{{ .HTTPPort }}/${KS_FILE}"
+  # shellcheck disable=SC2034
   local CONSOLE=""
   local modifyvm_console=""
   if [[ "${SERIAL_CONSOLE,,}" = "yes" ]]; then
+    # shellcheck disable=SC2034
     CONSOLE=" console=tty0 console=ttyS0"
     modifyvm_console='["modifyvm", "{{.Name}}", "--uart1", "0x3f8", 4, "--uartmode1", "file", "'"${WORKSPACE}/${VM_NAME}"'/serial-console.txt"],'
   fi
-  local boot_command=$(eval echo "\"${BOOT_COMMAND}\"")
+  local boot_command
+  # shellcheck disable=SC2153
+  boot_command=$(eval echo "\"${BOOT_COMMAND}\"")
 
   cat > "${WORKSPACE}/${VM_NAME}.json" <<-EOF
 	{
@@ -442,11 +450,13 @@ packer_conf() {
 run_packer() {
   echo_header "Run Packer"
 
-  cd ${WORKSPACE}
+  cd "${WORKSPACE}"
   local packer_status
+  # shellcheck disable=SC2155
   local errexit="$(shopt -po errexit)"
   set +e
-  /usr/bin/packer build -on-error=ask ${VM_NAME}.json
+  # shellcheck disable=SC2086
+  "${PACKER}" build ${PACKER_BUILD_OPTIONS} "${VM_NAME}".json
   packer_status=$?
   eval "${errexit}"
 
@@ -494,7 +504,7 @@ image_cleanup() {
   #        In case of a btrfs filesystem, / will be in root subvolume
   rm -rf "${mnt}"
   mkdir "${mnt}"
-  sudo ${MOUNT_IMAGE} System.img "${mnt}"
+  sudo "${MOUNT_IMAGE}" System.img "${mnt}"
   boot_fs="${mnt}/1"
   if df -T "${mnt}/2" | grep -q btrfs; then
     root_fs="${mnt}/2/root"
@@ -520,12 +530,12 @@ image_cleanup() {
   cd "${WORKSPACE}/${VM_NAME}"
   # unmount and trim image
   echo_message "Unmount and trim image"
-  sudo -- bash -c '\
-    sync; sync; sync; \
-    fstrim "'${boot_fs}'"; \
-    fstrim "'${root_fs}'"; \
+  sudo -- bash -c '
+    sync; sync; sync;
+    fstrim "'"${boot_fs}"'";
+    fstrim "'"${root_fs}"'";
     '
-  sudo ${MOUNT_IMAGE} -u System.img
+  sudo "${MOUNT_IMAGE}" -u System.img
   cp --sparse=always System.img System.img.sparse
   mv -f System.img.sparse System.img
   rm -rf "${mnt}"
@@ -560,7 +570,7 @@ cleanup() {
   mv "${WORKSPACE}/${KS_FILE}" "${WORKSPACE}/${VM_NAME}"
   mv "${WORKSPACE}/${VM_NAME}.json" "${WORKSPACE}/${VM_NAME}"
   mv "${GLOBAL_ENV_FILE}" "${WORKSPACE}/${VM_NAME}"
-  rm -rf "${WORKSPACE}/${PACKER_FILES}"
+  rm -rf "${WORKSPACE:?}/${PACKER_FILES}"
 }
 
 #######################################

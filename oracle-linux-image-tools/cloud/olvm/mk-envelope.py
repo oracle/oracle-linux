@@ -128,7 +128,7 @@ def generate_ovf(args):
     if args.release in OS_ID:
         os_id = OS_ID[args.release]
     else:
-        print ('Warning: unknown OS release {0}'.format(args.release))
+        print('Warning: unknown OS release {0}'.format(args.release))
         os_id = 0
 
     document = OvfDocument()
@@ -388,7 +388,7 @@ def make_ova(build, image, uuid, ovf):
         f.write(ovf)
 
     # Create OVA file
-    call(['tar', 'cvf', build+'.ova', ovf_file, uuid])
+    call(['tar', 'cvf', build + '.ova', ovf_file, uuid])
 
     # Cleanup
     remove(ovf_file)
@@ -396,7 +396,7 @@ def make_ova(build, image, uuid, ovf):
 
 
 def main():
-    """Main."""
+    """Make envelope."""
     args = parse_args()
     file_uuid, ovf = generate_ovf(args)
     make_ova(args.build, args.image, file_uuid, ovf)

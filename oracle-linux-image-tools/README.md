@@ -9,8 +9,9 @@ Image building is accomplished using Packer to build images from the Oracle Linu
 
 The tool currently supports:
 - Distributions:
-  - Oracle Linux 7 update 7 -- Slim  
+  - Oracle Linux 7 update 8 -- Slim  
     A minimal set of packages is installed
+  - Oracle Linux 8 update 1 -- Slim
 - Clouds:
   - Microsoft Azure cloud  
     Target packages: WALinuxAgent  
@@ -76,11 +77,11 @@ This can be done from the Console, or using the [Command Line Interface (CLI)](h
 ```shell
 # Upload in the Object Storage Bucket
 oci os object put -bn my_bucket \
-  --file /workspace/OL7U7_x86_64-oci-b0/OL7U7_x86_64-oci-b0.qcow
+  --file /workspace/OL7U8_x86_64-oci-b0/OL7U8_x86_64-oci-b0.qcow
 # Import as Custom image
 oci compute image import from-object -bn my_bucket \
   --namespace my_namespace \
-  --name OL7U7_x86_64-oci-b0.qcow \
+  --name OL7U8_x86_64-oci-b0.qcow \
   --display-name MyImage \
   --launch-mode PARAVIRTUALIZED \
   --source-image-type QCOW2
