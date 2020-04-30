@@ -26,9 +26,17 @@
 cloud::install_WALinuxAgent()
 {
   echo_message "Install Microsoft Azure Linux Agent"
-  yum install -y ${YUM_VERBOSE} parted python-pyasn1 hypervkvpd
-  yum install -y ${YUM_VERBOSE} --enablerepo ol7_addons WALinuxAgent dnsmasq
-  yum remove -y ${YUM_VERBOSE} dracut-config-rescue
+  if [[ "${ORACLE_RELEASE}" = "7" ]]; then
+    yum install -y "${YUM_VERBOSE}" parted python-pyasn1 hypervkvpd
+    yum install -y "${YUM_VERBOSE}" --enablerepo ol7_addons WALinuxAgent dnsmasq
+    yum remove -y "${YUM_VERBOSE}" dracut-config-rescue
+  elif [[ "${ORACLE_RELEASE}" = "8" ]]; then
+    dnf install -y parted hypervkvpd
+    dnf install -y WALinuxAgent dnsmasq
+  else
+    echo "Unsupported OL version"
+    exit
+  fi
 
   systemctl enable waagent
 
@@ -58,8 +66,11 @@ cloud::azure_cfg()
 	USERCTL=no
 	PEERDNS=yes
 	IPV6INIT=no
-	NM_CONTROLLED=no
 	EOF
+
+  if [[ "${ORACLE_RELEASE}" = "7" ]]; then
+    echo "NM_CONTROLLED=no" >>/etc/sysconfig/network-scripts/ifcfg-eth0
+  fi
 
   # Disable NetworkManager handling of the SRIOV interfaces
   # Fix for Bug 16391: For Accelerated Networking Azure, use udev rule to prevent Hyper-V PCI device renaming
