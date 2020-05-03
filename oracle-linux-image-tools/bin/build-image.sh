@@ -440,6 +440,7 @@ packer_conf() {
 #######################################
 # Run packer
 # Globals:
+#   SERIAL_CONSOLE
 #   VM_NAME
 #   WORKSPACE
 # Arguments:
@@ -451,7 +452,26 @@ run_packer() {
   echo_header "Run Packer"
 
   cd "${WORKSPACE}"
-  local packer_status
+  local packer_status serial_pid
+
+  if [[ ${SERIAL_CONSOLE,,} == "yes" ]]; then
+    # Print serial console output ([try to] suppress escape sequences)
+    echo_message "Monitoring serial console"
+    (
+      while [[ ! -f "${WORKSPACE}/${VM_NAME}/serial-console.txt" ]]; do
+        sleep 10
+      done
+      sleep 10
+      echo "--- serial console: Showing serial console output"
+      tail -f "${WORKSPACE}/${VM_NAME}/serial-console.txt" |
+        sed  -e "s,\x1B\[[0-9;]*[a-zA-Z],,g" \
+             -e "s/\x0D//g" \
+             -e '/^$/d' \
+             -e "s/^/    serial console: /"
+    )&
+    serial_pid=$!
+  fi
+
   # shellcheck disable=SC2155
   local errexit="$(shopt -po errexit)"
   set +e
@@ -459,6 +479,11 @@ run_packer() {
   "${PACKER}" build ${PACKER_BUILD_OPTIONS} "${VM_NAME}".json
   packer_status=$?
   eval "${errexit}"
+
+  if [[ -n "${serial_pid}" ]]; then
+    echo_message "Stop monitoring serial console"
+    kill ${serial_pid}
+  fi
 
   [[ ${packer_status} -ne 0 ]] && error "Packer didn't complete successfully"
 
