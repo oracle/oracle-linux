@@ -68,8 +68,12 @@ EOF
   echo 'vag' > /etc/yum/vars/infra
 
   # Configure grub to wait just 1 second before booting
-  sed -i 's/^GRUB_TIMEOUT=[0-9]\+$/GRUB_TIMEOUT=1/' /etc/default/grub
-  grub2-mkconfig -o /boot/grub2/grub.cfg
+  if [[ "${ORACLE_RELEASE}" = "6" ]]; then
+    sed -i 's/^timeout=[0-9]\+$/timeout=1/' /boot/grub/grub.conf
+  else
+    sed -i 's/^GRUB_TIMEOUT=[0-9]\+$/GRUB_TIMEOUT=1/' /etc/default/grub
+    grub2-mkconfig -o /boot/grub2/grub.cfg
+  fi
 
   # Blacklist the floppy module to avoid probing timeouts
   echo blacklist floppy > /etc/modprobe.d/nofloppy.conf
@@ -91,7 +95,14 @@ EOF
   sed -i -e 's/^SELINUX\s*=.*/SELINUX=enforcing/' /etc/selinux/config
 
   # Disabling firewalld on vagrant boxes
-  systemctl disable firewalld --now
+  if [[ "${ORACLE_RELEASE}" = "6" ]]; then
+    service iptables stop
+    chkconfig  iptables off
+    service ip6tables stop
+    chkconfig  ip6tables off
+  else
+    systemctl disable firewalld --now
+  fi
 
   # Install additional release packages and enable repos
   yum install -y "${YUM_VERBOSE}" wget
@@ -99,6 +110,8 @@ EOF
     yum install -y "${YUM_VERBOSE}" oracle-softwarecollection-release-el7
     yum-config-manager --enable  ol7_addons >/dev/null
     yum-config-manager --enable  ol7_optional_latest >/dev/null
+  elif [[ "${ORACLE_RELEASE}" = "6" ]]; then
+    yum-config-manager --enable  ol6_addons >/dev/null
   fi
 
   # Install developer release packages and enable repos
@@ -109,6 +122,8 @@ EOF
       yum-config-manager --enable  ol7_preview >/dev/null
       yum-config-manager --enable  ol7_developer >/dev/null
       yum-config-manager --enable  ol7_developer_EPEL >/dev/null
+    elif [[ "${ORACLE_RELEASE}" = "6" ]]; then
+      yum install -y "${YUM_VERBOSE}" oraclelinux-developer-release-el6
     elif  [[ "${ORACLE_RELEASE}" = "8" ]]; then
       dnf install -y oracle-epel-release-el8
     fi
@@ -140,11 +155,15 @@ For additional packages, updates, documentation and community help, see:
 #######################################
 vagrant::cleanup()
 {
-  distr::remove_rpms usermode \
-    rhn\* \
-    psmisc \
-    m2crypto \
-    checkpolicy \
-    dracut-config-rescue \
-    iptables-services
+  if [[ "${ORACLE_RELEASE}" != "6" ]]; then
+    # On OL6 we need to keep psmisc and checkpolicy for dependencies; other
+    # packages are not installed.
+    distr::remove_rpms usermode \
+      rhn\* \
+      psmisc \
+      m2crypto \
+      checkpolicy \
+      dracut-config-rescue \
+      iptables-services
+  fi
 }
