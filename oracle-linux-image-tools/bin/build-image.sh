@@ -457,6 +457,9 @@ run_packer() {
   if [[ ${SERIAL_CONSOLE,,} == "yes" ]]; then
     # Print serial console output ([try to] suppress escape sequences)
     echo_message "Monitoring serial console"
+    # shellcheck disable=SC2155
+    local monitor="$(shopt -po monitor)"
+    set -m
     (
       while [[ ! -f "${WORKSPACE}/${VM_NAME}/serial-console.txt" ]]; do
         sleep 10
@@ -470,6 +473,7 @@ run_packer() {
              -e "s/^/    serial console: /"
     )&
     serial_pid=$!
+    eval "${monitor}"
   fi
 
   # shellcheck disable=SC2155
@@ -482,7 +486,7 @@ run_packer() {
 
   if [[ -n "${serial_pid}" ]]; then
     echo_message "Stop monitoring serial console"
-    kill ${serial_pid}
+    kill -- -${serial_pid}
   fi
 
   [[ ${packer_status} -ne 0 ]] && error "Packer didn't complete successfully"
