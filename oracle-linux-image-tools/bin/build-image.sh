@@ -465,12 +465,13 @@ run_packer() {
         sleep 10
       done
       sleep 10
-      echo "--- serial console: Showing serial console output"
+      echo "$(tput setaf 4)--- serial console: Showing serial console output$(tput sgr 0)"
       tail -f "${WORKSPACE}/${VM_NAME}/serial-console.txt" |
         sed  -e "s,\x1B\[[0-9;]*[a-zA-Z],,g" \
              -e "s/\x0D//g" \
              -e '/^$/d' \
-             -e "s/^/    serial console: /"
+             -e "s/^/$(tput setaf 4)    serial console: /" \
+             -e "s/\$/$(tput sgr 0)/"
     )&
     serial_pid=$!
     eval "${monitor}"
