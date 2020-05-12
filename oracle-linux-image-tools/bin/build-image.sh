@@ -195,6 +195,15 @@ load_env() {
   [[ "${LOCK_ROOT,,}" =~ ^(yes)|(no)$ ]] || error "LOCK_ROOT must be yes or no"
   readonly LOCK_ROOT
 
+  # Attempt to derive DISTR_NAME from the iso image name, otherwise fall back
+  # to the configured name
+  local distr_name
+  # shellcheck disable=SC2001
+  distr_name=$(sed -e 's/^.*OracleLinux-R\([[:digit:]]\)-U\([[:digit:]]\+\)\(-Server\)\?-\([^-]\+\)\(-dvd\)\?\(-[[:digit:]]\+\)\?\.iso$/OL\1U\2_\4/' <<< "${ISO_URL}")
+  if [[ $distr_name =~ ^OL[678]U ]]; then
+    DISTR_NAME="${distr_name}"
+  fi
+
   [[ -z "${DISTR_NAME}" && -z "${BUILD_NUMBER}" ]] &&
     error "missing distribution name / build number"
   if [[ -z "${VM_NAME}" ]]; then

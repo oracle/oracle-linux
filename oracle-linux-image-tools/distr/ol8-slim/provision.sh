@@ -69,11 +69,14 @@ distr::kernel_config() {
   # dracut configuration files so that they get installed into the initrd
   # during fresh kernel installs.
   # This makes it is easy to move VM images between these virtual environments
-  if [[ "${KERNEL,,}" = "uek" ]]; then
-    local virtio="virtio_blk virtio_net virtio_pci virtio_scsi virtio_balloon"
-  else
-    local virtio="virtio_blk virtio_net virtio_balloon"
-  fi
+
+  # Available virtio modules depends on kernel build...
+  local virtio modules
+  modules=$(find "/lib/modules/$(uname -r)" -name "virtio*.ko*" -printf '%f\n')
+  while read -r module; do
+    virtio="${virtio} ${module%.ko*}"
+  done <<<"${modules}"
+
   cat > /etc/dracut.conf.d/01-dracut-vm.conf <<-EOF
 	add_drivers+=" xen_netfront xen_blkfront "
 	add_drivers+=" ${virtio} "
