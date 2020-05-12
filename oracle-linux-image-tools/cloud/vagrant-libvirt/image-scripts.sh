@@ -67,7 +67,14 @@ cloud::image_package() {
   config.vm.provider :libvirt do |libvirt|
     libvirt.memory = ${memory}
     libvirt.cpus = ${cpus}
+    libvirt.features = ['apic', 'acpi']
+    libvirt.video_vram = 16384
   end
+
+  config.vm.synced_folder ".", "/vagrant",
+    type: "nfs",
+    nfs_version: 3,
+    nfs_udp: false
 EOF
   ${VAGRANT_LIBVIRT_BOX_SCRIPT} "${VM_NAME}.qcow" "${VM_NAME}.box" Vagrantfile
   rm "${VM_NAME}.qcow" Vagrantfile
