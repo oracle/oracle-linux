@@ -374,7 +374,7 @@ def generate_ovf(args):
 
     ovf = document.toprettyxml(indent='  ', encoding='UTF-8')
     # Fixup for namespace
-    ovf = ovf.replace('ovirt:ovirt_id', 'ovirt:id')
+    ovf = ovf.replace(b'ovirt:ovirt_id', b'ovirt:id')
     return file_uuid, ovf
 
 
@@ -384,7 +384,7 @@ def make_ova(build, image, uuid, ovf):
 
     # Rename image and write OVF file
     rename(image, uuid)
-    with open(ovf_file, 'w') as f:
+    with open(ovf_file, 'wb') as f:
         f.write(ovf)
 
     # Create OVA file
