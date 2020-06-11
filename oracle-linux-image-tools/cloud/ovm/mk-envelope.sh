@@ -4,7 +4,7 @@
 #
 # Copyright (c) 2019,2020 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
-# https://oss.oracle.com/licenses/upl.
+# https://oss.oracle.com/licenses/upl
 #
 # Sample usage:
 # mk-envelope -r OL7 -u 7 -v 1.0 -s 10
