@@ -4,7 +4,7 @@
 #
 # Copyright (c) 1982-2020 Oracle and/or its affiliates. All rights reserved.
 # Licensed under the Universal Permissive License v 1.0 as shown at
-# https://oss.oracle.com/licenses/upl.
+# https://oss.oracle.com/licenses/upl
 #
 # Description: Proof of concept / demo script for the Oracle Cloud
 # Infrastructure (OCI) Command Line Interface (CLI).
