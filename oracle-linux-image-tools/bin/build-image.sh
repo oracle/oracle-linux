@@ -222,6 +222,9 @@ load_env() {
   [[ "${SETUP_SWAP,,}" =~ ^(yes)|(no)$ ]] || error "SETUP_SWAP must be yes or no"
   readonly SETUP_SWAP
 
+  [[ "${SELINUX,,}" =~ ^(enforcing)|(permissive)|(disabled)$ ]] || error "SELINUX must be enforcing, permissive or disabled"
+  readonly SELINUX
+
   [[ "${X2APIC,,}" =~ ^(on)|(off)$ ]] || error "X2APIC must be on or off"
   readonly X2APIC="${X2APIC,,}"
 

@@ -91,9 +91,6 @@ EOF
   current_kernel=$(uname -r)
   ${DRACUT_CMD} -f "/boot/initramfs-${current_kernel}.img" "${current_kernel}"
 
-  # Set SELinux to enforcing
-  sed -i -e 's/^SELINUX\s*=.*/SELINUX=enforcing/' /etc/selinux/config
-
   # Disabling firewalld on vagrant boxes
   if [[ "${ORACLE_RELEASE}" = "6" ]]; then
     service iptables stop

@@ -173,8 +173,12 @@ distr::common_cfg() {
   echo_message "Set rp_filter to loose mode"
   echo "net.ipv4.conf.default.rp_filter = 2" >> /etc/sysctl.conf
 
-  echo_message "Set SELinux to Permissive"
-  sed -i -e 's/^SELINUX[  ]*=.*/SELINUX=permissive/' /etc/selinux/config
+  echo_message "Set SELinux to ${SELINUX^^}"
+  sed -i -e "s/^SELINUX[  ]*=.*/SELINUX=${SELINUX,,}/" /etc/selinux/config
+  if [[ ${SELINUX,,} != "enforcing" ]]; then
+    # Relax SELinux for the provisioning as well
+    setenforce Permissive
+  fi
 
   echo_message "Clear network persistent data"
   rm -f /etc/udev/rules.d/70-persistent-net.rules
