@@ -98,6 +98,10 @@ def parse_args():
                         '--image',
                         default='System.qcow',
                         help='Image file name')
+    parser.add_argument('-t',
+                        '--template',
+                        action='store_true',
+                        help='Create a template')
 
     args = parser.parse_args()
 
@@ -121,6 +125,7 @@ def generate_ovf(args):
     # Random UUIDs
     file_uuid = get_uuid()
     disk_uuid = get_uuid()
+    ovf_uuid = get_uuid()
 
     # Timestamp for objects
     iso_time = datetime.utcnow().strftime("%Y/%m/%d %H:%M:%S")
@@ -203,7 +208,7 @@ def generate_ovf(args):
     virtual_system = document.createOvfElement('VirtualSystem',
                                                parent=envelope,
                                                attr={
-                                                   'ovf:id': get_uuid(),
+                                                   'ovf:id': ovf_uuid,
                                                })
 
     # Envelope / Virtual System / Text elements
@@ -233,19 +238,30 @@ def generate_ovf(args):
         'ConsoleDisconnectAction': 'LOCK_SCREEN',
         'MaxMemorySizeMb': str(args.memory),
         'MultiQueuesEnabled': 'true',
-        'TemplateId': '00000000-0000-0000-0000-000000000000',
-        'IsInitilized': 'true',
         # Not sure about this one...
         'Origin': '0',
         # DefaultDisplayType 2 is VNC / 1 is QXL
         'DefaultDisplayType': '2',
         'TrustedService': 'false',
-        'OriginalTemplateId': '00000000-0000-0000-0000-000000000000',
-        'OriginalTemplateName': 'Blank',
         'UseHostCpu': 'false',
-        'UseLatestVersion': 'false',
-        'StopTime': iso_time,
     }
+    if args.template:
+        virtual_system_elements.update({
+            'TemplateId': ovf_uuid,
+            'TemplateType': 'TEMPLATE',
+            'BaseTemplateId': ovf_uuid,
+            'TemplateVersionNumber': '1',
+            'TemplateVersionName': 'base version',
+        })
+    else:
+        virtual_system_elements.update({
+            'TemplateId': '00000000-0000-0000-0000-000000000000',
+            'OriginalTemplateId': '00000000-0000-0000-0000-000000000000',
+            'OriginalTemplateName': 'Blank',
+            'UseLatestVersion': 'false',
+            'StopTime': iso_time,
+        })
+
     for key, value in virtual_system_elements.items():
         document.createOvfElement(key, parent=virtual_system, text=value)
 
@@ -378,9 +394,9 @@ def generate_ovf(args):
     return file_uuid, ovf
 
 
-def make_ova(build, image, uuid, ovf):
+def make_ova(build, image, uuid, ovf, template):
     """Move image into an OVA file and cleanup."""
-    ovf_file = 'vm.ovf'
+    ovf_file = 'template.ovf' if template else 'vm.ovf'
 
     # Rename image and write OVF file
     rename(image, uuid)
@@ -399,7 +415,7 @@ def main():
     """Make envelope."""
     args = parse_args()
     file_uuid, ovf = generate_ovf(args)
-    make_ova(args.build, args.image, file_uuid, ovf)
+    make_ova(args.build, args.image, file_uuid, ovf, args.template)
 
 
 if __name__ == '__main__':
