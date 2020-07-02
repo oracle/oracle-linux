@@ -226,6 +226,7 @@ class OciCompute(object):
                          shape,
                          availability_domain,
                          vcn_name,
+                         vcn_compartment_id,
                          subnet_name,
                          ssh_authorized_keys_file,
                          cloud_init_file):
@@ -240,7 +241,7 @@ class OciCompute(object):
         if not availability_domain:
             return None
 
-        subnet = self._get_subnet(compartment_id, vcn_name, subnet_name)
+        subnet = self._get_subnet(vcn_compartment_id if vcn_compartment_id else compartment_id, vcn_name, subnet_name)
         if not subnet:
             return None
 
@@ -368,6 +369,7 @@ class OciCompute(object):
                            shape,
                            availability_domain,
                            vcn_name,
+                           vcn_compartment_id,
                            subnet_name,
                            ssh_authorized_keys_file,
                            cloud_init_file=None):
@@ -390,6 +392,7 @@ class OciCompute(object):
                                      shape=shape,
                                      availability_domain=availability_domain,
                                      vcn_name=vcn_name,
+                                     vcn_compartment_id=vcn_compartment_id,
                                      subnet_name=subnet_name,
                                      ssh_authorized_keys_file=ssh_authorized_keys_file,
                                      cloud_init_file=cloud_init_file)
@@ -401,6 +404,7 @@ class OciCompute(object):
                          shape,
                          availability_domain,
                          vcn_name,
+                         vcn_compartment_id,
                          subnet_name,
                          ssh_authorized_keys_file,
                          cloud_init_file=None):
@@ -431,6 +435,7 @@ class OciCompute(object):
                                      shape=shape,
                                      availability_domain=availability_domain,
                                      vcn_name=vcn_name,
+                                     vcn_compartment_id=vcn_compartment_id,
                                      subnet_name=subnet_name,
                                      ssh_authorized_keys_file=ssh_authorized_keys_file,
                                      cloud_init_file=cloud_init_file)
@@ -442,6 +447,7 @@ class OciCompute(object):
                          shape,
                          availability_domain,
                          vcn_name,
+                         vcn_compartment_id,
                          subnet_name,
                          ssh_authorized_keys_file,
                          cloud_init_file=None):
@@ -518,6 +524,7 @@ class OciCompute(object):
                                      shape=shape,
                                      availability_domain=availability_domain,
                                      vcn_name=vcn_name,
+                                     vcn_compartment_id=vcn_compartment_id,
                                      subnet_name=subnet_name,
                                      ssh_authorized_keys_file=ssh_authorized_keys_file,
                                      cloud_init_file=cloud_init_file)
