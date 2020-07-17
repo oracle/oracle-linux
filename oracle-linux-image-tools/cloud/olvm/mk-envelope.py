@@ -201,7 +201,7 @@ def generate_ovf(args):
         'ovf:disk-interface': 'VirtIO',
         'ovf:boot': 'true',
         'ovf:disk-type': 'System',
-        'ovf:disk-alias': 'Disk ' + args.build,
+        'ovf:disk-alias': 'Disk_' + args.build,
     })
 
     # Envelope / Virtual System
