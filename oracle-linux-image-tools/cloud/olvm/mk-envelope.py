@@ -120,7 +120,12 @@ def generate_ovf(args):
     """Generate the OVF document."""
     # Image capacity and size on disk
     disk_capacity = args.size * 1024 * 1024 * 1024
-    disk_size = stat(args.image).st_size
+    file_size = stat(args.image).st_size
+    # The imported disk image will be an uncompressed qcow file
+    uncompressed = args.image + ".uncompressed"
+    call(["qemu-img", "convert", "-O", "qcow2", args.image, uncompressed])
+    disk_size = stat(uncompressed).st_size
+    remove(uncompressed)
 
     # Random UUIDs
     file_uuid = get_uuid()
@@ -165,7 +170,7 @@ def generate_ovf(args):
         # Internal id
         'ovf:id': file_uuid,
         # Size on disk
-        'ovf:size': str(disk_size),
+        'ovf:size': str(file_size),
     })
 
     # Envelope / Network Section
@@ -190,7 +195,7 @@ def generate_ovf(args):
         'ovf:diskId': disk_uuid,
         # Image size
         'ovf:capacity': str(disk_capacity),
-        # Size on disk as above
+        # Size on disk of the uncompressed qcow file
         'ovf:populatedSize': str(disk_size),
         # Ref to file (should be the "id" of fileref)
         'ovf:fileRef': file_uuid,
