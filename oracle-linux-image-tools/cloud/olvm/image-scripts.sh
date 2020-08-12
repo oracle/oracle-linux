@@ -6,7 +6,8 @@
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
-# Description: this module provides 2 functions:
+# Description: this module provides 3 functions:
+#   cloud::validate: optional parameter validation
 #   cloud::image_cleanup: cloud specific actions to cleanup the image
 #     This function is optional
 #   cloud::image_package: Package the raw image for the target cloud.
@@ -14,6 +15,20 @@
 #
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 #
+
+#######################################
+# Parameter validation
+# Globals:
+#   OLVM_TEMPLATE
+# Arguments:
+#   None
+# Returns:
+#   None
+#######################################
+cloud::validate() {
+  [[ "${OLVM_TEMPLATE,,}" =~ ^(yes)|(no)$  ]]  || error "OLVM_TEMPLATE must be Yes or No"
+  readonly OLVM_TEMPLATE
+}
 
 #######################################
 # Cleanup actions run directly on the image
@@ -30,9 +45,9 @@ cloud::image_cleanup() {
 }
 
 #######################################
-# Image packaging - creates a PVM and PVHVM OVA
+# Image packaging - creates an OVA
 # Globals:
-#   CLOUD_DIR CLOUD DISTR_NAME
+#   CLOUD_DIR CLOUD DISTR_NAME OLVM_TEMPLATE
 # Arguments:
 #   None
 # Returns:
@@ -44,11 +59,16 @@ cloud::image_package() {
   local build_rel="${DISTR_NAME%U*}"
   local build_upd="${DISTR_NAME#*U}"
   local build_upd="${build_upd%%_*}"
+  local extra_args=()
 
   qemu-img convert -c -O qcow2 System.img System.qcow
   rm System.img
 
-  ${mk_envelope} \
+  if [[ "${OLVM_TEMPLATE,,}" = "yes" ]]; then
+    extra_args+=("--template")
+  fi
+
+  ${mk_envelope} "${extra_args[@]}" \
     -r "${build_rel}" \
     -u "${build_upd##U}" \
     -v "${BUILD_NUMBER}" \
