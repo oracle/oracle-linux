@@ -68,6 +68,10 @@ cloud::image_package() {
     extra_args+=("--template")
   fi
 
+  if [[ -n "${CUSTOM_SCRIPT}" ]]; then
+    extra_args+=("--script" "${CUSTOM_SCRIPT}")
+  fi
+
   ${mk_envelope} "${extra_args[@]}" \
     -r "${build_rel}" \
     -u "${build_upd##U}" \
