@@ -67,7 +67,14 @@ cloud::cloud_init()
 {
   echo_message "Install cloud-init: ${CLOUD_INIT^^}"
   if [[ "${CLOUD_INIT,,}" = "yes" ]]; then
+    # Disable cloud-init during installation
+    #   cloud-init-generator is run at install time and generates systemd
+    #   timeouts while scanning for data-sources as we have the distribution
+    #   image mounted!
+    mkdir /etc/cloud
+    touch /etc/cloud/cloud-init.disabled
     yum install -y "${YUM_VERBOSE}" cloud-init
+    rm /etc/cloud/cloud-init.disabled
     if [[ -n "${CLOUD_USER}" ]]; then
       sed -i -e "s/\(^\s\+name:\).*/\1 ${CLOUD_USER}/" /etc/cloud/cloud.cfg
     fi
