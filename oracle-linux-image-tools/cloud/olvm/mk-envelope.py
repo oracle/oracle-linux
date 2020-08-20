@@ -102,6 +102,8 @@ def parse_args():
                         '--template',
                         action='store_true',
                         help='Create a template')
+    parser.add_argument('--script',
+                        help='Cloud-init custom script')
 
     args = parser.parse_args()
 
@@ -267,6 +269,16 @@ def generate_ovf(args):
             'StopTime': iso_time,
         })
 
+    if args.script:
+        document.createOvfElement('VmInit',
+                                  parent=virtual_system,
+                                  attr={
+                                      'ovf:authorizedKeys': '',
+                                      'ovf:regenerateKeys': 'false',
+                                      'ovf:networks': '[ ]',
+                                      'ovf:customScript': args.script.replace('\n', '&#10;'),
+                                  })
+
     for key, value in virtual_system_elements.items():
         document.createOvfElement(key, parent=virtual_system, text=value)
 
@@ -396,6 +408,8 @@ def generate_ovf(args):
     ovf = document.toprettyxml(indent='  ', encoding='UTF-8')
     # Fixup for namespace
     ovf = ovf.replace(b'ovirt:ovirt_id', b'ovirt:id')
+    # Fixup for &#10;
+    ovf = ovf.replace(b'&amp;#10;', b'&#10;')
     return file_uuid, ovf
 
 
