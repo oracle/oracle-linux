@@ -140,7 +140,7 @@ The other sections describe the steps required to:
 `%files` describes what files will be part of the package. It is possible
 to specify the file permissions via `%defattr`
 
-`%changelog` allows to document the changes between version for the RPM
+`%changelog` enables you to document the changes between versions of the RPM
 package
 
 The tag `?dist` in the release directive appends the distribution
