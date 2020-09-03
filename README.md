@@ -5,7 +5,7 @@ This repository provide scripts, tools, and examples for developers and operator
 - [Scripts to build Oracle Linux images](oracle-linux-image-tools)
 - [Oracle Cloud Infrastructure provisioning shell script using the OCI Command Line Interface](oci-provision)
 - [Oracle Cloud Infrastructure provisioning python script using the OCI Python SDK](oci-compute)
-- [Creating an RPM package for your software](creating-rpm-packages)
+- [Creating an RPM package for your software](creating-rpm-packages/creating-rpm-packages.md)
 - Code snippets in Python, bash or other languages
 - Sample scripts to execute various Oracle Cloud operations
 - Scripts to run inside Oracle Cloud instances
