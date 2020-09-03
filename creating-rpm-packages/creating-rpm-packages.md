@@ -1,7 +1,7 @@
 # Creating an RPM package for your software
 
 [RPM](https://en.wikipedia.org/wiki/RPM_Package_Manager) is both a
-package manager and a file format (.rpm). It has been used by many linux
+package manager and a file format (.rpm). It has been used by many Linux
 distributions, including Oracle Linux, to ease the distribution,
 installation and maintenance of software. In this document we\'ll
 explain how to create an rpm using a simple example.
