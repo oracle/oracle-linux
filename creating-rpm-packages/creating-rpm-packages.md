@@ -9,7 +9,7 @@ explain how to create an rpm using a simple example.
 ## Why create an RPM
 
 Packaging software with RPM provides many advantages over delivering
-software via an simple tarball archive file. The main advantages are:
+software via a simple tarball. The main advantages are:
 
 - Ease of installation
   - RPM can be installed, removed and upgraded in a consistent way
