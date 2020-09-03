@@ -40,7 +40,7 @@ software via a simple tarball. The main advantages are:
 The main steps for packaging software are:
 
 - Prepare your system to build an rpm
-- Get our software to build and install on your system
+- Prepare your software for packaging
 - Creating an RPM specification file (spec file)  
 - Build the package using RPM
 - Testing the newly built package
