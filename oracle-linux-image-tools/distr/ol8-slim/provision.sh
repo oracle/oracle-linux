@@ -331,6 +331,7 @@ distr::cleanup() {
 
   echo_message "Save list of installed packages"
   rpm -qa --qf "%{name}.%{arch}\n"  | sort -u > /home/rpm.list
+  rpm -qa --qf '"%{NAME}","%{EPOCHNUM}","%{VERSION}","%{RELEASE}","%{ARCH}"\n' | sort > /home/rpm.csv
   uname -r > /home/kernel.txt
 
   echo_message "Relabel SELinux"
