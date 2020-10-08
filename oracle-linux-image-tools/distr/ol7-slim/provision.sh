@@ -268,6 +268,7 @@ distr::cleanup() {
   done
 
   echo_message "Yum cleanup"
+  yum -q repolist > /home/repolist.txt
   : > /etc/yum/vars/ociregion
   rm -rf /var/cache/yum/*
   rm -rf /var/lib/yum/*

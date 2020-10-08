@@ -84,6 +84,7 @@ distr::image_cleanup() {
 
   cp "${root_fs}"/home/rpm.list "${WORKSPACE}/${VM_NAME}/${VM_NAME}.pkglst"
   cp "${root_fs}"/home/rpm.csv "${WORKSPACE}/${VM_NAME}/pkglst.csv"
+  cp "${root_fs}"/home/repolist.txt "${WORKSPACE}/${VM_NAME}/repolist.txt"
   cp "${root_fs}"/home/kernel.txt "${WORKSPACE}/${VM_NAME}/${VM_NAME}.kernel"
 
   sudo chroot "${root_fs}" /bin/bash <<-EOF
@@ -95,6 +96,6 @@ distr::image_cleanup() {
 	rm -rf /var/spool/root /var/spool/mail/root
 	rm -rf /var/lib/NetworkManager
 	rm -rf /var/tmp/*
-	rm -f /home/rpm.list /home/rpm.csv /home/kernel.txt
+	rm -f /home/rpm.list /home/rpm.csv /home/repolist.txt /home/kernel.txt
 	EOF
 }

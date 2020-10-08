@@ -247,6 +247,7 @@ distr::cleanup() {
   done
 
   echo_message "Dnf cleanup"
+  dnf -q repolist > /home/repolist.txt
   : > /etc/dnf/vars/ociregion
   rm -rf /var/cache/dnf/*
   rm -rf /var/lib/dnf/*
