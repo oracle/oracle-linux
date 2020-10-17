@@ -25,7 +25,8 @@
 #   None
 #######################################
 distr::validate() {
-[[ "${ROOT_FS,,}" =~ ^(xfs)|(lvm)$ ]] || error "ROOT_FS must be xfs or lvm"
+  [[ "${ROOT_FS,,}" =~ ^(xfs)|(btrfs)|(lvm)$ ]] || error "ROOT_FS must be xfs, btrfs or lvm"
+  [[ "${ROOT_FS,,}" = "btrfs" ]] && echo_message "Note that for btrfs root filesystem you need to use an UEK boot ISO"  
   readonly ROOT_FS
 }
 
@@ -41,6 +42,11 @@ distr::validate() {
 distr::kickstart() {
   local ks_file="$1"
 
+  local btrfs="\
+part btrfs.01 --fstype=\"btrfs\"  --ondisk=sda --size=4096 --grow\n\
+btrfs none --label=btr_pool --data=single btrfs.01\n\
+btrfs /    --subvol --name=root btr_pool\
+"
   local lvm="\
 part pv.01 --ondisk=sda --size=4096 --grow\n\
 volgroup vg_main pv.01\n\
@@ -49,7 +55,9 @@ logvol /      --fstype=\"xfs\"  --vgname=vg_main --size=4096 --name=lv_root --gr
 "
 
   # Kickstart file is populated for xfs
-  if [[ "${ROOT_FS,,}" = "lvm" ]]; then
+  if [[ "${ROOT_FS,,}" = "btrfs" ]]; then
+    sed -i -e 's!^part / .*$!'"${btrfs}"'!' "${ks_file}"
+  elif [[ "${ROOT_FS,,}" = "lvm" ]]; then
     sed -i -e '/^part swap/d' -e 's!^part / .*$!'"${lvm}"'!' "${ks_file}"
   fi
 
