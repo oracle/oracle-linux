@@ -1,13 +1,14 @@
-Oracle Linux image tools
-========================
+# Oracle Linux image tools
 
-# Description
+## Description
+
 This repository provides tools to build Oracle Linux images for cloud deployment.
 
 The images built by these tools are based on distribution flavours and target packages.
 Image building is accomplished using Packer to build images from the Oracle Linux ISO using Oracle VM VirtualBox.
 
 The tool currently supports:
+
 - Distributions:
   - Oracle Linux 7 update 8 -- Slim  
     A minimal set of packages is installed
@@ -35,11 +36,12 @@ The tool currently supports:
     Target packages: none  
     Image format: OVA
 
-# Build instructions
+## Build instructions
+
 1. Install packer and VirtualBox:  
   `yum --enablerepo=ol7_developer install packer VirtualBox-6.0`
 1. Cloud specific requirements:
-   - For `OCI` or `OLVM` images, install the ` qemu-img` package:  
+   - For `OCI` or `OLVM` images, install the `qemu-img` package:  
     `yum install qemu-img`
    - For `Vagrant` box (VirtualBox provider), install [HashiCorp Vagrant](https://vagrantup.com/)
    - For `Vagrant` box (libvirt provider), download the [`create_box.sh`](https://github.com/vagrant-libvirt/vagrant-libvirt/blob/master/tools/create_box.sh) third party script from the [`vagrant-libvirt`](https://github.com/vagrant-libvirt/vagrant-libvirt) project or install [HashiCorp Vagrant](https://vagrantup.com/) and the [`vagrant-libvirt`](https://github.com/vagrant-libvirt/vagrant-libvirt) plugin
@@ -58,8 +60,10 @@ The tool currently supports:
 1. Run the buider:  
   `./bin/build-image.sh --env ENV_PROPERTY_FILE`
 
-# Advanced configuration
+## Advanced configuration
+
 For a given Oracle Linux distribution and target Cloud, the following properties are taken in consideration:
+
 - Global `env.properties.default` file
 - Distribution `env.properties` file
 - Cloud `env.properties` file
@@ -70,10 +74,13 @@ Files are processed in that order.
 As user you should only make changes in your local `env.properties` where you can override any definition from the previous property files.  
 Relevant parameters are documented in the distributed [`env.properties`](env.properties) file.
 
-# Cloud specific notes
-## OCI
+## Cloud specific notes
+
+### OCI
+
 The Oracle Cloud Infrastructure `oci` cloud target generates an `QCOW2` file which can be uploaded in an _Object Storage_ bucket and imported as _Custom Image_.
 This can be done from the Console, or using the [Command Line Interface (CLI)](https://docs.cloud.oracle.com/en-us/iaas/Content/API/Concepts/cliconcepts.htm). E.g.:
+
 ```shell
 # Upload in the Object Storage Bucket
 oci os object put -bn my_bucket \
@@ -96,14 +103,18 @@ oci work-requests work-request get \
 # my_image_ocid and my_work_request_ocid OCIDs are returned  by the import command
 ```
 
-## OLVM
+### OLVM
+
 The `olvm` cloud target generates an OVA file. The process to import OVA files in the Oracle Linux Virtualization Manager is described in this [blog post](https://blogs.oracle.com/scoter/import-configure-oracle-linux-7-template-for-oracle-linux-kvm).
 
 For cloud-init support, you will need to specify `CLOUD_INIT="Yes"` in your `env.properties` file.
 
-# Builder architecture
-## Directory structure
+## Builder architecture
+
+### Directory structure
+
 The `build-image` script relies on the following directory structure:
+
 - distr: directory for all Oracle Linux distribution
   - _distribution name_
     - env.properties: distribution parameters
@@ -121,14 +132,16 @@ The `build-image` script relies on the following directory structure:
 
 Most of the files are optional, only define what is needed.
 
-## Build process
+### Build process
+
 The builder will process the directories in the following order:
+
 1. Read properties files as described in [advanced configuration](#advanced-configuration).  
   The properties are available in all scripts, on the host and in the VM during provisioning.  
   Properties can be validated at distribution / cloud level:
-  - distr::validate
-  - cloud::validate
-  - cloud_distr::validate
+    - distr::validate
+    - cloud::validate
+    - cloud_distr::validate
 1. Select a kickstart file from _distr_ and customise it. The following hooks are called if defined:
     - distr::kickstart
     - cloud_distr::kickstart
@@ -150,8 +163,10 @@ The builder will process the directories in the following order:
     - cloud_distr::image_package
     - cloud::image_package
 
-# Feedback
+## Feedback
+
 Please provide feedback of any kind via GitHub issues on this repository.
 
-# Contributing
+## Contributing
+
 See [CONTRIBUTING](CONTRIBUTING.md) for details.
