@@ -62,6 +62,21 @@ The tool currently supports:
 
 ## Advanced configuration
 
+### Using _boot_ ISO images
+
+Instead of providing an Oracle Linux distribution ISO you can use a _boot_ ISO image.
+In that case, you will have to provide an URL to an installation tree and optionally additional yum repositories required by the installation.
+
+Example for an Oracle Linux 8 Update 2 using the UEK boot ISO:
+
+```Shell
+ISO_URL="http://yum.oracle.com/ISOS/OracleLinux/OL8/u2/x86_64/x86_64-boot-uek.iso"
+REPO_URL="http://yum.oracle.com/repo/OracleLinux/OL8/baseos/latest/x86_64"
+REPO[AppStream]="https://yum.oracle.com/repo/OracleLinux/OL8/appstream/x86_64"
+```
+
+### Configuration files
+
 For a given Oracle Linux distribution and target Cloud, the following properties are taken in consideration:
 
 - Global `env.properties.default` file
