@@ -86,7 +86,7 @@ For a given Oracle Linux distribution and target Cloud, the following properties
 - Local `env.properties` file (passed as parameter to the builder)
 
 Files are processed in that order.  
-As user you should only make changes in your local `env.properties` where you can override any definition from the previous property files.  
+Changes should be made to a local env.properties file which can override any definition made in an upstream property file.  
 Relevant parameters are documented in the distributed [`env.properties`](env.properties) file.
 
 ## Cloud specific notes
