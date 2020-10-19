@@ -340,11 +340,10 @@ stage_kickstart() {
       "${WORKSPACE}/${KS_FILE}"
   fi
 
-  local repo
-  # shellcheck disable=SC2153
-  for repo in "${!REPO[@]}"; do
+  local ks_repo
+  for ks_repo in "${!REPO[@]}"; do
     sed -i -e \
-      '/^# Additional yum repositories/a repo --name "'"${repo}"'" --baseurl "'"${REPO[${repo}]}"'"' \
+      '/^# Additional yum repositories/a repo --name "'"${ks_repo}"'" --baseurl "'"${REPO[${ks_repo}]}"'"' \
       "${WORKSPACE}/${KS_FILE}"
   done
 
