@@ -118,7 +118,7 @@ distr::kernel_config() {
 #######################################
 # Common configuration
 # Globals:
-#   UPDATE_TO_LATEST, YUM_VERBOSE
+#   UPDATE_TO_LATEST, YUM_VERBOSE, BUILD_INFO
 # Arguments:
 #   None
 # Returns:
@@ -126,6 +126,9 @@ distr::kernel_config() {
 #######################################
 distr::common_cfg() {
   local service tty
+
+  # Directory to save build information
+  mkdir -p "${BUILD_INFO}"
 
   # Disable ol7_ociyum_config (Orabug 31106231)
   yum-config-manager --disable ol7_ociyum_config >/dev/null 2>&1
@@ -234,6 +237,7 @@ distr::provision() {
 #######################################
 # Cleanup
 # Globals:
+#   BUILD_INFO
 # Arguments:
 #   None
 # Returns:
@@ -268,7 +272,7 @@ distr::cleanup() {
   done
 
   echo_message "Yum cleanup"
-  yum -q repolist > /home/repolist.txt
+  yum -q repolist > "${BUILD_INFO}/repolist.txt"
   : > /etc/yum/vars/ociregion
   rm -rf /var/cache/yum/*
   rm -rf /var/lib/yum/*
@@ -350,9 +354,9 @@ distr::cleanup() {
   rm -f /var/log/ovm-template-config.log
 
   echo_message "Save list of installed packages"
-  rpm -qa --qf "%{name}.%{arch}\n"  | sort -u > /home/rpm.list
-  rpm -qa --qf '"%{NAME}","%{EPOCHNUM}","%{VERSION}","%{RELEASE}","%{ARCH}"\n' | sort > /home/rpm.csv
-  uname -r > /home/kernel.txt
+  rpm -qa --qf "%{name}.%{arch}\n"  | sort -u > "${BUILD_INFO}/pkglist.txt"
+  rpm -qa --qf '"%{NAME}","%{EPOCHNUM}","%{VERSION}","%{RELEASE}","%{ARCH}"\n' | sort > "${BUILD_INFO}/pkglist.csv"
+  uname -r > "${BUILD_INFO}/kernel.txt"
 
   echo_message "Relabel SELinux"
   genhomedircon

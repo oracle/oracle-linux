@@ -113,7 +113,7 @@ distr::kernel_config() {
 #######################################
 # Common configuration
 # Globals:
-#   UPDATE_TO_LATEST
+#   UPDATE_TO_LATEST, BUILD_INFO
 # Arguments:
 #   None
 # Returns:
@@ -121,6 +121,9 @@ distr::kernel_config() {
 #######################################
 distr::common_cfg() {
   local service tty
+
+  # Directory to save build information
+  mkdir -p "${BUILD_INFO}"
 
   # Run dnf update if flag is set to yes in image build page
   echo_message "Update image: ${UPDATE_TO_LATEST^^}"
@@ -213,6 +216,7 @@ distr::provision() {
 #######################################
 # Cleanup
 # Globals:
+#   BUILD_INFO
 # Arguments:
 #   None
 # Returns:
@@ -247,7 +251,7 @@ distr::cleanup() {
   done
 
   echo_message "Dnf cleanup"
-  dnf -q repolist > /home/repolist.txt
+  dnf -q repolist > "${BUILD_INFO}/repolist.txt"
   : > /etc/dnf/vars/ociregion
   rm -rf /var/cache/dnf/*
   rm -rf /var/lib/dnf/*
@@ -331,9 +335,9 @@ distr::cleanup() {
   rm -f /var/log/ovm-template-config.log
 
   echo_message "Save list of installed packages"
-  rpm -qa --qf "%{name}.%{arch}\n"  | sort -u > /home/rpm.list
-  rpm -qa --qf '"%{NAME}","%{EPOCHNUM}","%{VERSION}","%{RELEASE}","%{ARCH}"\n' | sort > /home/rpm.csv
-  uname -r > /home/kernel.txt
+  rpm -qa --qf "%{name}.%{arch}\n"  | sort -u > "${BUILD_INFO}/pkglist.txt"
+  rpm -qa --qf '"%{NAME}","%{EPOCHNUM}","%{VERSION}","%{RELEASE}","%{ARCH}"\n' | sort > "${BUILD_INFO}/pkglist.csv"
+  uname -r > "${BUILD_INFO}/kernel.txt"
 
   echo_message "Relabel SELinux"
   genhomedircon
