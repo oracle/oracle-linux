@@ -562,7 +562,7 @@ image_cleanup() {
   mkdir "${mnt}"
   sudo "${MOUNT_IMAGE}" System.img "${mnt}"
   boot_fs="${mnt}/1"
-  if df -T "${mnt}/2" | grep -q btrfs; then
+  if [[ $(stat -f -c "%T" "${mnt}/2") = "btrfs" ]]; then
     root_fs="${mnt}/2/root"
   else
     root_fs="${mnt}/2"
