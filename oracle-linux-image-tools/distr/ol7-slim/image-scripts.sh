@@ -40,10 +40,12 @@ distr::validate() {
 #######################################
 distr::kickstart() {
   local ks_file="$1"
+
   local btrfs="\
 part btrfs.01 --fstype=\"btrfs\"  --ondisk=sda --size=4096 --grow\n\
-btrfs none --label=btr_pool --data=single btrfs.01\n\
-btrfs /    --subvol --name=root btr_pool\
+btrfs none  --label=btrfs_vol --data=single btrfs.01\n\
+btrfs /     --subvol --name=root LABEL=btrfs_vol\n\
+btrfs /home --subvol --name=home LABEL=btrfs_vol\
 "
   local lvm="\
 part pv.01 --ondisk=sda --size=4096 --grow\n\
