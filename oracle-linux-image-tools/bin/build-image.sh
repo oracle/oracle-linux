@@ -334,6 +334,19 @@ stage_kickstart() {
     sed -i -e '/^part swap /d' "${WORKSPACE}/${KS_FILE}"
   fi
 
+  if [[ -n "${REPO_URL}" ]]; then
+    sed -i -e \
+      '/^# URL to an installation tree/a url --url "'"${REPO_URL}"'"' \
+      "${WORKSPACE}/${KS_FILE}"
+  fi
+
+  local ks_repo
+  for ks_repo in "${!REPO[@]}"; do
+    sed -i -e \
+      '/^# Additional yum repositories/a repo --name "'"${ks_repo}"'" --baseurl "'"${REPO[${ks_repo}]}"'"' \
+      "${WORKSPACE}/${KS_FILE}"
+  done
+
   # Kickstart fixups at distr / cloud_distr level
   if [[ "$(type -t distr::kickstart)" = 'function' ]]; then
     distr::kickstart "${WORKSPACE}/${KS_FILE}"
@@ -548,7 +561,7 @@ image_cleanup() {
   mkdir "${mnt}"
   sudo "${MOUNT_IMAGE}" System.img "${mnt}"
   boot_fs="${mnt}/1"
-  if df -T "${mnt}/2" | grep -q btrfs; then
+  if [[ $(stat -f -c "%T" "${mnt}/2") = "btrfs" ]]; then
     root_fs="${mnt}/2/root"
   else
     root_fs="${mnt}/2"

@@ -40,10 +40,12 @@ distr::validate() {
 #######################################
 distr::kickstart() {
   local ks_file="$1"
+
   local btrfs="\
 part btrfs.01 --fstype=\"btrfs\"  --ondisk=sda --size=4096 --grow\n\
-btrfs none --label=btr_pool --data=single btrfs.01\n\
-btrfs /    --subvol --name=root btr_pool\
+btrfs none  --label=btrfs_vol --data=single btrfs.01\n\
+btrfs /     --subvol --name=root LABEL=btrfs_vol\n\
+btrfs /home --subvol --name=home LABEL=btrfs_vol\
 "
   local lvm="\
 part pv.01 --ondisk=sda --size=4096 --grow\n\
@@ -67,7 +69,7 @@ logvol /      --fstype=\"xfs\"  --vgname=vg_main --size=4096 --name=lv_root --gr
 #######################################
 # Cleanup actions run directly on the image
 # Globals:
-#   WORKSPACE VM_NAME
+#   WORKSPACE VM_NAME BUILD_INFO
 # Arguments:
 #   root filesystem directory
 #   boot filesystem directory
@@ -82,10 +84,9 @@ distr::image_cleanup() {
   [[ -z ${root_fs} ]] && error "Undefined root filesystem"
   [[ -z ${boot_fs} ]] && error "Undefined boot filesystem"
 
-  cp "${root_fs}"/home/rpm.list "${WORKSPACE}/${VM_NAME}/${VM_NAME}.pkglst"
-  cp "${root_fs}"/home/rpm.csv "${WORKSPACE}/${VM_NAME}/pkglst.csv"
-  cp "${root_fs}"/home/repolist.txt "${WORKSPACE}/${VM_NAME}/repolist.txt"
-  cp "${root_fs}"/home/kernel.txt "${WORKSPACE}/${VM_NAME}/${VM_NAME}.kernel"
+  if [[ -n ${BUILD_INFO} && -d "${root_fs}${BUILD_INFO}" ]]; then
+    find "${root_fs}${BUILD_INFO}" -type f -exec cp {} "${WORKSPACE}/${VM_NAME}/" \;
+  fi
 
   sudo chroot "${root_fs}" /bin/bash <<-EOF
   : > /var/log/wtmp
@@ -96,6 +97,6 @@ distr::image_cleanup() {
 	rm -rf /var/spool/root /var/spool/mail/root
 	rm -rf /var/lib/NetworkManager
 	rm -rf /var/tmp/*
-	rm -f /home/rpm.list /home/rpm.csv /home/repolist.txt /home/kernel.txt
+  [[ -n "${BUILD_INFO}" ]] && rm -rf "${BUILD_INFO}"
 	EOF
 }

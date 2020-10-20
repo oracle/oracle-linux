@@ -25,7 +25,8 @@
 #   None
 #######################################
 distr::validate() {
-[[ "${ROOT_FS,,}" =~ ^(xfs)|(lvm)$ ]] || error "ROOT_FS must be xfs or lvm"
+  [[ "${ROOT_FS,,}" =~ ^(xfs)|(btrfs)|(lvm)$ ]] || error "ROOT_FS must be xfs, btrfs or lvm"
+  [[ "${ROOT_FS,,}" = "btrfs" ]] && echo_message "Note that for btrfs root filesystem you need to use an UEK boot ISO"  
   readonly ROOT_FS
 }
 
@@ -41,6 +42,12 @@ distr::validate() {
 distr::kickstart() {
   local ks_file="$1"
 
+  local btrfs="\
+part btrfs.01 --fstype=\"btrfs\"  --ondisk=sda --size=4096 --grow\n\
+btrfs none  --label=btrfs_vol --data=single btrfs.01\n\
+btrfs /     --subvol --name=root LABEL=btrfs_vol\n\
+btrfs /home --subvol --name=home LABEL=btrfs_vol\
+"
   local lvm="\
 part pv.01 --ondisk=sda --size=4096 --grow\n\
 volgroup vg_main pv.01\n\
@@ -49,7 +56,9 @@ logvol /      --fstype=\"xfs\"  --vgname=vg_main --size=4096 --name=lv_root --gr
 "
 
   # Kickstart file is populated for xfs
-  if [[ "${ROOT_FS,,}" = "lvm" ]]; then
+  if [[ "${ROOT_FS,,}" = "btrfs" ]]; then
+    sed -i -e 's!^part / .*$!'"${btrfs}"'!' "${ks_file}"
+  elif [[ "${ROOT_FS,,}" = "lvm" ]]; then
     sed -i -e '/^part swap/d' -e 's!^part / .*$!'"${lvm}"'!' "${ks_file}"
   fi
 
@@ -60,7 +69,7 @@ logvol /      --fstype=\"xfs\"  --vgname=vg_main --size=4096 --name=lv_root --gr
 #######################################
 # Cleanup actions run directly on the image
 # Globals:
-#   WORKSPACE VM_NAME
+#   WORKSPACE VM_NAME BUILD_INFO
 # Arguments:
 #   root filesystem directory
 #   boot filesystem directory
@@ -75,10 +84,9 @@ distr::image_cleanup() {
   [[ -z ${root_fs} ]] && error "Undefined root filesystem"
   [[ -z ${boot_fs} ]] && error "Undefined boot filesystem"
 
-  cp "${root_fs}"/home/rpm.list "${WORKSPACE}/${VM_NAME}/${VM_NAME}.pkglst"
-  cp "${root_fs}"/home/rpm.csv "${WORKSPACE}/${VM_NAME}/pkglst.csv"
-  cp "${root_fs}"/home/repolist.txt "${WORKSPACE}/${VM_NAME}/repolist.txt"
-  cp "${root_fs}"/home/kernel.txt "${WORKSPACE}/${VM_NAME}/${VM_NAME}.kernel"
+  if [[ -n ${BUILD_INFO} && -d "${root_fs}${BUILD_INFO}" ]]; then
+    find "${root_fs}${BUILD_INFO}" -type f -exec cp {} "${WORKSPACE}/${VM_NAME}/" \;
+  fi
 
   sudo chroot "${root_fs}" /bin/bash <<-EOF
   : > /var/log/wtmp
@@ -89,6 +97,6 @@ distr::image_cleanup() {
 	rm -rf /var/spool/root /var/spool/mail/root
 	rm -rf /var/lib/NetworkManager
 	rm -rf /var/tmp/*
-	rm -f /home/rpm.list /home/rpm.csv /home/repolist.txt /home/kernel.txt
+  [[ -n "${BUILD_INFO}" ]] && rm -rf "${BUILD_INFO}"
 	EOF
 }
