@@ -38,7 +38,7 @@ setup(
     python_requires='>=3.5',
     install_requires=[
         'click>=7.0',
-        'oci>=2.10',
+        'oci>=2.23',
         'terminaltables>=3.1',
     ],
     entry_points={
