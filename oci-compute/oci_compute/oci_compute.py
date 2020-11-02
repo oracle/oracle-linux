@@ -463,7 +463,7 @@ class OciCompute(object):
             return None
         elif len(listings) > 1:
             self._echo_error("More than one image found:")
-            for name in sorted(l.name for l in listings):
+            for name in sorted(listing.name for listing in listings):
                 self._echo_error('    {}'.format(name))
             return None
         listing = listings[0]
