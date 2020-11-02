@@ -111,7 +111,9 @@ class OciCompute(object):
         self._echo_message_kv('Name', vcn.display_name)
 
         self._echo_header('Retrieving subnet')
-        subnets = self._virtual_network_client.list_subnets(compartment_id, vcn.id, display_name=subnet_name).data
+        subnets = self._virtual_network_client.list_subnets(compartment_id,
+                                                            vcn_id=vcn.id,
+                                                            display_name=subnet_name).data
 
         if not subnets:
             self._echo_error('No matching subnet for "{}"'.format(subnet_name))
