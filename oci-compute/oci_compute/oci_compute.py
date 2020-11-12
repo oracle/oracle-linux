@@ -15,6 +15,10 @@ from click import confirm, echo, secho
 import oci
 
 
+# OS name for Custom images
+CUSTOM_OS = ('Custom', 'Zero')
+
+
 class OciCompute(object):
     """Interface with the OCI SDK."""
 
@@ -111,7 +115,9 @@ class OciCompute(object):
         self._echo_message_kv('Name', vcn.display_name)
 
         self._echo_header('Retrieving subnet')
-        subnets = self._virtual_network_client.list_subnets(compartment_id, vcn.id, display_name=subnet_name).data
+        subnets = self._virtual_network_client.list_subnets(compartment_id,
+                                                            vcn_id=vcn.id,
+                                                            display_name=subnet_name).data
 
         if not subnets:
             self._echo_error('No matching subnet for "{}"'.format(subnet_name))
@@ -299,7 +305,7 @@ class OciCompute(object):
         response = oci.pagination.list_call_get_all_results(self._compute_client.list_images, compartment_id)
         images = set()
         for image in response.data:
-            if image.operating_system != 'Custom':
+            if image.operating_system not in CUSTOM_OS:
                 images.add((image.operating_system, image.operating_system_version))
 
         return sorted(images)
@@ -314,7 +320,7 @@ class OciCompute(object):
         response = oci.pagination.list_call_get_all_results(self._compute_client.list_images, compartment_id)
         images = set()
         for image in response.data:
-            if image.operating_system == 'Custom':
+            if image.operating_system in CUSTOM_OS:
                 images.add((image.display_name, image.time_created))
 
         return sorted(images)
@@ -412,14 +418,13 @@ class OciCompute(object):
         self._echo_header('Retrieving image details')
         response = self._compute_client.list_images(
             compartment_id,
-            operating_system='Custom',
             shape=shape,
             sort_by='DISPLAYNAME',
             sort_order='ASC')
         # Find matching names
         images = []
         for image in response.data:
-            if custom_image_name in image.display_name:
+            if image.operating_system in CUSTOM_OS and custom_image_name in image.display_name:
                 images.append(image)
         if not images:
             self._echo_error("No image found")
@@ -463,7 +468,7 @@ class OciCompute(object):
             return None
         elif len(listings) > 1:
             self._echo_error("More than one image found:")
-            for name in sorted(l.name for l in listings):
+            for name in sorted(listing.name for listing in listings):
                 self._echo_error('    {}'.format(name))
             return None
         listing = listings[0]
