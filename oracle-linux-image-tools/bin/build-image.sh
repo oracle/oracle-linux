@@ -176,8 +176,8 @@ load_env() {
 
   # Basic validation
   [[ -z "${ISO_URL}" ]] && error "missing ISO URL"
-  [[ -z "${ISO_SHA1_CHECKSUM}" ]] && error "missing ISO checksum"
-  readonly ISO_URL ISO_SHA1_CHECKSUM
+  [[ -z "${ISO_CHECKSUM}" ]] && error "missing ISO checksum"
+  readonly ISO_URL ISO_CHECKSUM
 
   [[ -z "${SSH_PASSWORD}" && -z "${SSH_KEY_FILE}" ]] &&
     error "need at least ssh key or password"
@@ -360,7 +360,7 @@ stage_kickstart() {
 # Generate Packer config file
 # Globals:
 #   DISK_SIZE_MB MEM_SIZE CPU_NUM
-#   ISO_URL ISO_SHA1_CHECKSUM
+#   ISO_URL ISO_CHECKSUM
 #   KS_FILE
 #   SERIAL_CONSOLE
 #   SHUTDOWN_CMD
@@ -400,8 +400,7 @@ packer_conf() {
 	      "type": "virtualbox-iso",
 	      "guest_os_type": "Oracle_64",
 	      "iso_url": "${ISO_URL}",
-	      "iso_checksum_type": "sha1",
-	      "iso_checksum": "${ISO_SHA1_CHECKSUM}",
+	      "iso_checksum": "${ISO_CHECKSUM}",
 	      "output_directory": "${WORKSPACE}/${VM_NAME}",
 	      "vm_name": "${VM_NAME}",
 	      "hard_drive_interface": "sata",

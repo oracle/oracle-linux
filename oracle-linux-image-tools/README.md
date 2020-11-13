@@ -55,9 +55,9 @@ The tool currently supports:
   Minimal configuration:
     - `WORKSPACE`: path of your workspace directory
     - `ISO_URL`: location of the Oracle Linux distribution ISO
-    - `ISO_SHA1_CHECKSUM`: SAH1 checksum for the ISO file
+    - `ISO_CHECKSUM`: checksum for the ISO file. As from packer 1.6.0, you can prepend the checksum type (see [packer documentation](https://www.packer.io/docs/builders/virtualbox/iso#iso_checksum))
     - `CLOUD`: cloud target (azure, oci, olvm, ovm or none)
-1. Run the buider:  
+1. Run the builder:  
   `./bin/build-image.sh --env ENV_PROPERTY_FILE`
 
 ## Advanced configuration
