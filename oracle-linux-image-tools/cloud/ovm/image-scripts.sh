@@ -26,7 +26,7 @@
 #   None
 #######################################
 cloud::validate() {
-  [[ ${ORACLE_RELEASE} == "7" ]]  || error "OVM cloud image builder is only supported with OL7"
+  :
 }
 
 #######################################

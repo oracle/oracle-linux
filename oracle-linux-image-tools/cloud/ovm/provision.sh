@@ -38,7 +38,7 @@ cloud::ovm_cfg()
 	PERSISTENT_DHCLIENT="1"
 	EOF
 
-  echo_message 'Configure grub"'
+  echo_message 'Configure grub'
   cat > /etc/default/grub  <<-EOF
 	GRUB_TIMEOUT=10
 	GRUB_HIDDEN_MENU_QUIET=false
@@ -66,24 +66,44 @@ cloud::ovm_cfg()
 cloud::install_vmapilibxenstore()
 {
   echo_message "Install OVM API and LibXenStore"
-  yum install --enablerepo ol7_addons -y "${YUM_VERBOSE}" libovmapi \
-    libovmapi-devel \
-    ovmd \
-    ovm-template-config \
-    ovm-template-config-authentication \
-    ovm-template-config-datetime \
-    ovm-template-config-firewall \
-    ovm-template-config-network \
-    ovm-template-config-selinux \
-    ovm-template-config-ssh \
-    ovm-template-config-system \
-    ovm-template-config-user \
-    python-simplejson \
-    xenstoreprovider
+  if [[ "${ORACLE_RELEASE}" = "7" ]]; then
+    yum install --enablerepo ol7_addons -y "${YUM_VERBOSE}" \
+      libovmapi \
+      libovmapi-devel \
+      ovmd \
+      ovm-template-config \
+      ovm-template-config-authentication \
+      ovm-template-config-datetime \
+      ovm-template-config-firewall \
+      ovm-template-config-network \
+      ovm-template-config-selinux \
+      ovm-template-config-ssh \
+      ovm-template-config-system \
+      ovm-template-config-user \
+      python-simplejson \
+      xenstoreprovider \
+      libxenstore
+  elif [[ "${ORACLE_RELEASE}" = "8" ]]; then
+    dnf install --enablerepo ol8_addons -y \
+      libovmapi \
+      libovmapi-devel \
+      ovmd \
+      ovm-template-config \
+      ovm-template-config-authentication \
+      ovm-template-config-datetime \
+      ovm-template-config-firewall \
+      ovm-template-config-network \
+      ovm-template-config-selinux \
+      ovm-template-config-ssh \
+      ovm-template-config-system \
+      ovm-template-config-user \
+      xenstoreprovider
+  else
+    echo "Unsupported OL version"
+    exit
+  fi
 
   sed -i -e 's/^INITIAL_CONFIG.*/INITIAL_CONFIG=yes/' /etc/sysconfig/ovm-template-initial-config
-
-  yum install --enablerepo ol7_addons -y "${YUM_VERBOSE}" libxenstore
 }
 
 #######################################
