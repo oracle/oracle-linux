@@ -144,7 +144,7 @@ For additional packages, updates, documentation and community help, see:
 #######################################
 # Cleanup module
 # Globals:
-#   None
+#   ORACLE_RELEASE RESCUE_KERNEL
 # Arguments:
 #   None
 # Returns:
@@ -160,7 +160,9 @@ vagrant::cleanup()
       psmisc \
       m2crypto \
       checkpolicy \
-      dracut-config-rescue \
       iptables-services
+    if [[ -z "${RESCUE_KERNEL}" || "${RESCUE_KERNEL,,}" = "no" ]]; then
+      distr::remove_rpms dracut-config-rescue
+    fi
   fi
 }

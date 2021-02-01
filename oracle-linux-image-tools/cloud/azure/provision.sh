@@ -33,6 +33,9 @@ cloud::install_WALinuxAgent()
   elif [[ "${ORACLE_RELEASE}" = "8" ]]; then
     dnf install -y parted hypervkvpd
     dnf install -y WALinuxAgent dnsmasq
+    if [[ -z "${RESCUE_KERNEL}" || "${RESCUE_KERNEL,,}" = "no" ]]; then
+      dnf remove -y dracut-config-rescue
+    fi
   else
     echo "Unsupported OL version"
     exit
