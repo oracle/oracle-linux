@@ -2,7 +2,7 @@
 #
 # Packer provisioning script for OVM on OL8
 #
-# Copyright (c) 2020 Oracle and/or its affiliates.
+# Copyright (c) 2020, 2021, Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -70,9 +70,63 @@ cloud_distr::serial_cfg() {
 }
 
 #######################################
+# Configure additional kernel
+# This will install RHCK if UEK is already there or the opposite
+# Assumes that we have a single kernel installed
+# Globals:
+#   DRACUT_CMD, KERNEL
+# Arguments:
+#   None
+# Returns:
+#   None
+#######################################
+cloud_distr::additional_kernel() {
+  local kernel kernel_version
+
+  # Select kernel to install
+  # shellcheck disable=SC2153
+  if [[ "${KERNEL,,}" = "uek" ]]; then
+    kernel="kernel"
+  else
+    kernel="kernel-uek"
+    dnf config-manager --set-enabled ol8_UEKR6
+  fi
+
+  echo_message "Adding kernel: ${kernel}"
+  # Cleanup dracut config, as it is customized for the "other" kernel
+  rm /etc/dracut.conf.d/01-dracut-vm.conf
+  dnf install -y ${kernel}
+  kernel_version=$(rpm -q ${kernel} --qf "%{VERSION}-%{RELEASE}.%{ARCH}")
+  echo_message "Installed kernel: ${kernel_version}"
+
+  # Add virtual drivers 
+  local virtio modules
+  modules=$(find "/lib/modules/${kernel_version}" -name "virtio*.ko*" -printf '%f\n')
+  while read -r module; do
+    virtio="${virtio} ${module%.ko*}"
+  done <<<"${modules}"
+
+  cat > /etc/dracut.conf.d/01-dracut-vm.conf <<-EOF
+	add_drivers+=" xen_netfront xen_blkfront "
+	add_drivers+=" ${virtio} "
+	add_drivers+=" hyperv_keyboard hv_netvsc hid_hyperv hv_utils hv_storvsc hyperv_fb "
+	add_drivers+=" ahci libahci "
+	EOF
+
+  # Regenerate initrd
+  ${DRACUT_CMD} -f "/boot/initramfs-${kernel_version}.img" "${kernel_version}"
+
+  # Cleanup dracut config, it is only needed for the initial build
+  rm /etc/dracut.conf.d/01-dracut-vm.conf
+
+  # Ensure grub is properly setup
+  grub2-mkconfig -o /boot/grub2/grub.cfg
+}
+
+#######################################
 # Provisioning module
 # Globals:
-#   None
+#   EXTRA_KERNEL
 # Arguments:
 #   None
 # Returns:
@@ -81,6 +135,9 @@ cloud_distr::serial_cfg() {
 cloud_distr::provision()
 {
   cloud_distr::serial_cfg
+  if [[ "${EXTRA_KERNEL,,}" = "yes" ]]; then
+    cloud_distr::additional_kernel
+  fi
 }
 
 #######################################
