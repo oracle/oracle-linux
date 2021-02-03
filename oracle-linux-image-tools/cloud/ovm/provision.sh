@@ -64,10 +64,8 @@ cloud::ovm_cfg()
 
   echo_message 'Configure grub'
   cloud::default_grub GRUB_TIMEOUT 10
-  # GRUB_HIDDEN_MENU_QUIET: for historical reason, AFAIK there is no shuch
-  # parameter...
+  # GRUB_HIDDEN_MENU_QUIET: for historical reason, not used anymore...
   cloud::default_grub GRUB_HIDDEN_MENU_QUIET false
-  cloud::default_grub GRUB_TIMEOUT_STYLE countdown
   cloud::default_grub GRUB_SERIAL_COMMAND '"serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"'
   sed -i -e '/^GRUB_TERMINAL/d' /etc/default/grub
   cloud::default_grub GRUB_TERMINAL '"serial console"'
