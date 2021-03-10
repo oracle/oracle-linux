@@ -18,7 +18,7 @@
 #######################################
 # Validate distribution parameters
 # Globals:
-#   ROOT_FS
+#   RESCUE_LERNEL ROOT_FS
 # Arguments:
 #   None
 # Returns:
@@ -26,14 +26,15 @@
 #######################################
 distr::validate() {
   [[ "${ROOT_FS,,}" =~ ^(xfs)|(btrfs)|(lvm)$ ]] || error "ROOT_FS must be xfs, btrfs or lvm"
-  [[ "${ROOT_FS,,}" = "btrfs" ]] && echo_message "Note that for btrfs root filesystem you need to use an UEK boot ISO"  
-  readonly ROOT_FS
+  [[ "${ROOT_FS,,}" = "btrfs" ]] && echo_message "Note that for btrfs root filesystem you need to use an UEK boot ISO"
+  [[ "${RESCUE_KERNEL,,}" =~ ^(yes)|(no)$ ]] || error "RESCUE_KERNEL must be yes or no"
+  readonly RESCUE_KERNEL ROOT_FS
 }
 
 #######################################
 # Kickcstart fixup
 # Globals:
-#   ROOT_FS
+#   RESCUE_KERNEL ROOT_FS
 # Arguments:
 #   kickstart file name
 # Returns:
@@ -62,8 +63,9 @@ logvol /      --fstype=\"xfs\"  --vgname=vg_main --size=4096 --name=lv_root --gr
     sed -i -e '/^part swap/d' -e 's!^part / .*$!'"${lvm}"'!' "${ks_file}"
   fi
 
-  # Pass kernel selection
+  # Pass kernel and rescue kernel selections
   sed -i -e 's!^KERNEL=.*$!KERNEL='"${KERNEL}"'!' "${ks_file}"
+  sed -i -e 's!^RESCUE_KERNEL=.*$!RESCUE_KERNEL='"${RESCUE_KERNEL}"'!' "${ks_file}"
 }
 
 #######################################

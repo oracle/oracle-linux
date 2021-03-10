@@ -14,6 +14,30 @@
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 #
 
+cloud::default_grub()
+#######################################
+# Set values in /etc/default/grub
+# Globals:
+#   None
+# Arguments:
+#   Key: key to set
+#   Value: value
+# Returns:
+#   None
+#######################################
+{
+  key="$1"
+  value="$2"
+
+  if grep -q "^${key}=" /etc/default/grub; then
+    # Replace parameter
+    sed -i -e "s/^${key}=.*/${key}=${value}/" /etc/default/grub
+  else
+    # Add parameter
+    echo "${key}=${value}" >> /etc/default/grub
+  fi
+}
+
 #######################################
 # Configure OVM instance
 # Globals:
@@ -39,16 +63,12 @@ cloud::ovm_cfg()
 	EOF
 
   echo_message 'Configure grub'
-  cat > /etc/default/grub  <<-EOF
-	GRUB_TIMEOUT=10
-	GRUB_HIDDEN_MENU_QUIET=false
-	GRUB_DEFAULT=saved
-	GRUB_DISABLE_SUBMENU=true
-	GRUB_TERMINAL="serial console"
-	GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"
-	GRUB_CMDLINE_LINUX="console=tty0"
-	GRUB_DISABLE_RECOVERY="true"
-	EOF
+  cloud::default_grub GRUB_TIMEOUT 10
+  # GRUB_HIDDEN_MENU_QUIET: for historical reason, not used anymore...
+  cloud::default_grub GRUB_HIDDEN_MENU_QUIET false
+  cloud::default_grub GRUB_SERIAL_COMMAND '"serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"'
+  sed -i -e '/^GRUB_TERMINAL/d' /etc/default/grub
+  cloud::default_grub GRUB_TERMINAL '"serial console"'
 
   #Regenerate grub.cfg
   grub2-mkconfig -o /boot/grub2/grub.cfg
