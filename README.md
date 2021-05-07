@@ -3,7 +3,7 @@
 This repository provides tips, scripts, tools, and examples for developers and operators to get started with Oracle Linux.
 
 ## Join the Discussion
-Questions or feedback? Join the [Oracle Linux Discussion](/oracle/oracle-linux/discussions)
+Questions or feedback? Join the [Oracle Linux Discussion](https://github.com/oracle/oracle-linux/discussions)
 
 ## Getting Started With Oracle Linux
 
@@ -22,7 +22,7 @@ Looking to switch from CentOS to Oracle Linux? Head over to the [centos2ol repo]
 
 ### Run Vagrant Boxes and Projects
 - [Download Oracle Linux Vagrant boxes](https://yum.oracle.com/boxes/)
-- Explore [Vagrant projects](/oracle/vagrant-projects) that provision Oracle and other software automatically 
+- Explore [Vagrant projects](https://github.com/oracle/vagrant-projects) that provision Oracle and other software automatically 
 
 ### Build Your Own Oracle Linux Images
 Need to build custom Linux images for VirtualBox, KVM, Oracle Cloud or other clouds? See these [scripts to build Oracle Linux images](oracle-linux-image-tools)
