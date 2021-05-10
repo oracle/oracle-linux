@@ -15,7 +15,7 @@ Questions or feedback? Join the [Oracle Linux Discussion](https://github.com/ora
 ### Convert CentOS to Oracle Linux
 Looking to switch from CentOS to Oracle Linux? Head over to the [centos2ol repo](/oracle/centos2ol) for a script designed to automatically switch a CentOS instance to Oracle Linux.
 
-### Run container images
+### Container images
  - Download official Oracle Linux base images published on [GitHub Container Registry](https://github.com/orgs/oracle/packages/container/package/oraclelinux).
  - Download [developer-oriented images](https://github.com/orgs/oracle/packages?repo_name=docker-images) to run your application code and or connect to Oracle Database
  - Build your own container images for Oracle commercial products and Oracle sponsored open source projects using these [sample Dockerfiles](https://github.com/oracle/docker-images).
