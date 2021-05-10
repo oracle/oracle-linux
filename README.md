@@ -20,7 +20,7 @@ Looking to switch from CentOS to Oracle Linux? Head over to the [centos2ol repo]
  - Download [developer-oriented images](https://github.com/orgs/oracle/packages?repo_name=docker-images) to run your application code and or connect to Oracle Database
  - Build your own container images for Oracle commercial products and Oracle sponsored open source projects using these [sample Dockerfiles](https://github.com/oracle/docker-images).
 
-### Run Vagrant boxes and projects
+### Vagrant boxes and projects
 - [Download Oracle Linux Vagrant boxes](https://yum.oracle.com/boxes/)
 - Explore [Vagrant projects](https://github.com/oracle/vagrant-projects) that provision Oracle and other software automatically 
 
