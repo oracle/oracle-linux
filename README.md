@@ -13,7 +13,7 @@ Questions or feedback? Join the [Oracle Linux Discussion](https://github.com/ora
 - Download individual packages and updates from [Oracle Linux yum server](https://yum.oracle.com).
 
 ### Convert CentOS to Oracle Linux
-Looking to switch from CentOS to Oracle Linux? Head over to the [centos2ol repo](/oracle/centos2ol) for a script designed to automatically switch a CentOS instance to Oracle Linux.
+Looking to switch from CentOS to Oracle Linux? Head over to the [centos2ol repo](https://github.com/oracle/centos2ol) for a script designed to automatically switch a CentOS instance to Oracle Linux.
 
 ### Container images
  - Download official Oracle Linux base images published on [GitHub Container Registry](https://github.com/orgs/oracle/packages/container/package/oraclelinux).
