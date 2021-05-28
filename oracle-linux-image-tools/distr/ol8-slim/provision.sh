@@ -342,7 +342,7 @@ distr::cleanup() {
   echo_message "Relabel SELinux"
   genhomedircon
   fixfiles -f -F relabel
-  restorecon -R /
+  restorecon -R / || true
   history -c
   swapoff -a
 }
