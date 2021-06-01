@@ -133,6 +133,12 @@ distr::common_cfg() {
     dnf update --security -y
   fi
 
+  # SSSD profile needs clients
+  if authselect current -r | grep -q '^sssd'; then
+    echo_message "Installing SSSD client"
+    dnf install -y sssd-client
+  fi
+
   # If you want to remove rsyslog and just use journald, remove this!
   echo_message "Disabling persistent journal"
   rm -rf /var/log/journal/
