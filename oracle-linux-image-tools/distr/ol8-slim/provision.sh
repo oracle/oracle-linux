@@ -102,6 +102,13 @@ distr::kernel_config() {
     fi
   done
 
+  # Workaround for orabug 32816428
+  if [[ "${KERNEL,,}" = "uek" && -f "/etc/ld.so.conf.d/kernel-${current_kernel}.conf" ]]; then
+    cat > "/etc/ld.so.conf.d/kernel-${current_kernel}.conf" <<-EOF
+			# Placeholder file, no vDSO hwcap entries used in this kernel."
+			EOF
+  fi
+
   # Regenerate initrd
   ${DRACUT_CMD} -f "/boot/initramfs-${current_kernel}.img" "${current_kernel}"
 
