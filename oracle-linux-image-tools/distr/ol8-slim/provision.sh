@@ -102,6 +102,13 @@ distr::kernel_config() {
     fi
   done
 
+  # Workaround for orabug 32816428
+  if [[ "${KERNEL,,}" = "uek" && -f "/etc/ld.so.conf.d/kernel-${current_kernel}.conf" ]]; then
+    cat > "/etc/ld.so.conf.d/kernel-${current_kernel}.conf" <<-EOF
+			# Placeholder file, no vDSO hwcap entries used in this kernel."
+			EOF
+  fi
+
   # Regenerate initrd
   ${DRACUT_CMD} -f "/boot/initramfs-${current_kernel}.img" "${current_kernel}"
 
@@ -131,6 +138,12 @@ distr::common_cfg() {
     dnf update -y
   elif [[ "${UPDATE_TO_LATEST,,}" = "security" ]]; then
     dnf update --security -y
+  fi
+
+  # SSSD profile needs clients
+  if authselect current -r | grep -q '^sssd'; then
+    echo_message "Installing SSSD client"
+    dnf install -y sssd-client
   fi
 
   # If you want to remove rsyslog and just use journald, remove this!
@@ -342,7 +355,7 @@ distr::cleanup() {
   echo_message "Relabel SELinux"
   genhomedircon
   fixfiles -f -F relabel
-  restorecon -R /
+  restorecon -R / || true
   history -c
   swapoff -a
 }
