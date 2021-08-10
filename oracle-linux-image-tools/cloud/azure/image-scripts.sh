@@ -39,6 +39,6 @@ cloud::image_cleanup() {
 #   None
 #######################################
 cloud::image_package() {
-  vboxmanage convertfromraw System.img --format VHD "${VM_NAME}.vhd"
+  qemu-img convert -f raw -O vpc -o subformat=dynamic System.img "${VM_NAME}.vhd"
   rm System.img
 }

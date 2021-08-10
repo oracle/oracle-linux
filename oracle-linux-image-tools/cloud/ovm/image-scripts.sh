@@ -59,7 +59,7 @@ cloud::image_package() {
   local build_upd="${DISTR_NAME#*U}"
   local build_upd="${build_upd%%_*}"
 
-  vboxmanage convertfromraw System.img --format VMDK System.vmdk  --variant Stream
+  qemu-img convert -f raw -O vmdk -o subformat=streamOptimized System.img System.vmdk
   rm System.img
 
   ${mk_envelope} \
