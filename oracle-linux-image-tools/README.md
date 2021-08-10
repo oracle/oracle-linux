@@ -39,7 +39,7 @@ Additional information is available in the [Building (Small) Oracle Linux Images
 
 ## Build instructions
 
-The build script require a Linux environment and has been tested on Oracle Linux 7 and 8.
+The build script requires a Linux environment and has been tested on Oracle Linux 7 and 8.
 
 1. Install either QEMU or VirtualBox (VirtualBox required for Vagrant VirtualBox images):
    - Oracle Linux 7:  
