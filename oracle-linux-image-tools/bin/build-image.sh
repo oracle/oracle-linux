@@ -175,6 +175,9 @@ load_env() {
   readonly WORKSPACE DISTR CLOUD
 
   # Basic validation
+  [[ ${PACKER_BUILDER} =~ ^(virtualbox-iso|qemu)$ ]] ||
+    error "Invalid PACKER_BUILDER: ${PACKER_BUILDER}"
+
   [[ -z "${ISO_URL}" ]] && error "missing ISO URL"
   [[ -z "${ISO_CHECKSUM}" ]] && error "missing ISO checksum"
   readonly ISO_URL ISO_CHECKSUM
@@ -383,10 +386,12 @@ packer_conf() {
   # shellcheck disable=SC2034
   local CONSOLE=""
   local modifyvm_console=""
+  local qemu_serial_console=""
   if [[ "${SERIAL_CONSOLE,,}" = "yes" ]]; then
     # shellcheck disable=SC2034
     CONSOLE=" console=tty0 console=ttyS0"
     modifyvm_console='["modifyvm", "{{.Name}}", "--uart1", "0x3f8", 4, "--uartmode1", "file", "'"${WORKSPACE}/${VM_NAME}"'/serial-console.txt"],'
+    qemu_serial_console='[ "-serial", "file:'"${WORKSPACE}/${VM_NAME}"'/serial-console.txt" ]'
   fi
   local boot_command
   # shellcheck disable=SC2153
@@ -413,7 +418,7 @@ packer_conf() {
 	      ${SSH_KEY_FILE:+${q}ssh_private_key_file${q}: ${q}$SSH_KEY_FILE${q},}
 	      "ssh_port": 22,
 	      "ssh_wait_timeout": "30m",
-        "http_directory": "${WORKSPACE}",
+	      "http_directory": "${WORKSPACE}",
 	      "boot_wait": "20s",
 	      "boot_command":
 	      [
@@ -431,6 +436,36 @@ packer_conf() {
 	      [
 	        ["modifyvm", "{{.Name}}", "--uart1", "off", "--uartmode1", "disconnected"],
 	        ["modifyvm", "{{.Name}}", "--x2apic", "on"]
+	      ]
+	    },
+	    {
+	      "type": "qemu",
+	      "iso_url": "${ISO_URL}",
+	      "iso_checksum": "${ISO_CHECKSUM}",
+	      "output_directory": "${WORKSPACE}/${VM_NAME}",
+	      "shutdown_command": "$SHUTDOWN_CMD",
+	      "disk_size": "${DISK_SIZE_MB}",
+	      "format": "raw",
+	      "accelerator": "kvm",
+	      "http_directory": "${WORKSPACE}",
+	      "ssh_username": "root",
+	      ${SSH_PASSWORD:+${q}ssh_password${q}: ${q}$SSH_PASSWORD${q},}
+	      ${SSH_KEY_FILE:+${q}ssh_private_key_file${q}: ${q}$SSH_KEY_FILE${q},}
+	      "ssh_port": 22,
+	      "ssh_wait_timeout": "30m",
+	      "net_device": "virtio-net",
+	      "disk_interface": "virtio-scsi",
+	      "boot_wait": "20s",
+	      "boot_command":
+	      [
+	        "${boot_command}"
+	      ],
+	      "cpus": ${CPU_NUM},
+	      "headless": "true",
+	      "memory": ${MEM_SIZE},
+	      "vm_name": "System.img",
+	      "qemuargs": [
+	        ${qemu_serial_console}
 	      ]
 	    }
 	  ],
@@ -464,6 +499,7 @@ packer_conf() {
 #######################################
 # Run packer
 # Globals:
+#   PACKER_BUILDER
 #   SERIAL_CONSOLE
 #   VM_NAME
 #   WORKSPACE
@@ -505,7 +541,7 @@ run_packer() {
   local errexit="$(shopt -po errexit)"
   set +e
   # shellcheck disable=SC2086
-  "${PACKER}" build ${PACKER_BUILD_OPTIONS} "${VM_NAME}".json
+  "${PACKER}" build -only "${PACKER_BUILDER}" ${PACKER_BUILD_OPTIONS} "${VM_NAME}".json
   packer_status=$?
   eval "${errexit}"
 
@@ -516,7 +552,7 @@ run_packer() {
 
   [[ ${packer_status} -ne 0 ]] && error "Packer didn't complete successfully"
 
-  [[ -r "${WORKSPACE}/${VM_NAME}/${VM_NAME}.ova" ]] ||
+  [[ -r "${WORKSPACE}/${VM_NAME}/${VM_NAME}.ova" || -r "${WORKSPACE}/${VM_NAME}/System.img" ]] ||
     error "Packer didn't built the image"
 }
 
@@ -524,6 +560,7 @@ run_packer() {
 # Cleanup actions run directly on the image
 # We prune work images as soon as possible to limit disk space usage
 # Globals:
+#   PACKER_BUILDER
 #   WORKSPACE VM_NAME
 #   MOUNT_IMAGE
 #   Loaded environment files used in invoked modules
@@ -540,15 +577,17 @@ image_cleanup() {
 
   echo_message "Extract image and convert to raw format"
   cd "${WORKSPACE}/${VM_NAME}"
-  tar -xf "${VM_NAME}.ova"
-  rm "${VM_NAME}.ova"
-  mv -f "${VM_NAME}"-disk*.vmdk System.vmdk
-  vbox-img convert \
-    --srcfilename System.vmdk \
-    --dstfilename System.img \
-    --srcformat VMDK \
-    --dstformat RAW
-  rm -f System.vmdk
+  if [[ ${PACKER_BUILDER} = "virtualbox-iso" ]]; then
+    tar -xf "${VM_NAME}.ova"
+    rm "${VM_NAME}.ova"
+    mv -f "${VM_NAME}"-disk*.vmdk System.vmdk
+    vbox-img convert \
+      --srcfilename System.vmdk \
+      --dstfilename System.img \
+      --srcformat VMDK \
+      --dstformat RAW
+    rm -f System.vmdk
+  fi
 
   echo_message "Loopback mount image"
   # Loopback mount the image
@@ -603,7 +642,9 @@ image_cleanup() {
     error "No packaging script found"
   fi
 
-  rm "${WORKSPACE}/${VM_NAME}/${VM_NAME}.ovf"
+  if [[ ${PACKER_BUILDER} = "virtualbox-iso" ]]; then
+    rm "${WORKSPACE}/${VM_NAME}/${VM_NAME}.ovf"
+  fi
 }
 
 #######################################

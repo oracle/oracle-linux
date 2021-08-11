@@ -30,8 +30,11 @@ cloud::image_cleanup() {
 }
 
 #######################################
-# Image packaging: We convert back to VMDK and re-create the OVA file
+# Image packaging: 
+#   For VistualBox we convert back to VMDK and re-create the OVA file
+#   For qemu we convert to a qcow2 file
 # Globals:
+#   PACKER_BUILDER
 #   VM_NAME
 # Arguments:
 #   None
@@ -39,9 +42,15 @@ cloud::image_cleanup() {
 #   None
 #######################################
 cloud::image_package() {
-  local vmdk=$(grep "ovf:href" "${VM_NAME}.ovf" | sed -r -e 's/.*ovf:href="([^"]+)".*/\1/')
-  vboxmanage convertfromraw System.img --format VMDK "${vmdk}" --variant Stream
-  rm System.img
-  tar cvf "${VM_NAME}.ova" "${VM_NAME}.ovf" "${vmdk}"
-  rm "${vmdk}"
+  if [[ ${PACKER_BUILDER} = "virtualbox-iso" ]]; then
+    local vmdk
+    vmdk=$(grep "ovf:href" "${VM_NAME}.ovf" | sed -r -e 's/.*ovf:href="([^"]+)".*/\1/')
+    vboxmanage convertfromraw System.img --format VMDK "${vmdk}" --variant Stream
+    rm System.img
+    tar cvf "${VM_NAME}.ova" "${VM_NAME}.ovf" "${vmdk}"
+    rm "${vmdk}"
+  else
+    qemu-img convert -c -f raw -O qcow2 System.img "${VM_NAME}.qcow"
+    rm System.img
+  fi
 }

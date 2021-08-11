@@ -5,14 +5,13 @@
 This repository provides tools to build Oracle Linux images for cloud deployment.
 
 The images built by these tools are based on distribution flavours and target packages.
-Image building is accomplished using Packer to build images from the Oracle Linux ISO using Oracle VM VirtualBox.
+Image building is accomplished using Packer to build images from the Oracle Linux ISO using Oracle VM VirtualBox or QEMU/KVM builders.
 
 The tool currently supports:
 
 - Distributions:
-  - Oracle Linux 7 update 8 -- Slim  
-    A minimal set of packages is installed
-  - Oracle Linux 8 update 1 -- Slim
+  - Oracle Linux 7 update 9 -- Slim
+  - Oracle Linux 8 update 4 -- Slim
 - Clouds:
   - Microsoft Azure cloud  
     Target packages: WALinuxAgent  
@@ -26,7 +25,7 @@ The tool currently supports:
   - Oracle VM Server (OVM)  
     Target packages: oracle-template-config + vmapi  
     Image format: OVA
-  - Vagrant (VirtualBox provider)  
+  - Vagrant (VirtualBox provider - requires VirtualBox for the build)  
     Target packages: VirtualBox guest additions  
     Image format: box
   - Vagrant (libvirt provider)  
@@ -34,19 +33,37 @@ The tool currently supports:
     Image format: box
   - Generic (No cloud setup)  
     Target packages: none  
-    Image format: OVA
+    Image format: OVA or QCOW2
+
+Additional information is available in the [Building (Small) Oracle Linux Images For The Cloud](https://blogs.oracle.com/linux/post/building-small-oracle-linux-images-for-the-cloud) blog post.
 
 ## Build instructions
 
-1. Install packer and VirtualBox:  
-  `yum --enablerepo=ol7_developer install packer VirtualBox-6.0`
+The build script requires a Linux environment and has been tested on Oracle Linux 7 and 8.
+
+1. Install either QEMU or VirtualBox (VirtualBox required for Vagrant VirtualBox images):
+   - Oracle Linux 7:  
+     `yum --enablerepo=ol7_kvm_utils group install "Virtualization Host"`  
+     or  
+     `yum --enablerepo=ol7_developer install VirtualBox-6.1`
+   - Oracle Linux 8:  
+     `dnf module install virt`  
+     or  
+     `dnf --enablerepo=ol8_developer install VirtualBox-6.1`
+1. Install `kpartx` and `qemu-img` to manipulate the artifacts
+   - Oracle Linux 7:  
+     `yum --enablerepo=ol7_kvm_utils install kpartx qemu-img`
+   - Oracle Linux 8:  
+     `dnf install kpartx qemu-img`
+1. Install packer:  
+   - Oracle Linux 7:  
+     `yum --enablerepo=ol7_developer install packer`
+   - Oracle Linux 8: Download and install Packer from [HashiCorp](https://www.packer.io/downloads/)
 1. Cloud specific requirements:
-   - For `OCI` or `OLVM` images, install the `qemu-img` package:  
-    `yum install qemu-img`
    - For `Vagrant` box (VirtualBox provider), install [HashiCorp Vagrant](https://vagrantup.com/)
    - For `Vagrant` box (libvirt provider), download the [`create_box.sh`](https://github.com/vagrant-libvirt/vagrant-libvirt/blob/master/tools/create_box.sh) third party script from the [`vagrant-libvirt`](https://github.com/vagrant-libvirt/vagrant-libvirt) project or install [HashiCorp Vagrant](https://vagrantup.com/) and the [`vagrant-libvirt`](https://github.com/vagrant-libvirt/vagrant-libvirt) plugin
 1. Clone this repo:  
-  `git clone https://github.com/oracle/ol-sample-scripts.git`
+  `git clone https://github.com/oracle/oracle-linux.git`
 1. The build script need root privileges during the build.
   Ensure `sudo` is properly configured for your build user
 1. Set up a separate workspace directory where the image will be built.
@@ -57,6 +74,7 @@ The tool currently supports:
     - `ISO_URL`: location of the Oracle Linux distribution ISO
     - `ISO_CHECKSUM`: checksum for the ISO file. As from packer 1.6.0, you can prepend the checksum type (see [packer documentation](https://www.packer.io/docs/builders/virtualbox/iso#iso_checksum))
     - `CLOUD`: cloud target (azure, oci, olvm, ovm or none)
+    - `PACKER_BUILDER`: builder used by packer (virtualbox-iso or qemu)
 1. Run the builder:  
   `./bin/build-image.sh --env ENV_PROPERTY_FILE`
 
