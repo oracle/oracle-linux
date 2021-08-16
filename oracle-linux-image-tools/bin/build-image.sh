@@ -177,6 +177,8 @@ load_env() {
   # Basic validation
   [[ ${PACKER_BUILDER} =~ ^(virtualbox-iso|qemu)$ ]] ||
     error "Invalid PACKER_BUILDER: ${PACKER_BUILDER}"
+  [[ ${PACKER_BUILDER} = "qemu" && -n ${QEMU_BINARY} && ! -x ${QEMU_BINARY} ]] &&
+    error "QEMU binary ${QEMU_BINARY} not found"
 
   [[ -z "${ISO_URL}" ]] && error "missing ISO URL"
   [[ -z "${ISO_CHECKSUM}" ]] && error "missing ISO checksum"
@@ -365,6 +367,7 @@ stage_kickstart() {
 #   DISK_SIZE_MB MEM_SIZE CPU_NUM
 #   ISO_URL ISO_CHECKSUM
 #   KS_FILE
+#   QEMU_BINARY
 #   SERIAL_CONSOLE
 #   SHUTDOWN_CMD
 #   SSH_PASSWORD SSH_KEY_FILE
@@ -464,6 +467,7 @@ packer_conf() {
 	      "headless": "true",
 	      "memory": ${MEM_SIZE},
 	      "vm_name": "System.img",
+	      ${QEMU_BINARY:+${q}qemu_binary${q}: ${q}$QEMU_BINARY${q},}
 	      "qemuargs": [
 	        ${qemu_serial_console}
 	      ]
