@@ -42,7 +42,7 @@ cloud::image_cleanup() {
 #   None
 #######################################
 cloud::image_package() {
-  if [[ ${PACKER_BUILDER} = "virtualbox-iso" ]]; then
+  if [[ ${PACKER_BUILDER} = "virtualbox-iso.x86-64" ]]; then
     local vmdk
     vmdk=$(grep "ovf:href" "${VM_NAME}.ovf" | sed -r -e 's/.*ovf:href="([^"]+)".*/\1/')
     vboxmanage convertfromraw System.img --format VMDK "${vmdk}" --variant Stream

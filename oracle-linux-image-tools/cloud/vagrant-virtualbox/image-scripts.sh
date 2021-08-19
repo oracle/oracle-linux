@@ -44,15 +44,10 @@ cloud::validate() {
 #######################################
 cloud::packer_conf() {
   if [[ -n "${VAGRANT_GUEST_ADDITIONS_URL}" && -n "${VAGRANT_GUEST_ADDITIONS_SHA256}" ]]; then
-    ex -s "$1" <<-EOF
-	/"disk_size": /
-	:append
-	      "guest_additions_url": "${VAGRANT_GUEST_ADDITIONS_URL}",
-	      "guest_additions_sha256": "${VAGRANT_GUEST_ADDITIONS_SHA256}",
-	.
-	:update
-	:quit
-	EOF
+    cat >>"$1" <<-EOF
+			guest_additions_url    = "${VAGRANT_GUEST_ADDITIONS_URL}"
+			guest_additions_sha256 = "${VAGRANT_GUEST_ADDITIONS_SHA256}"
+		EOF
   fi
 }
 
