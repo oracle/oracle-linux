@@ -19,6 +19,7 @@ readonly BIN_DIR=$( cd "$(dirname "$0")" ; pwd -P )
 readonly REPO_DIR=$(dirname "${BIN_DIR}")
 readonly DISTR_DIR="${REPO_DIR}/distr"
 readonly CLOUD_DIR="${REPO_DIR}/cloud"
+readonly TEMPLATE_DIR="${REPO_DIR}/packer-template"
 readonly ENV_FILE="env.properties"
 readonly ENV_FILE_DEFAULTS="${REPO_DIR}/${ENV_FILE}.defaults"
 readonly FILES_DIR="files"
@@ -175,9 +176,9 @@ load_env() {
   readonly WORKSPACE DISTR CLOUD
 
   # Basic validation
-  [[ ${PACKER_BUILDER} =~ ^(virtualbox-iso|qemu)$ ]] ||
+  [[ ${PACKER_BUILDER} =~ ^(virtualbox-iso\.|qemu\.) ]] ||
     error "Invalid PACKER_BUILDER: ${PACKER_BUILDER}"
-  [[ ${PACKER_BUILDER} = "qemu" && -n ${QEMU_BINARY} && ! -x ${QEMU_BINARY} ]] &&
+  [[ ${PACKER_BUILDER} =~ ^qemu\. && -n ${QEMU_BINARY} && ! -x ${QEMU_BINARY} ]] &&
     error "QEMU binary ${QEMU_BINARY} not found"
 
   [[ -z "${ISO_URL}" ]] && error "missing ISO URL"
@@ -396,107 +397,39 @@ packer_conf() {
     modifyvm_console='["modifyvm", "{{.Name}}", "--uart1", "0x3f8", 4, "--uartmode1", "file", "'"${WORKSPACE}/${VM_NAME}"'/serial-console.txt"],'
     qemu_serial_console='[ "-serial", "file:'"${WORKSPACE}/${VM_NAME}"'/serial-console.txt" ]'
   fi
-  local boot_command
-  # shellcheck disable=SC2153
-  boot_command=$(eval echo "\"${BOOT_COMMAND}\"")
 
-  cat > "${WORKSPACE}/${VM_NAME}.json" <<-EOF
-	{
-	  "builders":
-	  [
-	    {
-	      "type": "virtualbox-iso",
-	      "guest_os_type": "Oracle_64",
-	      "iso_url": "${ISO_URL}",
-	      "iso_checksum": "${ISO_CHECKSUM}",
-	      "output_directory": "${WORKSPACE}/${VM_NAME}",
-	      "vm_name": "${VM_NAME}",
-	      "hard_drive_interface": "sata",
-	      "disk_size": "${DISK_SIZE_MB}",
-	      "guest_additions_mode": "attach",
-	      "format": "ova",
-	      "headless": "true",
-	      "ssh_username": "root",
-	      ${SSH_PASSWORD:+${q}ssh_password${q}: ${q}$SSH_PASSWORD${q},}
-	      ${SSH_KEY_FILE:+${q}ssh_private_key_file${q}: ${q}$SSH_KEY_FILE${q},}
-	      "ssh_port": 22,
-	      "ssh_wait_timeout": "30m",
-	      "http_directory": "${WORKSPACE}",
-	      "boot_wait": "20s",
-	      "boot_command":
-	      [
-	        "${boot_command}"
-	      ],
-	      "shutdown_command": "$SHUTDOWN_CMD",
-	      "vboxmanage":
-	      [
-	        ${modifyvm_console}
-	        ["modifyvm", "{{.Name}}", "--x2apic", "${X2APIC}"],
-	        ["modifyvm", "{{.Name}}", "--memory", ${MEM_SIZE}],
-	        ["modifyvm", "{{.Name}}", "--cpus", ${CPU_NUM}]
-	      ],
-	      "vboxmanage_post":
-	      [
-	        ["modifyvm", "{{.Name}}", "--uart1", "off", "--uartmode1", "disconnected"],
-	        ["modifyvm", "{{.Name}}", "--x2apic", "on"]
-	      ]
-	    },
-	    {
-	      "type": "qemu",
-	      "iso_url": "${ISO_URL}",
-	      "iso_checksum": "${ISO_CHECKSUM}",
-	      "output_directory": "${WORKSPACE}/${VM_NAME}",
-	      "shutdown_command": "$SHUTDOWN_CMD",
-	      "disk_size": "${DISK_SIZE_MB}",
-	      "format": "raw",
-	      "accelerator": "kvm",
-	      "http_directory": "${WORKSPACE}",
-	      "ssh_username": "root",
-	      ${SSH_PASSWORD:+${q}ssh_password${q}: ${q}$SSH_PASSWORD${q},}
-	      ${SSH_KEY_FILE:+${q}ssh_private_key_file${q}: ${q}$SSH_KEY_FILE${q},}
-	      "ssh_port": 22,
-	      "ssh_wait_timeout": "30m",
-	      "net_device": "virtio-net",
-	      "disk_interface": "virtio-scsi",
-	      "boot_wait": "20s",
-	      "boot_command":
-	      [
-	        "${boot_command}"
-	      ],
-	      "cpus": ${CPU_NUM},
-	      "headless": "true",
-	      "memory": ${MEM_SIZE},
-	      "vm_name": "System.img",
-	      ${QEMU_BINARY:+${q}qemu_binary${q}: ${q}$QEMU_BINARY${q},}
-	      "qemuargs": [
-	        ${qemu_serial_console}
-	      ]
-	    }
-	  ],
-	  "provisioners":
-	  [
-	    {
-	      "type": "file",
-	      "source": "${WORKSPACE}/${PACKER_FILES}",
-	      "destination": "/tmp"
-	    },
-	    {
-	      "type": "shell",
-	      "script": "${BIN_DIR}/${PROVISION_SCRIPT}"
-	    }
-	  ]
-	}
+  cat > "${WORKSPACE}/${VM_NAME}.pkrvars.hcl" <<-EOF
+		# Variables file for ${VM_NAME}
+		workspace             = "${WORKSPACE}"
+		iso_url               = "${ISO_URL}"
+		iso_checksum          = "${ISO_CHECKSUM}"
+		vm_name               = "${VM_NAME}"
+		disk_size             = ${DISK_SIZE_MB}
+		memory                = ${MEM_SIZE}
+		cpus                  = ${CPU_NUM}
+		${SSH_PASSWORD:+ssh_password          = ${q}$SSH_PASSWORD${q}}
+		${SSH_KEY_FILE:+ssh_private_key_file  = ${q}$SSH_KEY_FILE${q}}
+		boot_command          = [
+		$(eval echo -e "\"$(printf '  \\"%s\\",\\n' "${BOOT_COMMAND[@]}")\"")
+		]
+		shutdown_command      = "${SHUTDOWN_CMD}"
+		vbox_manage           = [ ${modifyvm_console} ]
+		x2apic                = "${X2APIC}"
+		${QEMU_BINARY:+qemu_binary           = ${q}$QEMU_BINARY${q}}
+		qemu_args             = [ ${qemu_serial_console} ]
+		packer_files          = "${WORKSPACE}/${PACKER_FILES}"
+		provision_script      = "${BIN_DIR}/${PROVISION_SCRIPT}"
 	EOF
 
   # Packer config specific to distr / cloud / cloud_distr level
   if [[ "$(type -t distr::packer_conf)" = 'function' ]]; then
-    distr::packer_conf "${WORKSPACE}/${VM_NAME}.json"
+    distr::packer_conf "${WORKSPACE}/${VM_NAME}.pkrvars.hcl"
   fi
   if [[ "$(type -t cloud::packer_conf)" = 'function' ]]; then
-    cloud::packer_conf "${WORKSPACE}/${VM_NAME}.json"
+    cloud::packer_conf "${WORKSPACE}/${VM_NAME}.pkrvars.hcl"
   fi
   if [[ "$(type -t cloud_distr::packer_conf)" = 'function' ]]; then
-    cloud_distr::packer_conf "${WORKSPACE}/${VM_NAME}.json"
+    cloud_distr::packer_conf "${WORKSPACE}/${VM_NAME}.pkrvars.hcl"
   fi
 }
 
@@ -545,7 +478,9 @@ run_packer() {
   local errexit="$(shopt -po errexit)"
   set +e
   # shellcheck disable=SC2086
-  "${PACKER}" build -only "${PACKER_BUILDER}" ${PACKER_BUILD_OPTIONS} "${VM_NAME}".json
+  "${PACKER}" build -only "${PACKER_BUILDER}" ${PACKER_BUILD_OPTIONS} \
+    -var-file="${VM_NAME}.pkrvars.hcl" \
+    "${TEMPLATE_DIR}"
   packer_status=$?
   eval "${errexit}"
 
@@ -581,7 +516,7 @@ image_cleanup() {
 
   echo_message "Extract image and convert to raw format"
   cd "${WORKSPACE}/${VM_NAME}"
-  if [[ ${PACKER_BUILDER} = "virtualbox-iso" ]]; then
+  if [[ ${PACKER_BUILDER} = "virtualbox-iso.x86-64" ]]; then
     tar -xf "${VM_NAME}.ova"
     rm "${VM_NAME}.ova"
     mv -f "${VM_NAME}"-disk*.vmdk System.vmdk
@@ -646,7 +581,7 @@ image_cleanup() {
     error "No packaging script found"
   fi
 
-  if [[ ${PACKER_BUILDER} = "virtualbox-iso" ]]; then
+  if [[ ${PACKER_BUILDER} = "virtualbox-iso.x86-64" ]]; then
     rm "${WORKSPACE}/${VM_NAME}/${VM_NAME}.ovf"
   fi
 }
@@ -667,7 +602,7 @@ cleanup() {
   echo_header "Cleanup Workspace"
 
   mv "${WORKSPACE}/${KS_FILE}" "${WORKSPACE}/${VM_NAME}"
-  mv "${WORKSPACE}/${VM_NAME}.json" "${WORKSPACE}/${VM_NAME}"
+  mv "${WORKSPACE}/${VM_NAME}.pkrvars.hcl" "${WORKSPACE}/${VM_NAME}"
   mv "${GLOBAL_ENV_FILE}" "${WORKSPACE}/${VM_NAME}"
   rm -rf "${WORKSPACE:?}/${PACKER_FILES}"
 }

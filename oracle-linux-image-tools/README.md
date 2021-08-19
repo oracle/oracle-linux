@@ -74,7 +74,7 @@ The build script requires a Linux environment and has been tested on Oracle Linu
     - `ISO_URL`: location of the Oracle Linux distribution ISO
     - `ISO_CHECKSUM`: checksum for the ISO file. As from packer 1.6.0, you can prepend the checksum type (see [packer documentation](https://www.packer.io/docs/builders/virtualbox/iso#iso_checksum))
     - `CLOUD`: cloud target (azure, oci, olvm, ovm or none)
-    - `PACKER_BUILDER`: builder used by packer (virtualbox-iso or qemu)
+    - `PACKER_BUILDER`: builder used by packer (virtualbox-iso.x86-64 or qemu.x86-64)
 1. Run the builder:  
   `./bin/build-image.sh --env ENV_PROPERTY_FILE`
 
