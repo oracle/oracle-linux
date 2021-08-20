@@ -534,14 +534,29 @@ image_cleanup() {
   #   - 1: /boot
   #   - 2: root filesystem (/)
   #        In case of a btrfs filesystem, / will be in root subvolume
+  # Should /boot be part of the btrfs volume we then have:
+  #   - 1: btrfs volume with boot and root subvolumes
   rm -rf "${mnt}"
   mkdir "${mnt}"
   sudo "${MOUNT_IMAGE}" System.img "${mnt}"
-  boot_fs="${mnt}/1"
-  if [[ $(stat -f -c "%T" "${mnt}/2") = "btrfs" ]]; then
-    root_fs="${mnt}/2/root"
+  if [[ $(stat -f -c "%T" "${mnt}/1") = "btrfs" ]]; then
+    # Both / and /boot are on BTRFS
+    boot_fs="${mnt}/1/boot"
+    root_fs="${mnt}/1/root"
   else
-    root_fs="${mnt}/2"
+    boot_fs="${mnt}/1"
+    if [[ $(stat -f -c "%T" "${mnt}/2") = "btrfs" ]]; then
+      root_fs="${mnt}/2/root"
+    else
+      root_fs="${mnt}/2"
+    fi
+  fi
+
+  # Basic check to see if we have the "right" partitions mounted
+  if [[ ! -d "${root_fs}/etc" || ! -d "${boot_fs}/grub2" ]]; then
+    sudo "${MOUNT_IMAGE}" -u System.img
+    rm -rf "${mnt}"
+    error "Loopback mount failed"
   fi
 
   # Run cleanup scripts
