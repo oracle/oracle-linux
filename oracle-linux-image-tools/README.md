@@ -10,21 +10,23 @@ Image building is accomplished using Packer to build images from the Oracle Linu
 The tool currently supports:
 
 - Distributions:
-  - Oracle Linux 7 update 9 -- Slim
-  - Oracle Linux 8 update 4 -- Slim
+  - Oracle Linux 7 update 9 -- Slim (x86_64)
+  - Oracle Linux 8 update 4 -- Slim (x86_64 and aarch64)  
+    __Note__: for aarch64, only Generic and OCI clouds are supported
 - Clouds:
   - Microsoft Azure cloud  
     Target packages: WALinuxAgent  
     Image format: VHD
   - Oracle Cloud Infrastructure (OCI)  
-    Target packages: qemu-guest-agent  
-    Image format: QCOW2
+    Target packages: qemu-guest-agent / cloud-init  
+    Image format: QCOW2  
+    __Note__: no specific OCI tools are actually installed; this image can be used in any cloud-init based environment.
   - Oracle Linux Virtualization Manager (OLVM)  
-    Target packages: qemu-guest-agent  
-    Image format: OVA
+    Target packages: qemu-guest-agent / cloud-init  
+    Image format: OLVM OVA
   - Oracle VM Server (OVM)  
     Target packages: oracle-template-config + vmapi  
-    Image format: OVA
+    Image format: OVM OVA
   - Vagrant (VirtualBox provider - requires VirtualBox for the build)  
     Target packages: VirtualBox guest additions  
     Image format: box
@@ -33,7 +35,7 @@ The tool currently supports:
     Image format: box
   - Generic (No cloud setup)  
     Target packages: none  
-    Image format: OVA or QCOW2
+    Image format: VirtualBox OVA or QCOW2 (depending on the builder used)
 
 Additional information is available in the [Building (Small) Oracle Linux Images For The Cloud](https://blogs.oracle.com/linux/post/building-small-oracle-linux-images-for-the-cloud) blog post.
 
