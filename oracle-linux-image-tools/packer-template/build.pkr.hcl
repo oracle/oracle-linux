@@ -2,6 +2,7 @@ build {
   sources = [
     "virtualbox-iso.x86-64",
     "qemu.x86-64",
+    "qemu.aarch64",
   ]
   provisioner "file" {
     source      = var.packer_files
