@@ -11,7 +11,7 @@ The tool currently supports:
 
 - Distributions:
   - Oracle Linux 7 update 9 -- Slim (x86_64)
-  - Oracle Linux 8 update 4 -- Slim (x86_64 and aarch64)  
+  - Oracle Linux 8 update 5 -- Slim (x86_64 and aarch64)  
     __Note__: for aarch64, only Generic and OCI clouds are supported
 - Clouds:
   - Microsoft Azure cloud  
@@ -87,10 +87,10 @@ The build script requires a Linux environment and has been tested on Oracle Linu
 Instead of providing an Oracle Linux distribution ISO you can use a _boot_ ISO image.
 In that case, you will have to provide an URL to an installation tree and optionally additional yum repositories required by the installation.
 
-Example for an Oracle Linux 8 Update 2 using the UEK boot ISO:
+Example for an Oracle Linux 8 Update 5 using the UEK boot ISO:
 
 ```Shell
-ISO_URL="https://yum.oracle.com/ISOS/OracleLinux/OL8/u2/x86_64/x86_64-boot-uek.iso"
+ISO_URL="https://yum.oracle.com/ISOS/OracleLinux/OL8/u5/x86_64/x86_64-boot-uek.iso"
 REPO_URL="https://yum.oracle.com/repo/OracleLinux/OL8/baseos/latest/x86_64"
 REPO[AppStream]="https://yum.oracle.com/repo/OracleLinux/OL8/appstream/x86_64"
 ```
@@ -119,11 +119,11 @@ This can be done from the Console, or using the [Command Line Interface (CLI)](h
 ```shell
 # Upload in the Object Storage Bucket
 oci os object put -bn my_bucket \
-  --file /workspace/OL7U8_x86_64-oci-b0/OL7U8_x86_64-oci-b0.qcow
+  --file /workspace/OL7U9_x86_64-oci-b0/OL7U9_x86_64-oci-b0.qcow
 # Import as Custom image
 oci compute image import from-object -bn my_bucket \
   --namespace my_namespace \
-  --name OL7U8_x86_64-oci-b0.qcow \
+  --name OL7U9_x86_64-oci-b0.qcow \
   --display-name MyImage \
   --launch-mode PARAVIRTUALIZED \
   --source-image-type QCOW2
