@@ -60,12 +60,15 @@ cloud::image_package() {
   local build_upd="${DISTR_NAME#*U}"
   local build_upd="${build_upd%%_*}"
   local extra_args=()
+  local package_filename vmdk base_name
 
-  qemu-img convert -c -O qcow2 System.img System.qcow
-  rm System.img
+  common::convert_to_qcow2 System.qcow
 
   if [[ "${OLVM_TEMPLATE,,}" = "yes" ]]; then
     extra_args+=("--template")
+    package_filename="template"
+  else
+    package_filename="vm"
   fi
 
   if [[ -n "${CUSTOM_SCRIPT}" ]]; then
@@ -79,5 +82,14 @@ cloud::image_package() {
     -s "${DISK_SIZE_GB}" \
     -i System.qcow \
     -c "${CPU_NUM}" \
-    -m "${MEM_SIZE}"
+    -m "${MEM_SIZE}" \
+    >"${package_filename}.ovf"
+
+  vmdk=$(grep "ovf:href" "${package_filename}.ovf" | sed -r -e 's/.*ovf:href="([^"]+)".*/\1/')
+  base_name=$(grep '<Name>' "${package_filename}.ovf" | sed -r -e 's/.*<Name>([^<]+)<\/Name>.*/\1/')
+
+  mv System.qcow "${vmdk}"
+  common::make_manifest "${package_filename}.ovf" "${vmdk}" >"${package_filename}.mf"
+
+  VM_NAME="${base_name}" common::make_ova "${package_filename}.ovf" "${package_filename}.mf" "${vmdk}"
 }

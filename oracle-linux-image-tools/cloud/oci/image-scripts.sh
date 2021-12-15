@@ -40,6 +40,5 @@ cloud::image_cleanup() {
 #######################################
 cloud::image_package() {
   # We only need a QCOW2 file
-  qemu-img convert -c -O qcow2 System.img "${VM_NAME}.qcow"
-  rm System.img
+  common::convert_to_qcow2 "${VM_NAME}.qcow"
 }

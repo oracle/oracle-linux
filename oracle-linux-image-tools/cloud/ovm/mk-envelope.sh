@@ -83,7 +83,6 @@ fi
 init_parameter "$@"
 
 # Output filename
-readonly BASE_NAME="OVM_${OL_RELEASE}U${OL_UPDATE}_x86_64_PVHVM"
 readonly SIZE=$(stat --printf=%s System.vmdk)
 
 # Replace variables in template
@@ -92,23 +91,5 @@ sed -e "s/\\\${OL_RELEASE}/${OL_RELEASE}/" \
   -e "s/\\\${IMAGE_VERSION}/${IMAGE_VERSION}/" \
   -e "s/\\\${SIZE}/${SIZE}/" \
   -e "s/\\\${CAPACITY}/${CAPACITY}/" \
-  < "${PGM_DIR}"/OVM_TEMPLATE.ovf > "${BASE_NAME}.ovf"
-
-# Create manifest file
-rm -f "${BASE_NAME}.mf"
-for file in "${BASE_NAME}.ovf" System.vmdk
-do
-  echo -n "SHA1(${file})= " >> "${BASE_NAME}.mf"
-  sha1sum "${file}" | cut -d ' ' -f 1 >> "${BASE_NAME}.mf"
-done
-
-# Pack ova with manifest and without certificate
-tar cf "${BASE_NAME}.ova" \
-  "${BASE_NAME}.ovf" \
-  "${BASE_NAME}.mf" \
-  System.vmdk
-
-# Cleanup
-rm "${BASE_NAME}.ovf" "${BASE_NAME}.mf"
-
+  < "${PGM_DIR}"/OVM_TEMPLATE.ovf
 exit 0

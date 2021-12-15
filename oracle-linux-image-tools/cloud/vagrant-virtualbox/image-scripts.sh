@@ -81,11 +81,9 @@ cloud::image_package() {
   # convert back to VMDK
   local vmdk
   vmdk=$(grep "ovf:href" "${VM_NAME}.ovf" | sed -r -e 's/.*ovf:href="([^"]+)".*/\1/')
-  vboxmanage convertfromraw System.img --format VMDK "${vmdk}" --variant Stream
-  rm System.img
+  common::convert_to_vmdk "${vmdk}"
   # re-create the OVA file
-  tar cvf "${VM_NAME}.ova" "${VM_NAME}.ovf" "${vmdk}"
-  rm "${vmdk}"
+  common::make_ova "${VM_NAME}.ovf" "${vmdk}"
   # Import in VirtualBox and adjust cpu/memory for the box
   vboxmanage import "${VM_NAME}.ova" \
     --vsys 0 --vmname "${VM_NAME}" \

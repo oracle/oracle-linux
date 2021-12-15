@@ -53,20 +53,21 @@ cloud::image_cleanup() {
 #   None
 #######################################
 cloud::image_package() {
-  local mk_envelope="${CLOUD_DIR}/${CLOUD}/mk-envelope.sh"
+  commmon::convert_to_vmdk System.vmdk
+
   # Decompose Build Name into Release/update/platform
   local build_rel="${DISTR_NAME%U*}"
   local build_upd="${DISTR_NAME#*U}"
   local build_upd="${build_upd%%_*}"
+  local base_name="OVM_${build_rel}U${build_upd##U}_x86_64_PVHVM"
 
-  qemu-img convert -f raw -O vmdk -o subformat=streamOptimized System.img System.vmdk
-  rm System.img
-
-  ${mk_envelope} \
+  "${CLOUD_DIR}/${CLOUD}/mk-envelope.sh" \
     -r "${build_rel}" \
     -u "${build_upd##U}" \
     -v "${IMAGE_VERSION}" \
-    -s "${DISK_SIZE_GB}"
+    -s "${DISK_SIZE_GB}" \
+    > "${base_name}.ovf"
 
-  rm System.vmdk
+  common::make_manifest "${base_name}.ovf" System.vmdk >"${base_name}.mf"
+  VM_NAME="${base_name}" common::make_ova "${base_name}.ovf" "${base_name}.mf" System.vmdk
 }
