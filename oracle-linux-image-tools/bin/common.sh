@@ -4,7 +4,7 @@
 #
 # Create minimal Oracle Linux images
 #
-# Copyright (c) 2019,2020 Oracle and/or its affiliates.
+# Copyright (c) 2022 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl.
 #
@@ -108,9 +108,9 @@ common::convert_to_vmdk() {
 common::convert_to_vhd() {
   local output=${1:?- ***error*** \'output\' not set}
   if common::is_vbox ; then
-    vboxmanage convertfromraw System.img --format VHD "${output}" --variant Stream
+    vboxmanage convertfromraw System.img --format VHD "${output}"
   else
-    qemu-img convert -f raw -O vpc -o subformat=dynamic System.img "${output}.vhd"
+    qemu-img convert -f raw -O vpc -o subformat=dynamic System.img "${output}"
   fi
   rm System.img
 }

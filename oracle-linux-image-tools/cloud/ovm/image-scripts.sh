@@ -2,7 +2,7 @@
 #
 # Cleanup and package image for OVM
 #
-# Copyright (c) 2019,2020 Oracle and/or its affiliates.
+# Copyright (c) 2019-2022 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -53,21 +53,20 @@ cloud::image_cleanup() {
 #   None
 #######################################
 cloud::image_package() {
-  commmon::convert_to_vmdk System.vmdk
+  common::convert_to_vmdk System.vmdk
 
   # Decompose Build Name into Release/update/platform
   local build_rel="${DISTR_NAME%U*}"
   local build_upd="${DISTR_NAME#*U}"
   local build_upd="${build_upd%%_*}"
-  local base_name="OVM_${build_rel}U${build_upd##U}_x86_64_PVHVM"
 
   "${CLOUD_DIR}/${CLOUD}/mk-envelope.sh" \
     -r "${build_rel}" \
     -u "${build_upd##U}" \
     -v "${IMAGE_VERSION}" \
     -s "${DISK_SIZE_GB}" \
-    > "${base_name}.ovf"
+    > "${VM_NAME}.ovf"
 
-  common::make_manifest "${base_name}.ovf" System.vmdk >"${base_name}.mf"
-  VM_NAME="${base_name}" common::make_ova "${base_name}.ovf" "${base_name}.mf" System.vmdk
+  common::make_manifest "${VM_NAME}.ovf" System.vmdk >"${VM_NAME}.mf"
+  common::make_ova "${VM_NAME}.ovf" "${VM_NAME}.mf" System.vmdk
 }

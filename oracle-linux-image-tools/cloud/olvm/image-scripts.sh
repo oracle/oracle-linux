@@ -2,7 +2,7 @@
 #
 # Cleanup and package image for OLVM
 #
-# Copyright (c) 2020 Oracle and/or its affiliates.
+# Copyright (c) 2020-2022 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -86,10 +86,9 @@ cloud::image_package() {
     >"${package_filename}.ovf"
 
   vmdk=$(grep "ovf:href" "${package_filename}.ovf" | sed -r -e 's/.*ovf:href="([^"]+)".*/\1/')
-  base_name=$(grep '<Name>' "${package_filename}.ovf" | sed -r -e 's/.*<Name>([^<]+)<\/Name>.*/\1/')
 
   mv System.qcow "${vmdk}"
   common::make_manifest "${package_filename}.ovf" "${vmdk}" >"${package_filename}.mf"
 
-  VM_NAME="${base_name}" common::make_ova "${package_filename}.ovf" "${package_filename}.mf" "${vmdk}"
+  common::make_ova "${package_filename}.ovf" "${package_filename}.mf" "${vmdk}"
 }
