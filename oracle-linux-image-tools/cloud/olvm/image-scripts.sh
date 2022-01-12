@@ -2,7 +2,7 @@
 #
 # Cleanup and package image for OLVM
 #
-# Copyright (c) 2020 Oracle and/or its affiliates.
+# Copyright (c) 2020-2022 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -60,12 +60,15 @@ cloud::image_package() {
   local build_upd="${DISTR_NAME#*U}"
   local build_upd="${build_upd%%_*}"
   local extra_args=()
+  local package_filename vmdk
 
-  qemu-img convert -c -O qcow2 System.img System.qcow
-  rm System.img
+  common::convert_to_qcow2 System.qcow
 
   if [[ "${OLVM_TEMPLATE,,}" = "yes" ]]; then
     extra_args+=("--template")
+    package_filename="template"
+  else
+    package_filename="vm"
   fi
 
   if [[ -n "${CUSTOM_SCRIPT}" ]]; then
@@ -79,5 +82,12 @@ cloud::image_package() {
     -s "${DISK_SIZE_GB}" \
     -i System.qcow \
     -c "${CPU_NUM}" \
-    -m "${MEM_SIZE}"
+    -m "${MEM_SIZE}" \
+    >"${package_filename}.ovf"
+
+  vmdk=$(grep "ovf:href" "${package_filename}.ovf" | sed -r -e 's/.*ovf:href="([^"]+)".*/\1/')
+
+  mv System.qcow "${vmdk}"
+
+  common::make_ova "${package_filename}.ovf" "${vmdk}"
 }

@@ -2,7 +2,7 @@
 #
 # Cleanup and package image for the "vagrant-libvirt" image
 #
-# Copyright (c) 2020 Oracle and/or its affiliates.
+# Copyright (c) 2020-2022 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -58,9 +58,7 @@ cloud::image_package() {
   local cpus="${VAGRANT_LIBVIRT_CPU_NUM:-$CPU_NUM}"
   local memory="${VAGRANT_LIBVIRT_MEM_SIZE:-$MEM_SIZE}"
 
-  # Convert to qcow2
-  qemu-img convert -c -O qcow2 System.img "${VM_NAME}.qcow"
-  rm System.img
+  common::convert_to_qcow2 "${VM_NAME}.qcow"
 
   # Defaults for the box
   cat > Vagrantfile <<-EOF

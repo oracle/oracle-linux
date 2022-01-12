@@ -2,7 +2,7 @@
 #
 # Cleanup and package image for Azure
 #
-# Copyright (c) 2019 Oracle and/or its affiliates.
+# Copyright (c) 2019-2022 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -39,6 +39,5 @@ cloud::image_cleanup() {
 #   None
 #######################################
 cloud::image_package() {
-  qemu-img convert -f raw -O vpc -o subformat=dynamic System.img "${VM_NAME}.vhd"
-  rm System.img
+  common::convert_to_vhd "${VM_NAME}.vhd"
 }

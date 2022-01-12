@@ -2,7 +2,7 @@
 #
 # Cleanup and package image for OCI
 #
-# Copyright (c) 2020 Oracle and/or its affiliates.
+# Copyright (c) 2020-2022 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -40,6 +40,5 @@ cloud::image_cleanup() {
 #######################################
 cloud::image_package() {
   # We only need a QCOW2 file
-  qemu-img convert -c -O qcow2 System.img "${VM_NAME}.qcow"
-  rm System.img
+  common::convert_to_qcow2 "${VM_NAME}.qcow"
 }

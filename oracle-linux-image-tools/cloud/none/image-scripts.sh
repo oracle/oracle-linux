@@ -2,7 +2,7 @@
 #
 # Cleanup and package image for the "None" image
 #
-# Copyright (c) 2019 Oracle and/or its affiliates.
+# Copyright (c) 2019-2022 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -42,15 +42,13 @@ cloud::image_cleanup() {
 #   None
 #######################################
 cloud::image_package() {
-  if [[ ${PACKER_BUILDER} = "virtualbox-iso.x86-64" ]]; then
+  if common::is_vbox ; then
     local vmdk
     vmdk=$(grep "ovf:href" "${VM_NAME}.ovf" | sed -r -e 's/.*ovf:href="([^"]+)".*/\1/')
-    vboxmanage convertfromraw System.img --format VMDK "${vmdk}" --variant Stream
-    rm System.img
-    tar cvf "${VM_NAME}.ova" "${VM_NAME}.ovf" "${vmdk}"
-    rm "${vmdk}"
+    common::convert_to_vmdk "${vmdk}"
+    common::make_manifest "${VM_NAME}.ovf" "${vmdk}" > "${VM_NAME}.mf"
+    common::make_ova "${VM_NAME}.ovf" "${VM_NAME}.mf" "${vmdk}"
   else
-    qemu-img convert -c -f raw -O qcow2 System.img "${VM_NAME}.qcow"
-    rm System.img
+    common::convert_to_qcow2 "${VM_NAME}.qcow"
   fi
 }

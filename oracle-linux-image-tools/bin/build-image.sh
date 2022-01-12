@@ -3,7 +3,7 @@
 #
 # Create minimal Oracle Linux images
 #
-# Copyright (c) 2019,2020 Oracle and/or its affiliates.
+# Copyright (c) 2019-2022 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl.
 #
@@ -516,7 +516,7 @@ image_cleanup() {
 
   echo_message "Extract image and convert to raw format"
   cd "${WORKSPACE}/${VM_NAME}"
-  if [[ ${PACKER_BUILDER} = "virtualbox-iso.x86-64" ]]; then
+  if common::is_vbox ; then
     tar -xf "${VM_NAME}.ova"
     rm "${VM_NAME}.ova"
     mv -f "${VM_NAME}"-disk*.vmdk System.vmdk
@@ -596,7 +596,7 @@ image_cleanup() {
     error "No packaging script found"
   fi
 
-  if [[ ${PACKER_BUILDER} = "virtualbox-iso.x86-64" ]]; then
+  if common::is_vbox ; then
     rm "${WORKSPACE}/${VM_NAME}/${VM_NAME}.ovf"
   fi
 }
@@ -627,6 +627,7 @@ cleanup() {
 #######################################
 main () {
   parse_args "$@"
+  source "${BIN_DIR}/common.sh"
   load_env
   stage_files
   stage_kickstart
