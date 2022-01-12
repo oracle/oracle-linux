@@ -165,6 +165,7 @@ load_env() {
     "${ENV_FILE_DEFAULTS}" \
     "${DISTR_DIR}/${DISTR}/${ENV_FILE}" \
     "${CLOUD_DIR}/${CLOUD}/${ENV_FILE}" \
+    "${CLOUD_DIR}/${CLOUD}/${DISTR}/${ENV_FILE}" \
     "${LOCAL_ENV_FILE}"
   do
     [[ -r "${file}" ]] && cat "${file}" >> "${GLOBAL_ENV_FILE}"
