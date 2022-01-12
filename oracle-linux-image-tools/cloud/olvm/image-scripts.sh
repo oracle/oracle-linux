@@ -60,7 +60,7 @@ cloud::image_package() {
   local build_upd="${DISTR_NAME#*U}"
   local build_upd="${build_upd%%_*}"
   local extra_args=()
-  local package_filename vmdk base_name
+  local package_filename vmdk
 
   common::convert_to_qcow2 System.qcow
 
@@ -88,7 +88,6 @@ cloud::image_package() {
   vmdk=$(grep "ovf:href" "${package_filename}.ovf" | sed -r -e 's/.*ovf:href="([^"]+)".*/\1/')
 
   mv System.qcow "${vmdk}"
-  common::make_manifest "${package_filename}.ovf" "${vmdk}" >"${package_filename}.mf"
 
-  common::make_ova "${package_filename}.ovf" "${package_filename}.mf" "${vmdk}"
+  common::make_ova "${package_filename}.ovf" "${vmdk}"
 }

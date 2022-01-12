@@ -39,7 +39,7 @@ common::is_vbox() {
 #   - writes manifest to stdout
 #######################################
 common::make_manifest() {
-  sha1sum "$@" | sed --regexp-extended 's/(.*) +(.*)/SHA1 (\2) = \1/g'
+  sha1sum "$@" | sed --regexp-extended 's/(.*) +(.*)/SHA1(\2)= \1/g'
 }
 
 #######################################
