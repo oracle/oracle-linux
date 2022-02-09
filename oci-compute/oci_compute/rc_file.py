@@ -1,8 +1,10 @@
+#!/usr/bin/env python3
+
 """OCI Compute rc file helper.
 
 RcFile helper class to get default values from the oci_compute rc file.
 
-Copyright (c) 2020 Oracle and/or its affiliates.
+Copyright (c) 2020-2022 Oracle and/or its affiliates.
 Licensed under the Universal Permissive License v 1.0 as shown at
 https://oss.oracle.com/licenses/upl
 

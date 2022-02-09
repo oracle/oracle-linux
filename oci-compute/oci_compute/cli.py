@@ -1,8 +1,10 @@
+#!/usr/bin/env python3
+
 """OCI Compute CLI.
 
 Provides the command line interface for the oci-compute script.
 
-Copyright (c) 2020 Oracle and/or its affiliates.
+Copyright (c) 2020-2022 Oracle and/or its affiliates.
 Licensed under the Universal Permissive License v 1.0 as shown at
 https://oss.oracle.com/licenses/upl
 
@@ -38,7 +40,7 @@ class ExpandedPath(click.ParamType):
     def convert(self, value, param, ctx):
         path = expandvars(expanduser(value))
         try:
-            with open(path) as fp:  # noqa: F841
+            with open(path) as _:
                 pass
         except:  # noqa: E722
             self.fail('Cannot open {0} for reading'.format(value), param, ctx)

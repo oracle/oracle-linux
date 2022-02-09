@@ -1,8 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
 """
 Simple wrapper to generate SHA512 hash for a password.
 
-Copyright (c) 2019 Oracle and/or its affiliates.
+Copyright (c) 2019-2022 Oracle and/or its affiliates.
 Licensed under the Universal Permissive License v 1.0 as shown at
 https://oss.oracle.com/licenses/upl.
 
