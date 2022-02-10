@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
 """
 Generate OLVM compatible OVF file.
 
@@ -8,8 +9,6 @@ https://oss.oracle.com/licenses/upl
 
 DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 """
-
-from __future__ import print_function
 
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 from datetime import datetime

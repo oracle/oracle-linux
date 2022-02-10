@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """Main package file.
 
 Import classes, exceptions and enums
