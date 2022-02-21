@@ -35,11 +35,11 @@ Need to build custom Linux images for VirtualBox, KVM, Oracle Cloud or other clo
 ### Create Your Own RPMs
 Learn recommended practices for [creating RPM packages for your software](creating-rpm-packages/creating-rpm-packages.md).
 
-### Try Hands-On Labs
+### Try Tutorials, Learning Paths, and Hands-On Labs
 
-* [Creating a highly available NFS service with Oracle Linux 7](https://oracle.github.io/linux-labs/HA-NFS/)
-* [Using Gluster with Oracle Linux Cloud Native Environment for Oracle Linux 8](https://oracle.github.io/linux-labs/OLCNE-Gluster/)
-* [Oracle Linux Disk Encryption Using Network Based Key Services](https://oracle.github.io/linux-labs/NBDE/)
+* [Oracle Linux 8 tutorials](https://docs.oracle.com/en/operating-systems/oracle-linux/8/tutorials.html)
+* [Oracle Linux 8 learning paths](0https://www.oracle.com/goto/oraclelinuxlearningpath)
+* [Oracle Linux 8 hands-on labs](https://luna.oracle.com/team/418f9969-5e1c-4bbb-ae5f-b8b6acffc9f1)(login required)
 
 ### View Unbreakable Enterprise Kernel Source Code
 See the [source code for UEK](https://github.com/oracle/linux-uek), including every patch.
