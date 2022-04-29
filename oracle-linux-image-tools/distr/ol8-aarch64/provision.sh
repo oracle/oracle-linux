@@ -2,7 +2,7 @@
 #
 # Packer provisioning script for OL8 - aarch64
 #
-# Copyright (c) 2021 Oracle and/or its affiliates.
+# Copyright (c) 2021,2022 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -94,6 +94,11 @@ distr::kernel_config() {
   # Ensure grub is properly setup
   grub2-mkconfig -o /etc/grub2-efi.cfg
   grubby --set-default="/boot/vmlinuz-${current_kernel}"
+
+  echo_message "Linux firmware: ${LINUX_FIRMWARE^^}"
+  if [[ "${LINUX_FIRMWARE,,}" = "no" ]]; then
+    distr::remove_rpms linux-firmware
+  fi
 }
 
 #######################################
@@ -287,6 +292,15 @@ distr::cleanup() {
     [ -d /root/.ssh ] && /bin/rm -fr /root/.ssh
   else
     find /root/.ssh -type f -not -name authorized_keys -delete
+  fi
+
+  # Rebuild rpmdb to save some space
+  rpm --rebuilddb
+
+  # Remove man and info pages
+  echo_message "Exclude documentation: ${EXCLUDE_DOCS^^}"
+  if [[ "${EXCLUDE_DOCS,,}" = "minimal" ]]; then
+    rm -rf /usr/share/{man,info}
   fi
 
   # cleanup vnc cache files

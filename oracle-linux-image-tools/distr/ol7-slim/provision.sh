@@ -2,7 +2,7 @@
 #
 # Packer provisioning script for OL7
 #
-# Copyright (c) 2019,2020 Oracle and/or its affiliates.
+# Copyright (c) 2019,2022 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -113,6 +113,11 @@ distr::kernel_config() {
   # Ensure grub is properly setup
   grub2-mkconfig -o /boot/grub2/grub.cfg
   grubby --set-default="/boot/vmlinuz-${current_kernel}"
+
+  echo_message "Linux firmware: ${LINUX_FIRMWARE^^}"
+  if [[ "${LINUX_FIRMWARE,,}" = "no" ]]; then
+    yum remove -y linux-firmware
+  fi
 }
 
 #######################################
@@ -319,6 +324,23 @@ distr::cleanup() {
     [ -d /root/.ssh ] && /bin/rm -fr /root/.ssh
   else
     find /root/.ssh -type f -not -name authorized_keys -delete
+  fi
+
+  # Rebuild rpmdb to save some space
+  rpm --rebuilddb
+
+  # Remove man and info pages
+  echo_message "Exclude documentation: ${EXCLUDE_DOCS^^}"
+  if [[ "${EXCLUDE_DOCS,,}" = "minimal" ]]; then
+    rm -rf /usr/share/{man,info}
+  fi
+
+  echo_message "Strip locales: ${STRIP_LOCALES^^}"
+  if [[ "${STRIP_LOCALES,,}" = "yes" ]]; then 
+    # Remove unused locale files
+    find /usr/share/locale -mindepth  1 -maxdepth 1 -type d \
+      -not -name en_US -a -not -name C \
+      -exec rm -rf {} +
   fi
 
   # cleanup vnc cache files
