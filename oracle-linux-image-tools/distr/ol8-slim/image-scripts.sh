@@ -2,7 +2,7 @@
 #
 # image scripts for OL8
 #
-# Copyright (c) 2020 Oracle and/or its affiliates.
+# Copyright (c) 2020,2022 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -28,7 +28,9 @@ distr::validate() {
   [[ "${ROOT_FS,,}" =~ ^(xfs)|(btrfs)|(lvm)$ ]] || error "ROOT_FS must be xfs, btrfs or lvm"
   [[ "${ROOT_FS,,}" = "btrfs" ]] && echo_message "Note that for btrfs root filesystem you need to use an UEK boot ISO"
   [[ "${RESCUE_KERNEL,,}" =~ ^(yes)|(no)$ ]] || error "RESCUE_KERNEL must be yes or no"
-  readonly RESCUE_KERNEL ROOT_FS
+  [[ "${LINUX_FIRMWARE,,}" =~ ^(yes)|(no)$ ]] || error "LINUX_FIRMWARE must be yes or no"
+  [[ "${EXCLUDE_DOCS,,}" =~ ^(yes)|(no)|(minimal)$ ]] || error "EXCLUDE_DOCS must be yes, no or minimal"
+  readonly ROOT_FS RESCUE_KERNEL LINUX_FIRMWARE EXCLUDE_DOCS
 }
 
 #######################################
@@ -70,6 +72,12 @@ logvol /      --fstype=\"xfs\"  --vgname=vg_main --size=4096 --name=lv_root --gr
   # Override authselect if needed
   if [[ -n ${AUTHSELECT} ]]; then
     sed -i -e 's!^authselect .*$!authselect '"${AUTHSELECT}"'!' "${ks_file}"
+  fi
+
+  # Docs
+  sed -i -e 's!^EXCLUDE_DOCS=.*$!EXCLUDE_DOCS='"${EXCLUDE_DOCS}"'!' "${ks_file}"
+  if [[ "${EXCLUDE_DOCS,,}" = "yes" ]]; then
+    sed -i -e 's!^%packages!%packages --excludedocs!' "${ks_file}"
   fi
 }
 
