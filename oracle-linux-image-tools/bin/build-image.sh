@@ -19,6 +19,7 @@ readonly BIN_DIR=$( cd "$(dirname "$0")" ; pwd -P )
 readonly REPO_DIR=$(dirname "${BIN_DIR}")
 readonly DISTR_DIR="${REPO_DIR}/distr"
 readonly CLOUD_DIR="${REPO_DIR}/cloud"
+readonly CUSTOM_DIR="${REPO_DIR}/custom"
 readonly TEMPLATE_DIR="${REPO_DIR}/packer-template"
 readonly ENV_FILE="env.properties"
 readonly ENV_FILE_DEFAULTS="${REPO_DIR}/${ENV_FILE}.defaults"
@@ -156,6 +157,10 @@ load_env() {
   [[ -d "${DISTR_DIR}/${DISTR}" ]] || error "no such distribution: ${DISTR}"
   [[ -z "${CLOUD}" ]] && error "no cloud defined"
   [[ -d "${CLOUD_DIR}/${CLOUD}" ]] || error "no such cloud: ${CLOUD}"
+  [[ -z "${CUSTOM}" ]] && 
+    error "no custom project defined (use 'none' for no customization)"
+  [[ "${CUSTOM}" == "none" || -d "${CUSTOM_DIR}/${CUSTOM}" ]] || 
+    error "no such custom project: ${CUSTOM}"
 
   # Generate global env file
   rm -rf "${WORKSPACE:?}/${PACKER_FILES}"
@@ -166,6 +171,7 @@ load_env() {
     "${DISTR_DIR}/${DISTR}/${ENV_FILE}" \
     "${CLOUD_DIR}/${CLOUD}/${ENV_FILE}" \
     "${CLOUD_DIR}/${CLOUD}/${DISTR}/${ENV_FILE}" \
+    "${CUSTOM_DIR}/${CUSTOM}/${ENV_FILE}" \
     "${LOCAL_ENV_FILE}"
   do
     [[ -r "${file}" ]] && cat "${file}" >> "${GLOBAL_ENV_FILE}"
@@ -174,7 +180,7 @@ load_env() {
   # Load it
   source "${GLOBAL_ENV_FILE}"
 
-  readonly WORKSPACE DISTR CLOUD
+  readonly WORKSPACE DISTR CLOUD CUSTOM
 
   # Basic validation
   [[ ${PACKER_BUILDER} =~ ^(virtualbox-iso\.|qemu\.) ]] ||
@@ -248,6 +254,9 @@ load_env() {
   if [[ -r "${CLOUD_DIR}/${CLOUD}/${DISTR}/${IMAGE_SCRIPTS}" ]]; then
     source "${CLOUD_DIR}/${CLOUD}/${DISTR}/${IMAGE_SCRIPTS}"
   fi
+  if [[ -r "${CUSTOM_DIR}/${CUSTOM}/${IMAGE_SCRIPTS}" ]]; then
+    source "${CUSTOM_DIR}/${CUSTOM}/${IMAGE_SCRIPTS}"
+  fi
 
   # Validate distr / cloud parameters
   if [[ "$(type -t distr::validate)" = 'function' ]]; then
@@ -258,6 +267,9 @@ load_env() {
   fi
   if [[ "$(type -t cloud_distr::validate)" = 'function' ]]; then
     cloud_distr::validate
+  fi
+  if [[ "$(type -t custom::validate)" = 'function' ]]; then
+    custom::validate
   fi
 }
 
@@ -287,6 +299,11 @@ stage_files() {
   if [[ -d "${DISTR_DIR}/${DISTR}/${FILES_DIR}" ]]; then
     cp -RL "${DISTR_DIR}/${DISTR}/${FILES_DIR}/." "${WORKSPACE}/${PACKER_FILES}/distr"
   fi
+  # Custom files into custom subdir
+  mkdir "${WORKSPACE}/${PACKER_FILES}/custom"
+  if [[ -d "${CUSTOM_DIR}/${CUSTOM}/${FILES_DIR}" ]]; then
+    cp -RL "${CUSTOM_DIR}/${CUSTOM}/${FILES_DIR}/." "${WORKSPACE}/${PACKER_FILES}/custom"
+  fi
 
   # Provisioners
   if [[ -r "${CLOUD_DIR}/${CLOUD}/${PROVISION_SCRIPT}" ]]; then
@@ -297,6 +314,9 @@ stage_files() {
   fi
   if [[ -r "${DISTR_DIR}/${DISTR}/${PROVISION_SCRIPT}" ]]; then
     cp "${DISTR_DIR}/${DISTR}/${PROVISION_SCRIPT}" "${WORKSPACE}/${PACKER_FILES}/distr/"
+  fi
+  if [[ -r "${CUSTOM_DIR}/${CUSTOM}/${PROVISION_SCRIPT}" ]]; then
+    cp "${CUSTOM_DIR}/${CUSTOM}/${PROVISION_SCRIPT}" "${WORKSPACE}/${PACKER_FILES}/custom"
   fi
 }
 
@@ -360,6 +380,9 @@ stage_kickstart() {
   fi
   if [[ "$(type -t cloud_distr::kickstart)" = 'function' ]]; then
     cloud_distr::kickstart "${WORKSPACE}/${KS_FILE}"
+  fi
+  if [[ "$(type -t custom::kickstart)" = 'function' ]]; then
+    custom::kickstart "${WORKSPACE}/${KS_FILE}"
   fi
 }
 
@@ -431,6 +454,9 @@ packer_conf() {
   fi
   if [[ "$(type -t cloud_distr::packer_conf)" = 'function' ]]; then
     cloud_distr::packer_conf "${WORKSPACE}/${VM_NAME}.pkrvars.hcl"
+  fi
+  if [[ "$(type -t custom::packer_conf)" = 'function' ]]; then
+    custom::packer_conf "${WORKSPACE}/${VM_NAME}.pkrvars.hcl"
   fi
 }
 
@@ -561,6 +587,10 @@ image_cleanup() {
   fi
 
   # Run cleanup scripts
+  if [[ "$(type -t custom::image_cleanup)" = 'function' ]]; then
+    echo_message "Run custom cleanup"
+    custom::image_cleanup "${root_fs}" "${boot_fs}"
+  fi
   if [[ "$(type -t cloud_distr::image_cleanup)" = 'function' ]]; then
     echo_message "Run cloud distribution cleanup"
     cloud_distr::image_cleanup "${root_fs}" "${boot_fs}"
@@ -589,7 +619,9 @@ image_cleanup() {
   rm -rf "${mnt}"
 
   echo_message "Package image"
-  if [[ "$(type -t cloud_distr::image_package)" = 'function' ]]; then
+  if [[ "$(type -t custom::image_package)" = 'function' ]]; then
+    custom::image_package
+  elif [[ "$(type -t cloud_distr::image_package)" = 'function' ]]; then
     cloud_distr::image_package
   elif [[ "$(type -t cloud::image_package)" = 'function' ]]; then
     cloud::image_package
