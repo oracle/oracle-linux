@@ -6,7 +6,7 @@
 # which are run inside the VM:
 #   custom::provision: provision the instance
 #   custom::cleanup: instance cleanup before shutdown
-# Both function are optional.
+# Both functions are optional.
 #
 
 #######################################
