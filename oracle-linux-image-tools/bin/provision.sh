@@ -69,7 +69,8 @@ load_env() {
   for dir in \
     "${PACKER_FILES}/distr" \
     "${PACKER_FILES}/cloud" \
-    "${PACKER_FILES}/cloud/distr"
+    "${PACKER_FILES}/cloud/distr" \
+    "${PACKER_FILES}/custom"
   do
     if [[ -r "${dir}/provision.sh" ]]; then
       source "${dir}/provision.sh"
@@ -94,6 +95,14 @@ main () {
   if [[ "$(type -t cloud_distr::provision)" = 'function' ]]; then
     echo_header "Run cloud distribution provisioner"
     cloud_distr::provision
+  fi
+  if [[ "$(type -t custom::provision)" = 'function' ]]; then
+    echo_header "Run custom provisioner"
+    custom::provision
+  fi
+  if [[ "$(type -t custom::cleanup)" = 'function' ]]; then
+    echo_header "Run custom cleanup"
+    custom::cleanup
   fi
   if [[ "$(type -t cloud_distr::cleanup)" = 'function' ]]; then
     echo_header "Run cloud distribution cleanup"

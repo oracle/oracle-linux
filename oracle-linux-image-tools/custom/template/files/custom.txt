@@ -1,0 +1,3 @@
+Custom file example
+This file will be uploaded in the /tmp/packer_files/custom/ directory inside
+the VM

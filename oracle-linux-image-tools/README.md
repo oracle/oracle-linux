@@ -95,6 +95,19 @@ REPO_URL="https://yum.oracle.com/repo/OracleLinux/OL8/baseos/latest/x86_64"
 REPO[AppStream]="https://yum.oracle.com/repo/OracleLinux/OL8/appstream/x86_64"
 ```
 
+### Customizing builds
+
+The build tool can be used to create custom images based on the existing Distributions and Clouds.
+
+Custom image definitions must reside in a subdirectory of the `custom` directory (use a symbolic link if you want to keep your project separate).
+
+A typical use case is installing additional packages.
+You only need to provide a `provision.sh` file with a `custom::provision()` bash function which will be invoked from inside the VM.
+
+For more complex use cases, hooks are available at all stages of the build; for more details see the sample project`template` in the `custom` directory.
+
+Specific actions can be executed depending on the selected Distribution and Cloud by testing the `DISTR` and `CLOUD` environment variables.
+
 ### Configuration files
 
 For a given Oracle Linux distribution and target Cloud, the following properties are taken in consideration:
@@ -103,6 +116,7 @@ For a given Oracle Linux distribution and target Cloud, the following properties
 - Distribution `env.properties` file
 - Cloud `env.properties` file
 - Cloud distribution specific `env.properties` file
+- Custom `env.properties` file
 - Local `env.properties` file (passed as parameter to the builder)
 
 Files are processed in that order.  
@@ -177,24 +191,34 @@ The builder will process the directories in the following order:
     - distr::validate
     - cloud::validate
     - cloud_distr::validate
+    - custom::validate
 1. Select a kickstart file from _distr_ and customise it. The following hooks are called if defined:
     - distr::kickstart
     - cloud_distr::kickstart
+    - custom::kickstart
+1. Select a packer configuration file and customise it. The following hooks are called if defined:
+    - distr::packer_conf
+    - cloud_distr::packer_conf
+    - custom::packer_conf
 1. Stage files from the _files_ directories. These files are copied during provisioning in `/tmp/packer_files` in the VM.
 1. Run packer to provision the VM image.
   During provisioning the `provision.sh` scripts run in the following order:
     - distr::provision
     - cloud::provision
     - cloud_distr::provision
+    - custom::provision
+    - custom::cleanup
     - cloud_distr::cleanup
     - cloud::cleanup
     - distr::cleanup
 1. Image cleanup: the generated image is mounted on the host and the `image-scripts` scripts are run:
+    - custom::cleanup
     - cloud_distr::cleanup
     - cloud::cleanup
     - distr::cleanup
 1. Image packaging: the generated image is packaged in its final format.
   Only the first script found is executed:
+    - custom::image_package
     - cloud_distr::image_package
     - cloud::image_package
 
