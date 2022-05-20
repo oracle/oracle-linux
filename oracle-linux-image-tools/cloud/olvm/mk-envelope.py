@@ -412,7 +412,7 @@ def generate_ovf(args):
     ovf = ovf.replace(b'ovirt:ovirt_id', b'ovirt:id')
     # Fixup for &#10;
     ovf = ovf.replace(b'&amp;#10;', b'&#10;')
-    return ovf
+    return ovf.decode()
 
 
 def main():
