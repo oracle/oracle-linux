@@ -14,7 +14,7 @@ Looking to switch from CentOS to Oracle Linux? Head over to the [centos2ol repo]
 
 ### Help
 
- - The [Issues](issues) section of this GitHub repository
+ - The [Issues](https://github.com/oracle/oracle-linux/issues) section of this GitHub repository
  - [Stackoverflow](https://stackoverflow.com). Use the [oraclelinux](https://stackoverflow.com/questions/tagged/oraclelinux) tag.
  - [Oracle Linux topic](https://community.oracle.com/tech/apps-infra/categories/oracle_linux) on Oracle Communities
  - [Linux topic](https://community.oracle.com/customerconnect/categories/oci-cloud-infrastructure-linux) on Cloud Customer Connect
