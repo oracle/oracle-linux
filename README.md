@@ -2,9 +2,6 @@
 
 This repository provides tips, scripts, tools, and examples for developers and operators to get started with Oracle Linux.
 
-## Join the discussion
-Questions or feedback? Join the [Oracle Linux Discussion](https://github.com/oracle/oracle-linux/discussions)
-
 ## Getting started with Oracle Linux
 
 ### Download Oracle Linux
@@ -14,6 +11,14 @@ Questions or feedback? Join the [Oracle Linux Discussion](https://github.com/ora
 
 ### Convert CentOS to Oracle Linux
 Looking to switch from CentOS to Oracle Linux? Head over to the [centos2ol repo](https://github.com/oracle/centos2ol) for a script designed to automatically switch a CentOS instance to Oracle Linux.
+
+### Help
+
+ - The [Issues](issues) section of this GitHub repository
+ - [Stackoverflow](https://stackoverflow.com). Use the [oraclelinux](https://stackoverflow.com/questions/tagged/oraclelinux) tag.
+ - [Oracle Linux topic](https://community.oracle.com/tech/apps-infra/categories/oracle_linux) on Oracle Communities
+ - [Linux topic](https://community.oracle.com/customerconnect/categories/oci-cloud-infrastructure-linux) on Cloud Customer Connect
+ - [My Oracle Support](https://support.oracle.com)
 
 ### Container images
  - Download official Oracle Linux base images published on [GitHub Container Registry](https://github.com/orgs/oracle/packages/container/package/oraclelinux).
