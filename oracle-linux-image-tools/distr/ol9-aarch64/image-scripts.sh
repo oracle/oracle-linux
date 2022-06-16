@@ -19,7 +19,7 @@
 #######################################
 # Validate distribution parameters
 # Globals:
-#   ISO_LABEL RESCUE_LERNEL ROOT_FS
+#   ROOT_FS TMP_IN_TMPFS RESCUE_KERNEL ISO_LABEL KERNEL_MODULES EXCLUDE_DOCS
 # Arguments:
 #   None
 # Returns:
@@ -28,11 +28,12 @@
 distr::validate() {
   [[ "${ROOT_FS,,}" =~ ^(xfs)|(btrfs)|(lvm)$ ]] || error "ROOT_FS must be xfs, btrfs or lvm"
   [[ "${ROOT_FS,,}" = "btrfs" ]] && echo_message "Note that for btrfs root filesystem you need to use an UEK boot ISO"
+  [[ "${TMP_IN_TMPFS,,}" =~ ^(yes)|(no)$ ]] || error "TMP_IN_TMPFS must be yes or no"
   [[ "${RESCUE_KERNEL,,}" =~ ^(yes)|(no)$ ]] || error "RESCUE_KERNEL must be yes or no"
   [[ -n ${ISO_LABEL} ]] || error "ISO_LABEL must be provided"
   [[ "${KERNEL_MODULES,,}" =~ ^(yes)|(no)$ ]] || error "KERNEL_MODULES must be yes or no"
   [[ "${EXCLUDE_DOCS,,}" =~ ^(yes)|(no)|(minimal)$ ]] || error "EXCLUDE_DOCS must be yes, no or minimal"
-  readonly ROOT_FS RESCUE_KERNEL ISO_LABEL KERNEL_MODULES EXCLUDE_DOCS
+  readonly ROOT_FS TMP_IN_TMPFS RESCUE_KERNEL ISO_LABEL KERNEL_MODULES EXCLUDE_DOCS
 }
 
 #######################################
@@ -82,6 +83,9 @@ logvol /      --fstype=\"xfs\"  --vgname=vg_main --size=4096 --name=lv_root --gr
   if [[ "${EXCLUDE_DOCS,,}" = "yes" ]]; then
     sed -i -e 's!^%packages!%packages --excludedocs!' "${ks_file}"
   fi
+
+  # /tmp in tmpfs
+  sed -i -e "s!^TMP_IN_TMPFS=no!TMP_IN_TMPFS=$TMP_IN_TMPFS!" "${ks_file}"
 }
 
 #######################################
