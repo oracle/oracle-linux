@@ -23,5 +23,10 @@ source "qemu" "x86-64" {
   boot_command         = var.boot_command
   shutdown_command     = var.shutdown_command
   qemu_binary          = var.qemu_binary
-  qemuargs             = var.qemu_args
+  qemuargs             =  concat(
+    var.qemu_args,
+    [
+      ["-cpu", "host"]
+    ]
+  )
 }
