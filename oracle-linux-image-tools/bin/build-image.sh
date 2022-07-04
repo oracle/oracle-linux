@@ -3,7 +3,7 @@
 #
 # Create minimal Oracle Linux images
 #
-# Copyright (c) 2019-2022 Oracle and/or its affiliates.
+# Copyright (c) 2019, 2022 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl.
 #
@@ -545,7 +545,7 @@ image_cleanup() {
   cd "${WORKSPACE}/${VM_NAME}"
   if common::is_vbox ; then
     tar -xf "${VM_NAME}.ova"
-    rm "${VM_NAME}.ova"
+    mv "${VM_NAME}.ova" System.ova
     mv -f "${VM_NAME}"-disk*.vmdk System.vmdk
     vbox-img convert \
       --srcfilename System.vmdk \
@@ -555,68 +555,76 @@ image_cleanup() {
     rm -f System.vmdk
   fi
 
-  echo_message "Loopback mount image"
-  # Loopback mount the image
-  # We will have the following subdirectories:
-  #   - 1: /boot
-  #   - 2: root filesystem (/)
-  #        In case of a btrfs filesystem, / will be in root subvolume
-  # Should /boot be part of the btrfs volume we then have:
-  #   - 1: btrfs volume with boot and root subvolumes
-  rm -rf "${mnt}"
-  mkdir "${mnt}"
-  sudo "${MOUNT_IMAGE}" System.img "${mnt}"
-  if [[ $(stat -f -c "%T" "${mnt}/1") = "btrfs" ]]; then
-    # Both / and /boot are on BTRFS
-    boot_fs="${mnt}/1/boot"
-    root_fs="${mnt}/1/root"
-  else
-    boot_fs="${mnt}/1"
-    if [[ $(stat -f -c "%T" "${mnt}/2") = "btrfs" ]]; then
-      root_fs="${mnt}/2/root"
+  # Run cleanup scripts
+  if [[ "$(type -t custom::image_cleanup)" = 'function' ||
+    "$(type -t cloud_distr::image_cleanup)" = 'function' ||
+    "$(type -t cloud::image_cleanup)" = 'function' ||
+    "$(type -t distr::image_cleanup)" = 'function' ]]; then
+    # Only mount the image if we have an image_cleanup function defined
+    echo_message "Loopback mount image"
+    # Loopback mount the image
+    # We will have the following subdirectories:
+    #   - 1: /boot
+    #   - 2: root filesystem (/)
+    #        In case of a btrfs filesystem, / will be in root subvolume
+    # Should /boot be part of the btrfs volume we then have:
+    #   - 1: btrfs volume with boot and root subvolumes
+    rm -rf "${mnt}"
+    mkdir "${mnt}"
+    sudo "${MOUNT_IMAGE}" System.img "${mnt}"
+    if [[ $(stat -f -c "%T" "${mnt}/1") = "btrfs" ]]; then
+      # Both / and /boot are on BTRFS
+      boot_fs="${mnt}/1/boot"
+      root_fs="${mnt}/1/root"
     else
-      root_fs="${mnt}/2"
+      boot_fs="${mnt}/1"
+      if [[ $(stat -f -c "%T" "${mnt}/2") = "btrfs" ]]; then
+        root_fs="${mnt}/2/root"
+      else
+        root_fs="${mnt}/2"
+      fi
     fi
-  fi
 
-  # Basic check to see if we have the "right" partitions mounted
-  if [[ ! -d "${root_fs}/etc" || ! -d "${boot_fs}/grub2" ]]; then
+    # Basic check to see if we have the "right" partitions mounted
+    if [[ ! -d "${root_fs}/etc" || ! -d "${boot_fs}/grub2" ]]; then
+      sudo "${MOUNT_IMAGE}" -u System.img
+      rm -rf "${mnt}"
+      error "Loopback mount failed"
+    fi
+
+    # Run cleanup scripts
+    if [[ "$(type -t custom::image_cleanup)" = 'function' ]]; then
+      echo_message "Run custom cleanup"
+      custom::image_cleanup "${root_fs}" "${boot_fs}"
+    fi
+    if [[ "$(type -t cloud_distr::image_cleanup)" = 'function' ]]; then
+      echo_message "Run cloud distribution cleanup"
+      cloud_distr::image_cleanup "${root_fs}" "${boot_fs}"
+    fi
+    if [[ "$(type -t cloud::image_cleanup)" = 'function' ]]; then
+      echo_message "Run cloud cleanup"
+      cloud::image_cleanup "${root_fs}" "${boot_fs}"
+    fi
+    if [[ "$(type -t distr::image_cleanup)" = 'function' ]]; then
+      echo_message "Run distribution cleanup"
+      distr::image_cleanup "${root_fs}" "${boot_fs}"
+    fi
+
+    # Ensure we are still in the image directory
+    cd "${WORKSPACE}/${VM_NAME}"
+    # unmount and trim image
+    echo_message "Unmount and trim image"
+    sudo -- bash -c '
+      sync; sync; sync;
+      fstrim "'"${boot_fs}"'";
+      fstrim "'"${root_fs}"'";
+      '
     sudo "${MOUNT_IMAGE}" -u System.img
     rm -rf "${mnt}"
-    error "Loopback mount failed"
-  fi
 
-  # Run cleanup scripts
-  if [[ "$(type -t custom::image_cleanup)" = 'function' ]]; then
-    echo_message "Run custom cleanup"
-    custom::image_cleanup "${root_fs}" "${boot_fs}"
+    cp --sparse=always System.img System.img.sparse
+    mv -f System.img.sparse System.img
   fi
-  if [[ "$(type -t cloud_distr::image_cleanup)" = 'function' ]]; then
-    echo_message "Run cloud distribution cleanup"
-    cloud_distr::image_cleanup "${root_fs}" "${boot_fs}"
-  fi
-  if [[ "$(type -t cloud::image_cleanup)" = 'function' ]]; then
-    echo_message "Run cloud cleanup"
-    cloud::image_cleanup "${root_fs}" "${boot_fs}"
-  fi
-  if [[ "$(type -t distr::image_cleanup)" = 'function' ]]; then
-    echo_message "Run distribution cleanup"
-    distr::image_cleanup "${root_fs}" "${boot_fs}"
-  fi
-
-  # Ensure we are still in the image directory
-  cd "${WORKSPACE}/${VM_NAME}"
-  # unmount and trim image
-  echo_message "Unmount and trim image"
-  sudo -- bash -c '
-    sync; sync; sync;
-    fstrim "'"${boot_fs}"'";
-    fstrim "'"${root_fs}"'";
-    '
-  sudo "${MOUNT_IMAGE}" -u System.img
-  cp --sparse=always System.img System.img.sparse
-  mv -f System.img.sparse System.img
-  rm -rf "${mnt}"
 
   echo_message "Package image"
   if [[ "$(type -t custom::image_package)" = 'function' ]]; then
@@ -631,6 +639,7 @@ image_cleanup() {
 
   if common::is_vbox ; then
     rm "${WORKSPACE}/${VM_NAME}/${VM_NAME}.ovf"
+    rm "${WORKSPACE}/${VM_NAME}/System.ova"
   fi
 }
 
