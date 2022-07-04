@@ -28,6 +28,7 @@ source "virtualbox-iso" "x86-64" {
       ["modifyvm", "{{.Name}}", "--x2apic", var.x2apic],
       ["modifyvm", "{{.Name}}", "--memory", var.memory],
       ["modifyvm", "{{.Name}}", "--cpus", var.cpus],
+      ["modifyvm", "{{.Name}}", "--nictype1", "virtio"],
     ]
   )
   vboxmanage_post = [
