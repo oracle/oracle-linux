@@ -2,13 +2,14 @@
 #
 # image scripts for OL8
 #
-# Copyright (c) 2020,2022 Oracle and/or its affiliates.
+# Copyright (c) 2020, 2022 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
 # Description: this module provides the following function:
 #   distr::validate: basic parameter validation
 #   distr::kickstart: hook for kickstart file updates
+#   distr::packer_conf: hook for packer configuration file updates
 #   distr::image_cleanup: distribution specific actions to cleanup the image
 # All functions are optional
 #
@@ -82,6 +83,23 @@ logvol /      --fstype=\"xfs\"  --vgname=vg_main --size=4096 --name=lv_root --gr
 }
 
 #######################################
+# Packer configuration
+# Globals:
+#   BUILD_INFO
+# Arguments:
+#   Packer configuration file
+# Returns:
+#   None
+#######################################
+distr::packer_conf() {
+  if [[ -n "${BUILD_INFO}" ]]; then
+    cat >>"$1" <<-EOF
+			build_info = "${BUILD_INFO}"
+		EOF
+  fi
+}
+
+#######################################
 # Cleanup actions run directly on the image
 # Globals:
 #   WORKSPACE VM_NAME BUILD_INFO
@@ -91,27 +109,6 @@ logvol /      --fstype=\"xfs\"  --vgname=vg_main --size=4096 --name=lv_root --gr
 # Returns:
 #   None
 #######################################
-distr::image_cleanup() {
-  local root_fs="$1"
-  local boot_fs="$2"
-
-  # Ensure we don't blindly cleanup local host!
-  [[ -z ${root_fs} ]] && error "Undefined root filesystem"
-  [[ -z ${boot_fs} ]] && error "Undefined boot filesystem"
-
-  if [[ -n ${BUILD_INFO} && -d "${root_fs}${BUILD_INFO}" ]]; then
-    find "${root_fs}${BUILD_INFO}" -type f -exec cp {} "${WORKSPACE}/${VM_NAME}/" \;
-  fi
-
-  sudo chroot "${root_fs}" /bin/bash <<-EOF
-  : > /var/log/wtmp
-  : > /var/log/lastlog
-	rm -f /var/log/audit/audit.log
-	rm -f /var/log/tuned/tuned.log
-	rm -rf /root/.gemrc /root/.gem
-	rm -rf /var/spool/root /var/spool/mail/root
-	rm -rf /var/lib/NetworkManager
-	rm -rf /var/tmp/*
-  [[ -n "${BUILD_INFO}" ]] && rm -rf "${BUILD_INFO}"
-	EOF
-}
+# distr::image_cleanup_no() {
+#     :
+# }

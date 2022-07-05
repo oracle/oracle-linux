@@ -2,14 +2,15 @@
 #
 # Packer provisioning script for OL8
 #
-# Copyright (c) 2019,2022 Oracle and/or its affiliates.
+# Copyright (c) 2019, 2022 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
-# Description: provision an OL8 image. This module provides 2 functions,
+# Description: provision an OL8 image. This module provides 3 functions,
 # both are optional.
 #   distr::provision: provision the instance
 #   distr::cleanup: instance cleanup before shutdown
+#   distr::seal: final instance sealing
 #
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 #
@@ -347,7 +348,6 @@ distr::cleanup() {
   rm -rf /var/log/sa/*
   rm -rf /var/log/acpid /var/log/boot.log /var/log/cron /var/log/dmesg.* /var/log/ovm*
   rm -rf /poweroff
-  rm -rf /tmp/*
   rm -f /etc/ssh/ssh_host_*
   rm -rf /root/*
   rm -f /etc/udev/rules.d/70-persistent-net.rules
@@ -365,11 +365,37 @@ distr::cleanup() {
   rpm -qa --qf "%{name}.%{arch}\n"  | sort -u > "${BUILD_INFO}/pkglist.txt"
   rpm -qa --qf '"%{NAME}","%{EPOCHNUM}","%{VERSION}","%{RELEASE}","%{ARCH}"\n' | sort > "${BUILD_INFO}/pkglist.csv"
   uname -r > "${BUILD_INFO}/kernel.txt"
+}
+
+#######################################
+# Final seal of the image
+# Globals:
+#   BUILD_INFO
+# Returns:
+#   None
+#######################################
+distr::seal() {
+  echo_message "File cleanup"
+  : > /var/log/wtmp
+  : > /var/log/lastlog
+  rm -f /var/log/audit/audit.log
+  rm -f /var/log/tuned/tuned.log
+  rm -rf /root/.gemrc /root/.gem
+  rm -rf /var/spool/root /var/spool/mail/root
+  rm -rf /var/lib/NetworkManager
+  [[ -n "${BUILD_INFO}" ]] && rm -rf "${BUILD_INFO}"
+  rm -rf /var/tmp/* /tmp/*
 
   echo_message "Relabel SELinux"
   genhomedircon
   fixfiles -f -F relabel
   restorecon -R / || true
-  history -c
-  swapoff -a
+
+  echo_message "Trim filesystem"
+  sync; sync; sync
+  for fs in /boot /; do
+    echo_message "    ${fs}"
+    dd if=/dev/zero of="${fs}"/EMPTY bs=1M >/dev/null 2>&1 || :
+    rm -f "${fs}"/EMPTY
+  done
 }
