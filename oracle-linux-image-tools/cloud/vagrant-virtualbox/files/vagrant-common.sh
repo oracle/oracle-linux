@@ -30,12 +30,19 @@ vagrant::config()
   sed -i "s/^.*requiretty/#Defaults requiretty/" /etc/sudoers
 
   # sshd: disable password authentication and DNS checks
-  ex -s /etc/ssh/sshd_config <<EOF
-:%substitute/^\(PasswordAuthentication\) .*$/\1 no/
-:%substitute/^#\?\(UseDNS\) .*$/\1 no/
-:update
-:quit
-EOF
+  if [[ "${ORACLE_RELEASE}" = "9" ]]; then
+    cat > /etc/ssh/sshd_config.d/90-vagrant.conf <<-EOF
+			PasswordAuthentication no
+			UseDNS no
+		EOF
+  else
+    ex -s /etc/ssh/sshd_config <<-EOF
+			:%substitute/^#\?\(PasswordAuthentication\) .*$/\1 no/
+			:%substitute/^#\?\(UseDNS\) .*$/\1 no/
+			:update
+			:quit
+		EOF
+  fi
 
   cat >>/etc/sysconfig/sshd <<EOF
 
@@ -123,6 +130,8 @@ EOF
       yum install -y "${YUM_VERBOSE}" oraclelinux-developer-release-el6
     elif  [[ "${ORACLE_RELEASE}" = "8" ]]; then
       dnf install -y oracle-epel-release-el8
+    elif  [[ "${ORACLE_RELEASE}" = "9" ]]; then
+      dnf install -y oracle-epel-release-el9
     fi
   fi
 

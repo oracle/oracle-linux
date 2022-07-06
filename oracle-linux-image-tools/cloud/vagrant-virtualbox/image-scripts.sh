@@ -79,8 +79,8 @@ cloud::packer_conf() {
 cloud::image_package() {
   local cpu="${VAGRANT_VIRTUALBOX_CPU_NUM:-$CPU_NUM}"
   local memory="${VAGRANT_VIRTUALBOX_MEM_SIZE:-$MEM_SIZE}"
-  if [[ "${ORACLE_RELEASE}" = "8" ]]; then
-    # For OL8 as we don't have image_cleanup (we use distr::seal), we can
+  if [[ "${ORACLE_RELEASE}" =~ ^[89]$ ]]; then
+    # For OL8/OL9 as we don't have image_cleanup (we use distr::seal), we can
     # import directrly the saved OVA file.
     rm System.img
     vboxmanage import System.ova \
