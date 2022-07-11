@@ -66,42 +66,41 @@ distr::kernel_config() {
   # shellcheck disable=SC2153
   echo_message "Configure kernel: ${KERNEL^^}"
   echo_message "Running kernel: $(uname -r)"
-  # Add virtual drivers for xen,virtualbox and hyperv into the initrd using
-  # dracut configuration files so that they get installed into the initrd
-  # during fresh kernel installs.
-  # This makes it is easy to move VM images between these virtual environments
 
-  # Available virtio modules depends on kernel build...
-  local virtio modules
-  modules=$(find "/lib/modules/$(uname -r)" -name "virtio*.ko*" -printf '%f\n')
-  while read -r module; do
-    virtio="${virtio} ${module%.ko*}"
-  done <<<"${modules}"
-
-  cat > /etc/dracut.conf.d/01-dracut-vm.conf <<-EOF
-	add_drivers+=" xen_netfront xen_blkfront "
-	add_drivers+=" ${virtio} "
-	add_drivers+=" hyperv_keyboard hv_netvsc hid_hyperv hv_utils hv_storvsc hyperv_fb "
-	add_drivers+=" ahci libahci "
-	EOF
+  # Note: there is no need to force drivers in intrd as dracut-config-generic
+  # is installed
 
   # Configure repos and remove old kernels
   if [[ "${KERNEL,,}" = "uek" ]]; then
-    kernel="kernel-uek"
-    dnf config-manager --set-enabled ol8_UEKR6
+    dnf config-manager --disable ol8_UEKR\* || :
+    dnf config-manager --enable "ol8_UEKR${UEK_RELEASE}"
+    kernel_list=( "kernel-uek" "kernel-uek-core" )
     distr::remove_rpms kernel
   else
-    kernel="kernel"
-    distr::remove_rpms kernel-uek
+    kernel_list=( "kernel" )
+    distr::remove_rpms kernel-uek kernel-uek-core
   fi
 
   current_kernel=$(uname -r)
-  kernels=$(rpm -q ${kernel} --qf "%{VERSION}-%{RELEASE}.%{ARCH} ")
-  for old_kernel in $kernels; do
-    if [[ ${old_kernel} != "${current_kernel}" ]]; then
-      distr::remove_rpms "${kernel}-${old_kernel}"
+  for kernel in "${kernel_list[@]}"; do
+    if kernels=$(rpm -q "${kernel}" --qf "%{VERSION}-%{RELEASE}.%{ARCH} "); then
+      for old_kernel in $kernels; do
+        if [[ ${old_kernel} != "${current_kernel}" ]]; then
+          distr::remove_rpms "${kernel}-${old_kernel}"
+        fi
+      done
     fi
   done
+
+  if [[ ${KERNEL,,} = "uek" && ${UEK_RELEASE} != 6 ]]; then
+    if [[ ${KERNEL_MODULES,,} == "no" ]]; then
+      echo_message "Removing kernel modules"
+      distr::remove_rpms kernel-uek-modules
+    else
+      echo_message "Ensure kernel modules are installed"
+      dnf install -y kernel-uek
+    fi
+  fi
 
   # Workaround for orabug 32816428
   if [[ "${KERNEL,,}" = "uek" && -f "/etc/ld.so.conf.d/kernel-${current_kernel}.conf" ]]; then
@@ -119,6 +118,7 @@ distr::kernel_config() {
 
   echo_message "Linux firmware: ${LINUX_FIRMWARE^^}"
   if [[ "${LINUX_FIRMWARE,,}" = "no" ]]; then
+    echo_message "Removing linux firmware"
     distr::remove_rpms linux-firmware
   fi
 }
