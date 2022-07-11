@@ -30,9 +30,9 @@ distr::validate() {
   [[ "${ROOT_FS,,}" = "btrfs" ]] && echo_message "Note that for btrfs root filesystem you need to use an UEK boot ISO"
   [[ "${RESCUE_KERNEL,,}" =~ ^(yes)|(no)$ ]] || error "RESCUE_KERNEL must be yes or no"
   [[ -n ${ISO_LABEL} ]] || error "ISO_LABEL must be provided"
-  [[ "${LINUX_FIRMWARE,,}" =~ ^(yes)|(no)$ ]] || error "LINUX_FIRMWARE must be yes or no"
+  [[ "${KERNEL_MODULES,,}" =~ ^(yes)|(no)$ ]] || error "KERNEL_MODULES must be yes or no"
   [[ "${EXCLUDE_DOCS,,}" =~ ^(yes)|(no)|(minimal)$ ]] || error "EXCLUDE_DOCS must be yes, no or minimal"
-  readonly ROOT_FS RESCUE_KERNEL ISO_LABEL LINUX_FIRMWARE EXCLUDE_DOCS
+  readonly ROOT_FS RESCUE_KERNEL ISO_LABEL KERNEL_MODULES EXCLUDE_DOCS
 }
 
 #######################################

@@ -67,28 +67,32 @@ distr::kernel_config() {
   echo_message "Configure kernel: ${KERNEL^^}"
   echo_message "Running kernel: $(uname -r)"
 
-  # Available virtio modules depends on kernel build...
-  local virtio modules
-  modules=$(find "/lib/modules/$(uname -r)" -name "virtio*.ko*" -printf '%f\n')
-  while read -r module; do
-    virtio="${virtio} ${module%.ko*}"
-  done <<<"${modules}"
-
-  cat > /etc/dracut.conf.d/01-dracut-vm.conf <<-EOF
-	add_drivers+=" ${virtio} "
-	EOF
+  # Note: there is no need to force drivers in intrd as dracut-config-generic
+  # is installed
 
   # Configure repos and remove old kernels
   kernel="kernel-uek"
   dnf config-manager --set-enabled ol9_UEKR7
 
   current_kernel=$(uname -r)
-  kernels=$(rpm -q ${kernel} --qf "%{VERSION}-%{RELEASE}.%{ARCH} ")
+  kernels=$(rpm -q "${kernel}-core" --qf "%{VERSION}-%{RELEASE}.%{ARCH} ")
   for old_kernel in $kernels; do
     if [[ ${old_kernel} != "${current_kernel}" ]]; then
-      distr::remove_rpms "${kernel}-${old_kernel}"
+      distr::remove_rpms "${kernel}-core-${old_kernel}"
     fi
   done
+
+  # Clean dnf cache which contains odd dependencies and prevents removal
+  # of kernel modules
+  rm -rf /var/cache/dnf/*
+  rm -rf /var/lib/dnf/*
+  if [[ ${KERNEL_MODULES,,} == "no" ]]; then
+    echo_message "Removing kernel modules and linux firmware"
+    distr::remove_rpms "${kernel}-modules" linux-firmware
+  else
+    echo_message "Ensure kernel modules are installed"
+    dnf install -y ${kernel} linux-firmware
+  fi
 
   # Regenerate initrd
   ${DRACUT_CMD} -f "/boot/initramfs-${current_kernel}.img" "${current_kernel}"
@@ -96,14 +100,6 @@ distr::kernel_config() {
   # Ensure grub is properly setup
   grub2-mkconfig -o /etc/grub2-efi.cfg
   grubby --set-default="/boot/vmlinuz-${current_kernel}"
-
-  echo_message "Linux firmware: ${LINUX_FIRMWARE^^}"
-  if [[ "${LINUX_FIRMWARE,,}" = "no" ]]; then
-    # We can only remove linux-firmware if we remove linux-modules, but we
-    # need linux-modules for HyperV drivers
-    echo_message "Removing linux firmware is currenlty not supported on OL9"
-    # distr::remove_rpms kernel-uek-modules linux-firmware
-  fi
 }
 
 #######################################
