@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
-# Packer provisioning script for OL8
+# Packer provisioning script for OL9 - aarch64
 #
-# Copyright (c) 2019, 2022 Oracle and/or its affiliates.
+# Copyright (c) 2022 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
-# Description: provision an OL8 image. This module provides 3 functions,
+# Description: provision an OL9 image. This module provides 3 functions,
 # both are optional.
 #   distr::provision: provision the instance
 #   distr::cleanup: instance cleanup before shutdown
@@ -71,56 +71,35 @@ distr::kernel_config() {
   # is installed
 
   # Configure repos and remove old kernels
-  if [[ "${KERNEL,,}" = "uek" ]]; then
-    dnf config-manager --disable ol8_UEKR\* || :
-    dnf config-manager --enable "ol8_UEKR${UEK_RELEASE}"
-    kernel_list=( "kernel-uek" "kernel-uek-core" )
-    distr::remove_rpms kernel
-  else
-    kernel_list=( "kernel" )
-    distr::remove_rpms kernel-uek kernel-uek-core
-  fi
+  kernel="kernel-uek"
+  dnf config-manager --set-enabled ol9_UEKR7
 
   current_kernel=$(uname -r)
-  for kernel in "${kernel_list[@]}"; do
-    if kernels=$(rpm -q "${kernel}" --qf "%{VERSION}-%{RELEASE}.%{ARCH} "); then
-      for old_kernel in $kernels; do
-        if [[ ${old_kernel} != "${current_kernel}" ]]; then
-          distr::remove_rpms "${kernel}-${old_kernel}"
-        fi
-      done
+  kernels=$(rpm -q "${kernel}-core" --qf "%{VERSION}-%{RELEASE}.%{ARCH} ")
+  for old_kernel in $kernels; do
+    if [[ ${old_kernel} != "${current_kernel}" ]]; then
+      distr::remove_rpms "${kernel}-core-${old_kernel}"
     fi
   done
 
-  if [[ ${KERNEL,,} = "uek" && ${UEK_RELEASE} != 6 ]]; then
-    if [[ ${KERNEL_MODULES,,} == "no" ]]; then
-      echo_message "Removing kernel modules"
-      distr::remove_rpms kernel-uek-modules
-    else
-      echo_message "Ensure kernel modules are installed"
-      dnf install -y kernel-uek
-    fi
-  fi
-
-  # Workaround for orabug 32816428
-  if [[ "${KERNEL,,}" = "uek" && -f "/etc/ld.so.conf.d/kernel-${current_kernel}.conf" ]]; then
-    cat > "/etc/ld.so.conf.d/kernel-${current_kernel}.conf" <<-EOF
-			# Placeholder file, no vDSO hwcap entries used in this kernel."
-			EOF
+  # Clean dnf cache which contains odd dependencies and prevents removal
+  # of kernel modules
+  rm -rf /var/cache/dnf/*
+  rm -rf /var/lib/dnf/*
+  if [[ ${KERNEL_MODULES,,} == "no" ]]; then
+    echo_message "Removing kernel modules and linux firmware"
+    distr::remove_rpms "${kernel}-modules" linux-firmware
+  else
+    echo_message "Ensure kernel modules are installed"
+    dnf install -y ${kernel} linux-firmware
   fi
 
   # Regenerate initrd
   ${DRACUT_CMD} -f "/boot/initramfs-${current_kernel}.img" "${current_kernel}"
 
   # Ensure grub is properly setup
-  grub2-mkconfig -o /boot/grub2/grub.cfg
+  grub2-mkconfig -o /etc/grub2-efi.cfg
   grubby --set-default="/boot/vmlinuz-${current_kernel}"
-
-  echo_message "Linux firmware: ${LINUX_FIRMWARE^^}"
-  if [[ "${LINUX_FIRMWARE,,}" = "no" ]]; then
-    echo_message "Removing linux firmware"
-    distr::remove_rpms linux-firmware
-  fi
 }
 
 #######################################
@@ -133,7 +112,7 @@ distr::kernel_config() {
 #   None
 #######################################
 distr::common_cfg() {
-  local service tty
+  local service
 
   # Directory to save build information
   mkdir -p "${BUILD_INFO}"
@@ -199,16 +178,6 @@ distr::common_cfg() {
   # https://forums.oracle.com/thread/2550364
   echo "http_caching=none" >> /etc/dnf/dnf.conf
 
-  echo_message "Enable login on serial console ports"
-  for tty in "hvc0" "ttyS0" "ttyS0"
-  do
-    grep -q "${tty}" /etc/securetty ||  echo "${tty}" >>/etc/securetty
-  done
-
-  # TODO: simplify -- this is done as well in cleanup()!
-  # 27601618 - set the machine-id file
-  sed -i -e 's@^ExecStart=.*@ExecStart=/usr/bin/systemd-firstboot --prompt-locale --prompt-timezone --prompt-root-password --setup-machine-id@g' /usr/lib/systemd/system/systemd-firstboot.service
-
   echo_message "Remove unneeded RPMs"
   distr::remove_rpms \
     iwl7265-firmware \
@@ -246,29 +215,6 @@ distr::cleanup() {
   systemctl stop rsyslog || true
   systemctl stop auditd || true
 
-  echo_message "Remove orabackup files"
-  find /etc -name "*.orabackup*" -exec rm -rf {} \;
-  find /boot -name "*.orabackup*" -exec rm -rf {} \;
-
-  echo_message "Remove leftover firewall rules"
-  if [[ -f /etc/sysconfig/iptables ]]; then
-    sed -i -e '/-p 50/d' /etc/sysconfig/iptables
-    sed -i -e '/-p 51/d' /etc/sysconfig/iptables
-    sed -i -e '/--dport 5353/d' /etc/sysconfig/iptables
-    sed -i -e '/--dport 631/d' /etc/sysconfig/iptables
-  fi
-  if [[ -f /etc/sysconfig/ip6tables ]]; then
-    sed -i -e '/-p 50/d' /etc/sysconfig/ip6tables
-    sed -i -e '/-p 51/d' /etc/sysconfig/ip6tables
-    sed -i -e '/--dport 5353/d' /etc/sysconfig/ip6tables
-    sed -i -e '/--dport 631/d' /etc/sysconfig/ip6tables
-  fi
-
-  echo_message "Remove MAC addresses"
-  for f in /etc/sysconfig/network-scripts/ifcfg-eth*; do
-     [ -e "$f" ] && sed -i '/^HWADDR=/d' "$f"
-  done
-
   echo_message "Dnf cleanup"
   dnf -q repolist > "${BUILD_INFO}/repolist.txt"
   : > /etc/dnf/vars/ociregion
@@ -277,12 +223,12 @@ distr::cleanup() {
   find /etc/ -name "./*.uln-*" -exec rm -rf {} \;
 
   # Cleanup and regenerate /etc/machine-id
-  # Todo -- already done in provisioning!
   echo_message "Reset machine id"
   : > /etc/machine-id
   if ! grep -q setup-machine-id /usr/lib/systemd/system/systemd-firstboot.service; then
-    sed -i.old -e "/^ExecStart=/s/$/ --setup-machine-id/" /usr/lib/systemd/system/systemd-firstboot.service
+    sed -i -e "/^ExecStart=/s/$/ --setup-machine-id/" /usr/lib/systemd/system/systemd-firstboot.service
   fi
+  rm -f /var/lib/systemd/random-seed
 
   echo_message "Cleanup all log files"
   rm -f /var/log/anaconda.* /var/log/oraclevm-template.log
@@ -314,6 +260,7 @@ distr::cleanup() {
     passwd -d root
     passwd -l root
   fi
+  rm -f /etc/ssh/sshd_config.d/01-permitrootlogin.conf
 
   # cleanup ssh config files
   if [ -z "${SSH_KEY_FILE}" ]; then
@@ -365,6 +312,9 @@ distr::cleanup() {
   rpm -qa --qf "%{name}.%{arch}\n"  | sort -u > "${BUILD_INFO}/pkglist.txt"
   rpm -qa --qf '"%{NAME}","%{EPOCHNUM}","%{VERSION}","%{RELEASE}","%{ARCH}"\n' | sort > "${BUILD_INFO}/pkglist.csv"
   uname -r > "${BUILD_INFO}/kernel.txt"
+
+  history -c
+  swapoff -a
 }
 
 #######################################

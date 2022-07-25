@@ -62,31 +62,45 @@ distr::ks_log() {
 distr::kernel_config() {
   local current_kernel kernel kernels old_kernel
 
+  # Ensure swap is properly formatted (UEK6/7 change)
+  if [[ ${SETUP_SWAP,,} == "yes" ]]; then
+    swapon -a || swapon -a --fixpgsz
+  fi
+
   # shellcheck disable=SC2153
   echo_message "Configure kernel: ${KERNEL^^}"
   echo_message "Running kernel: $(uname -r)"
 
-  # Available virtio modules depends on kernel build...
-  local virtio modules
-  modules=$(find "/lib/modules/$(uname -r)" -name "virtio*.ko*" -printf '%f\n')
-  while read -r module; do
-    virtio="${virtio} ${module%.ko*}"
-  done <<<"${modules}"
-
-  cat > /etc/dracut.conf.d/01-dracut-vm.conf <<-EOF
-	add_drivers+=" ${virtio} "
-	EOF
+  # Note: there is no need to force drivers in intrd as dracut-config-generic
+  # is installed
 
   # Remove old kernels
-  kernel="kernel-uek"
+  dnf config-manager --disable ol8_UEKR\* || :
+  if [[ ${UEK_RELEASE} != 6 ]]; then
+    # UEK R6 doesn't have its own repo
+    dnf config-manager --enable "ol8_UEKR${UEK_RELEASE}"
+  fi
 
   current_kernel=$(uname -r)
-  kernels=$(rpm -q ${kernel} --qf "%{VERSION}-%{RELEASE}.%{ARCH} ")
-  for old_kernel in $kernels; do
-    if [[ ${old_kernel} != "${current_kernel}" ]]; then
-      distr::remove_rpms "${kernel}-${old_kernel}"
+  for kernel in "kernel-uek" "kernel-uek-core"; do
+    if kernels=$(rpm -q ${kernel} --qf "%{VERSION}-%{RELEASE}.%{ARCH} "); then
+      for old_kernel in $kernels; do
+        if [[ ${old_kernel} != "${current_kernel}" ]]; then
+          distr::remove_rpms "${kernel}-${old_kernel}"
+        fi
+      done
     fi
   done
+
+  if [[ ${UEK_RELEASE} != 6 ]]; then
+    if [[ ${KERNEL_MODULES,,} == "no" ]]; then
+      echo_message "Removing kernel modules"
+      distr::remove_rpms kernel-uek-modules
+    else
+      echo_message "Ensure kernel modules are installed"
+      dnf install -y kernel-uek
+    fi
+  fi
 
   # Regenerate initrd
   ${DRACUT_CMD} -f "/boot/initramfs-${current_kernel}.img" "${current_kernel}"
@@ -97,6 +111,7 @@ distr::kernel_config() {
 
   echo_message "Linux firmware: ${LINUX_FIRMWARE^^}"
   if [[ "${LINUX_FIRMWARE,,}" = "no" ]]; then
+    echo_message "Removing linux firmware"
     distr::remove_rpms linux-firmware
   fi
 }

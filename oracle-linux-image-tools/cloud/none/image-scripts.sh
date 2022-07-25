@@ -2,7 +2,7 @@
 #
 # Cleanup and package image for the "None" image
 #
-# Copyright (c) 2019-2022 Oracle and/or its affiliates.
+# Copyright (c) 2019, 2022 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -25,9 +25,9 @@
 # Returns:
 #   None
 #######################################
-cloud::image_cleanup() {
-  :
-}
+# cloud::image_cleanup() {
+#   :
+# }
 
 #######################################
 # Image packaging: 

@@ -11,7 +11,9 @@ The tool currently supports:
 
 - Distributions:
   - Oracle Linux 7 update 9 -- Slim (x86_64)
-  - Oracle Linux 8 update 5 -- Slim (x86_64 and aarch64)  
+  - Oracle Linux 8 update 6 -- Slim (x86_64 and aarch64)  
+    __Note__: for aarch64, only Generic and OCI clouds are supported
+  - Oracle Linux 9 update 0 -- Slim (x86_64 and aarch64)  
     __Note__: for aarch64, only Generic and OCI clouds are supported
 - Clouds:
   - Microsoft Azure cloud  
@@ -87,12 +89,13 @@ The build script requires a Linux environment and has been tested on Oracle Linu
 Instead of providing an Oracle Linux distribution ISO you can use a _boot_ ISO image.
 In that case, you will have to provide an URL to an installation tree and optionally additional yum repositories required by the installation.
 
-Example for an Oracle Linux 8 Update 5 using the UEK boot ISO:
+Example for an Oracle Linux 9 using the UEK boot ISO:
 
 ```Shell
-ISO_URL="https://yum.oracle.com/ISOS/OracleLinux/OL8/u5/x86_64/x86_64-boot-uek.iso"
-REPO_URL="https://yum.oracle.com/repo/OracleLinux/OL8/baseos/latest/x86_64"
-REPO[AppStream]="https://yum.oracle.com/repo/OracleLinux/OL8/appstream/x86_64"
+ISO_URL="https://yum.oracle.com/ISOS/OracleLinux/OL9/u0/x86_64/OracleLinux-R9-U0-x86_64-boot-uek.iso"
+REPO_URL="https://yum.oracle.com/repo/OracleLinux/OL9/baseos/latest/x86_64"
+REPO[AppStream]="https://yum.oracle.com/repo/OracleLinux/OL9/appstream/x86_64"
+REPO[ol9_UEKR7]="https://yum.oracle.com/repo/OracleLinux/OL9/UEKR7/x86_64"
 ```
 
 ### Customizing builds
@@ -211,7 +214,8 @@ The builder will process the directories in the following order:
     - cloud_distr::cleanup
     - cloud::cleanup
     - distr::cleanup
-1. Image cleanup: the generated image is mounted on the host and the `image-scripts` scripts are run:
+    - distr::seal[^1]
+1. Image cleanup: the generated image is mounted on the host and the `image-scripts` scripts are run[^1]:
     - custom::cleanup
     - cloud_distr::cleanup
     - cloud::cleanup
@@ -221,6 +225,11 @@ The builder will process the directories in the following order:
     - custom::image_package
     - cloud_distr::image_package
     - cloud::image_package
+
+[^1]: `provision` `seal` vs. `image-scripts` `cleanup`.
+These functions have the same purpose: _seal_ the image before packaging.
+The difference is that the former runs in the VM while the latter runs on the host.
+Sealing on the host might be more efficient, but when it is not possible to mount the image disk on the host, in-VM sealing can be used. When no `image-scripts` `cleanup` are defined, no attempt will be made to mount the filesystem on the host.
 
 ## Feedback
 

@@ -108,8 +108,15 @@ variable "qemu_args" {
   default     = []
 }
 
+variable "build_info" {
+  description = "Guest directory with build information"
+  type        = string
+  default     = ""
+}
+
 # Locals
 locals {
   output_directory = "${var.workspace}/${var.vm_name}"
   http_directory   = var.workspace
+  get_build_info   = var.build_info == "" ? [ "none" ] : []
 }

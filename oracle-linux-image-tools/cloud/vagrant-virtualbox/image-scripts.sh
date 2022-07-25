@@ -2,7 +2,7 @@
 #
 # Cleanup and package image for the "vagrant-virtualbox" image
 #
-# Copyright (c) 2020-2022 Oracle and/or its affiliates.
+# Copyright (c) 2020, 2022 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -61,13 +61,14 @@ cloud::packer_conf() {
 # Returns:
 #   None
 #######################################
-cloud::image_cleanup() {
-  :
-}
+# cloud::image_cleanup() {
+#   :
+# }
 
 #######################################
 # Image packaging: generate box using vagrant tool
 # Globals:
+#   ORACLE_RELEASE
 #   VM_NAME, VAGRANT_VIRTUALBOX_CPU, VAGRANT_VIRTUALBOX_MEMORY,
 #   VAGRANT_VIRTUALBOX_EXTRA_DISK_GB
 # Arguments:
@@ -78,19 +79,30 @@ cloud::image_cleanup() {
 cloud::image_package() {
   local cpu="${VAGRANT_VIRTUALBOX_CPU_NUM:-$CPU_NUM}"
   local memory="${VAGRANT_VIRTUALBOX_MEM_SIZE:-$MEM_SIZE}"
-  # convert back to VMDK
-  local vmdk
-  vmdk=$(grep "ovf:href" "${VM_NAME}.ovf" | sed -r -e 's/.*ovf:href="([^"]+)".*/\1/')
-  common::convert_to_vmdk "${vmdk}"
-  # re-create the OVA file
-  common::make_ova "${VM_NAME}.ovf" "${vmdk}"
-  # Import in VirtualBox and adjust cpu/memory for the box
-  vboxmanage import "${VM_NAME}.ova" \
-    --vsys 0 --vmname "${VM_NAME}" \
-    --vsys 0 --ostype "Oracle_64" \
-    --vsys 0 --cpus "$cpu" \
-    --vsys 0 --memory "$memory"
-  rm "${VM_NAME}.ova"
+  if [[ "${ORACLE_RELEASE}" =~ ^[89]$ ]]; then
+    # For OL8/OL9 as we don't have image_cleanup (we use distr::seal), we can
+    # import directrly the saved OVA file.
+    rm System.img
+    vboxmanage import System.ova \
+      --vsys 0 --vmname "${VM_NAME}" \
+      --vsys 0 --ostype "Oracle_64" \
+      --vsys 0 --cpus "$cpu" \
+      --vsys 0 --memory "$memory"
+  else
+    # convert back to VMDK
+    local vmdk
+    vmdk=$(grep "ovf:href" "${VM_NAME}.ovf" | sed -r -e 's/.*ovf:href="([^"]+)".*/\1/')
+    common::convert_to_vmdk "${vmdk}"
+    # re-create the OVA file
+    common::make_ova "${VM_NAME}.ovf" "${vmdk}"
+    # Import in VirtualBox and adjust cpu/memory for the box
+    vboxmanage import "${VM_NAME}.ova" \
+      --vsys 0 --vmname "${VM_NAME}" \
+      --vsys 0 --ostype "Oracle_64" \
+      --vsys 0 --cpus "$cpu" \
+      --vsys 0 --memory "$memory"
+    rm "${VM_NAME}.ova"
+  fi
   # Add additional disk
   if [[ -n $VAGRANT_VIRTUALBOX_EXTRA_DISK_GB ]]; then
     local disk_size_mb=$(( VAGRANT_VIRTUALBOX_EXTRA_DISK_GB * 1024 ))

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# image scripts for OL8
+# image scripts for OL9 - aarch64 
 #
-# Copyright (c) 2020, 2022 Oracle and/or its affiliates.
+# Copyright (c) 2022 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -19,7 +19,7 @@
 #######################################
 # Validate distribution parameters
 # Globals:
-#   RESCUE_LERNEL ROOT_FS
+#   ISO_LABEL RESCUE_LERNEL ROOT_FS
 # Arguments:
 #   None
 # Returns:
@@ -28,12 +28,11 @@
 distr::validate() {
   [[ "${ROOT_FS,,}" =~ ^(xfs)|(btrfs)|(lvm)$ ]] || error "ROOT_FS must be xfs, btrfs or lvm"
   [[ "${ROOT_FS,,}" = "btrfs" ]] && echo_message "Note that for btrfs root filesystem you need to use an UEK boot ISO"
-  [[ "${UEK_RELEASE}" =~ ^[67]$ ]] || error "UEK_RELEASE must be 6 or 7"
   [[ "${RESCUE_KERNEL,,}" =~ ^(yes)|(no)$ ]] || error "RESCUE_KERNEL must be yes or no"
+  [[ -n ${ISO_LABEL} ]] || error "ISO_LABEL must be provided"
   [[ "${KERNEL_MODULES,,}" =~ ^(yes)|(no)$ ]] || error "KERNEL_MODULES must be yes or no"
-  [[ "${LINUX_FIRMWARE,,}" =~ ^(yes)|(no)$ ]] || error "LINUX_FIRMWARE must be yes or no"
   [[ "${EXCLUDE_DOCS,,}" =~ ^(yes)|(no)|(minimal)$ ]] || error "EXCLUDE_DOCS must be yes, no or minimal"
-  readonly ROOT_FS UEK_RELEASE RESCUE_KERNEL KERNEL_MODULES LINUX_FIRMWARE EXCLUDE_DOCS
+  readonly ROOT_FS RESCUE_KERNEL ISO_LABEL KERNEL_MODULES EXCLUDE_DOCS
 }
 
 #######################################
@@ -52,6 +51,7 @@ distr::kickstart() {
 part btrfs.01 --fstype=\"btrfs\"  --ondisk=sda --size=4096 --grow\n\
 btrfs none  --label=btrfs_vol --data=single btrfs.01\n\
 btrfs /     --subvol --name=root LABEL=btrfs_vol\n\
+btrfs /boot --subvol --name=boot LABEL=btrfs_vol\n\
 btrfs /home --subvol --name=home LABEL=btrfs_vol\
 "
   local lvm="\
@@ -63,14 +63,13 @@ logvol /      --fstype=\"xfs\"  --vgname=vg_main --size=4096 --name=lv_root --gr
 
   # Kickstart file is populated for xfs
   if [[ "${ROOT_FS,,}" = "btrfs" ]]; then
-    sed -i -e 's!^part / .*$!'"${btrfs}"'!' "${ks_file}"
+    sed -i -e '/^part \/boot /d' -e 's!^part / .*$!'"${btrfs}"'!' "${ks_file}"
   elif [[ "${ROOT_FS,,}" = "lvm" ]]; then
     sed -i -e '/^part swap/d' -e 's!^part / .*$!'"${lvm}"'!' "${ks_file}"
   fi
 
   # Pass kernel and rescue kernel selections
   sed -i -e 's!^KERNEL=.*$!KERNEL='"${KERNEL}"'!' "${ks_file}"
-  sed -i -e 's!^UEK_RELEASE=.*$!UEK_RELEASE='"${UEK_RELEASE}"'!' "${ks_file}"
   sed -i -e 's!^RESCUE_KERNEL=.*$!RESCUE_KERNEL='"${RESCUE_KERNEL}"'!' "${ks_file}"
 
   # Override authselect if needed
@@ -95,6 +94,11 @@ logvol /      --fstype=\"xfs\"  --vgname=vg_main --size=4096 --name=lv_root --gr
 #   None
 #######################################
 distr::packer_conf() {
+  if [[ -c /dev/kvm ]]; then
+    cat >>"$1" <<-EOF
+			accel = "kvm"
+		EOF
+  fi
   if [[ -n "${BUILD_INFO}" ]]; then
     cat >>"$1" <<-EOF
 			build_info = "${BUILD_INFO}"
@@ -112,6 +116,6 @@ distr::packer_conf() {
 # Returns:
 #   None
 #######################################
-# distr::image_cleanup_no() {
-#     :
+# distr::image_cleanup() {
+#   :
 # }

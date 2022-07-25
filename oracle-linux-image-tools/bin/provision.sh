@@ -3,11 +3,14 @@
 #
 # Packer main provisioning script
 #
-# Copyright (c) 2019,2020 Oracle and/or its affiliates.
+# Copyright (c) 2019, 2022 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl.
 #
-# Description: provision image by calling child provisioners
+# Description:
+#   - provision image by calling child provisioners
+#   - Seal image by calling distribution seal function (final cleanup
+#     cleanup before packaging)
 #
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 #
@@ -57,7 +60,9 @@ echo_error() {
 load_env() {
   local dir
 
-  source "${ENV_FILE}"
+  if [[ -r "${ENV_FILE}" ]]; then
+    source "${ENV_FILE}"
+  fi
 
   if [[ -n "${PROXY_URL}" ]]; then
     export http_proxy="${PROXY_URL}"
@@ -79,9 +84,9 @@ load_env() {
 }
 
 #######################################
-# Main
+# provision
 #######################################
-main () {
+provision () {
   echo_header "Load environment"
   load_env
   if [[ "$(type -t distr::provision)" = 'function' ]]; then
@@ -116,6 +121,40 @@ main () {
     echo_header "Run distribution cleanup"
     distr::cleanup
   fi
+}
+
+#######################################
+# seal
+#######################################
+seal () {
+  echo_header "Load environment"
+  load_env
+  if [[ "$(type -t distr::seal)" = 'function' ]]; then
+    echo_header "Seal VM image"
+    distr::seal
+  else
+    echo_message "No seal function defined"
+  fi
+}
+
+#######################################
+# Main
+#######################################
+main () {
+  if [[ -z ${OLIT_ACTION} ]]; then
+    echo_error "OLIT_ACTION undefined"
+  fi
+  case "${OLIT_ACTION}" in
+    provision)
+      provision
+      ;;
+    seal)
+      seal
+      ;;
+    *)
+      echo_error "Unexpected action: ${OLIT_ACTION}"
+      ;;
+  esac
 }
 
 main "$@"
