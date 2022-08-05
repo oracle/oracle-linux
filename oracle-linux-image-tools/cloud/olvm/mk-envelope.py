@@ -362,7 +362,7 @@ def generate_ovf(args):
     document.createOvfElement('Item', parent=vh_section, text_elements={
         'rasd:Caption': 'Graphical Controller',
         'rasd:InstanceId': get_uuid(),
-        'rasd:ResourceType': '20',
+        'rasd:ResourceType': '32768',
         'Type': 'video',
         'rasd:VirtualQuantity': '1',
         'Device': 'vga',
