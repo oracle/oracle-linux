@@ -93,9 +93,11 @@ EOF
   chcon -u system_u -r object_r -t modules_conf_t /etc/modprobe.d/nofloppy.conf
 
   # Customize the initramfs
-  # Enable VMware PVSCSI support for VMware Fusion guests.
-  echo 'add_drivers+=" mptspi "' > /etc/dracut.conf.d/vmware-fusion-drivers.conf
-  restorecon /etc/dracut.conf.d/vmware-fusion-drivers.conf
+  if [[ "${ORACLE_RELEASE}" != "9" ]]; then
+    # Enable VMware PVSCSI support for VMware Fusion guests.
+    echo 'add_drivers+=" mptspi "' > /etc/dracut.conf.d/vmware-fusion-drivers.conf
+    restorecon /etc/dracut.conf.d/vmware-fusion-drivers.conf
+  fi
   # There's no floppy controller, but probing for it generates timeouts
   echo 'omit_drivers+=" floppy "' > /etc/dracut.conf.d/nofloppy.conf
   restorecon /etc/dracut.conf.d/nofloppy.conf
