@@ -44,6 +44,12 @@ vagrant::config()
 		EOF
   fi
 
+  # For OL9 re-enable SHA1 as the vagrant embedded ssh client insists to use
+  # SHA1 for RSA keys -- See hashicorp/vagrant#12344
+  if [[ "${ORACLE_RELEASE}" = "9" ]]; then
+    /bin/update-crypto-policies --set DEFAULT:SHA1
+  fi
+
   cat >>/etc/sysconfig/sshd <<EOF
 
 # Decrease connection time by preventing reverse DNS lookups
