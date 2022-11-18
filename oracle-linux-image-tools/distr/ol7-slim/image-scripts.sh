@@ -16,7 +16,7 @@
 #######################################
 # Validate distribution parameters
 # Globals:
-#   ROOT_FS
+#   ROOT_FS TMP_IN_TMPFS UEK_RELEASE LINUX_FIRMWARE STRIP_LOCALES EXCLUDE_DOCS
 # Arguments:
 #   None
 # Returns:
@@ -24,11 +24,12 @@
 #######################################
 distr::validate() {
   [[ "${ROOT_FS,,}" =~ ^(xfs)|(btrfs)|(lvm)$ ]] || error "ROOT_FS must be xfs, btrfs or lvm"
+  [[ "${TMP_IN_TMPFS,,}" =~ ^(yes)|(no)$ ]] || error "TMP_IN_TMPFS must be yes or no"
   [[ "${UEK_RELEASE}" =~ ^[56]$ ]] || error "UEK_RELEASE must be 5 or 6"
   [[ "${LINUX_FIRMWARE,,}" =~ ^(yes)|(no)$ ]] || error "LINUX_FIRMWARE must be yes or no"
   [[ "${STRIP_LOCALES,,}" =~ ^(yes)|(no)$ ]] || error "STRIP_LOCALES must be yes or no"
   [[ "${EXCLUDE_DOCS,,}" =~ ^(yes)|(no)|(minimal)$ ]] || error "EXCLUDE_DOCS must be yes, no or minimal"
-  readonly ROOT_FS UEK_RELEASE LINUX_FIRMWARE STRIP_LOCALES EXCLUDE_DOCS
+  readonly ROOT_FS TMP_IN_TMPFS UEK_RELEASE LINUX_FIRMWARE STRIP_LOCALES EXCLUDE_DOCS
 }
 
 #######################################
@@ -75,6 +76,9 @@ logvol /      --fstype=\"xfs\"  --vgname=vg_main --size=4096 --name=lv_root --gr
   if [[ "${EXCLUDE_DOCS,,}" = "yes" ]]; then
     sed -i -e 's!^%packages !%packages --excludedocs !' "${ks_file}"
   fi
+
+  # /tmp in tmpfs
+  sed -i -e "s!^TMP_IN_TMPFS=no!TMP_IN_TMPFS=$TMP_IN_TMPFS!" "${ks_file}"
 }
 
 #######################################

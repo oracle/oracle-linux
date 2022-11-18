@@ -19,7 +19,7 @@
 #######################################
 # Validate distribution parameters
 # Globals:
-#   RESCUE_LERNEL ROOT_FS
+#   ROOT_FS TMP_IN_TMPFS UEK_RELEASE RESCUE_KERNEL KERNEL_MODULES LINUX_FIRMWARE EXCLUDE_DOCS
 # Arguments:
 #   None
 # Returns:
@@ -28,12 +28,13 @@
 distr::validate() {
   [[ "${ROOT_FS,,}" =~ ^(xfs)|(btrfs)|(lvm)$ ]] || error "ROOT_FS must be xfs, btrfs or lvm"
   [[ "${ROOT_FS,,}" = "btrfs" ]] && echo_message "Note that for btrfs root filesystem you need to use an UEK boot ISO"
+  [[ "${TMP_IN_TMPFS,,}" =~ ^(yes)|(no)$ ]] || error "TMP_IN_TMPFS must be yes or no"
   [[ "${UEK_RELEASE}" =~ ^[67]$ ]] || error "UEK_RELEASE must be 6 or 7"
   [[ "${RESCUE_KERNEL,,}" =~ ^(yes)|(no)$ ]] || error "RESCUE_KERNEL must be yes or no"
   [[ "${KERNEL_MODULES,,}" =~ ^(yes)|(no)$ ]] || error "KERNEL_MODULES must be yes or no"
   [[ "${LINUX_FIRMWARE,,}" =~ ^(yes)|(no)$ ]] || error "LINUX_FIRMWARE must be yes or no"
   [[ "${EXCLUDE_DOCS,,}" =~ ^(yes)|(no)|(minimal)$ ]] || error "EXCLUDE_DOCS must be yes, no or minimal"
-  readonly ROOT_FS UEK_RELEASE RESCUE_KERNEL KERNEL_MODULES LINUX_FIRMWARE EXCLUDE_DOCS
+  readonly ROOT_FS TMP_IN_TMPFS UEK_RELEASE RESCUE_KERNEL KERNEL_MODULES LINUX_FIRMWARE EXCLUDE_DOCS
 }
 
 #######################################
@@ -83,6 +84,9 @@ logvol /      --fstype=\"xfs\"  --vgname=vg_main --size=4096 --name=lv_root --gr
   if [[ "${EXCLUDE_DOCS,,}" = "yes" ]]; then
     sed -i -e 's!^%packages!%packages --excludedocs!' "${ks_file}"
   fi
+
+  # /tmp in tmpfs
+  sed -i -e "s!^TMP_IN_TMPFS=no!TMP_IN_TMPFS=$TMP_IN_TMPFS!" "${ks_file}"
 }
 
 #######################################
