@@ -35,7 +35,7 @@ cloud::config()
 #######################################
 # Install Virtualbox guest agent
 # Globals:
-#   YUM_VERBOSE
+#   KERNEL, YUM_VERBOSE
 # Arguments:
 #   None
 # Returns:
@@ -52,6 +52,12 @@ cloud::install_agent()
   else
     yum install -y "${YUM_VERBOSE}" kernel-devel
   fi
+
+  # Orabug 34811820 for OL8 UEK7 -- for the current install
+  case $(uname -r) in
+    5.15.0-*.el8uek*)
+      export PATH="/opt/rh/gcc-toolset-11/root/usr/bin:$PATH"
+  esac
 
   # Search for guest additions on cd devices
   for cdrom in /dev/sr*; do
@@ -71,6 +77,14 @@ cloud::install_agent()
 
   sh "${additions}" || :
   umount /mnt
+
+  # Orabug 34811820 for OL8 UEK7 -- for subsequent rebuilds
+  case $(uname -r) in
+    5.15.0-*.el8uek*)
+      # shellcheck disable=SC2016
+      sed -i '/PATH=$PATH/a PATH="/opt/rh/gcc-toolset-11/root/usr/bin:$PATH"' /usr/sbin/rcvboxadd
+  esac
+
 }
 
 #######################################

@@ -12,7 +12,7 @@
 #######################################
 # Configure Vagrant instance
 # Globals:
-#   None
+#   ORACLE_RELEASE, UEK_RELEASE
 # Arguments:
 #   None
 # Returns:
@@ -93,7 +93,7 @@ EOF
   chcon -u system_u -r object_r -t modules_conf_t /etc/modprobe.d/nofloppy.conf
 
   # Customize the initramfs
-  if [[ "${ORACLE_RELEASE}" != "9" ]]; then
+  if [[ "${ORACLE_RELEASE}" != "9" && "${UEK_RELEASE}" != "7" ]]; then
     # Enable VMware PVSCSI support for VMware Fusion guests.
     echo 'add_drivers+=" mptspi "' > /etc/dracut.conf.d/vmware-fusion-drivers.conf
     restorecon /etc/dracut.conf.d/vmware-fusion-drivers.conf
@@ -169,16 +169,11 @@ For additional packages, updates, documentation and community help, see:
 #######################################
 vagrant::cleanup()
 {
-  if [[ "${ORACLE_RELEASE}" != "6" ]]; then
-    # On OL6 we need to keep psmisc and checkpolicy for dependencies; other
-    # packages are not installed.
-    distr::remove_rpms usermode \
-      rhn\* \
-      m2crypto \
-      checkpolicy \
-      iptables-services
-    if [[ -z "${RESCUE_KERNEL}" || "${RESCUE_KERNEL,,}" = "no" ]]; then
-      distr::remove_rpms dracut-config-rescue
-    fi
+  distr::remove_rpms usermode \
+    rhn\* \
+    m2crypto \
+    iptables-services
+  if [[ -z "${RESCUE_KERNEL}" || "${RESCUE_KERNEL,,}" = "no" ]]; then
+    distr::remove_rpms dracut-config-rescue
   fi
 }
