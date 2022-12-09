@@ -75,8 +75,24 @@ cloud::cloud_init()
     touch /etc/cloud/cloud-init.disabled
     yum install -y "${YUM_VERBOSE}" cloud-init
     rm /etc/cloud/cloud-init.disabled
+    cat > /etc/cloud/cloud.cfg.d/90_ol.cfg <<-EOF
+	# Provide sensible defaults for OL - see Orabug 34821447
+	system_info:
+	  default_user:
+	    name: cloud-user
+	    lock_passwd: true
+	    gecos: Cloud User
+	    groups: [adm, systemd-journal]
+	    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+	    shell: /bin/bash
+	  distro: rhel
+	  paths:
+	    cloud_dir: /var/lib/cloud
+	    templates_dir: /etc/cloud/templates
+	  ssh_svcname: sshd
+	EOF
     if [[ -n "${CLOUD_USER}" ]]; then
-      sed -i -e "s/\(^\s\+name:\).*/\1 ${CLOUD_USER}/" /etc/cloud/cloud.cfg
+      sed -i -e "s/\(^\s\+name:\).*/\1 ${CLOUD_USER}/" /etc/cloud/cloud.cfg.d/90_ol.cfg
     fi
   fi
 }

@@ -110,6 +110,19 @@ cloud::image_package() {
     vboxmanage storageattach "${VM_NAME}" --storagectl "SATA Controller" --port 1 --device 0 --type hdd --medium ./extra_disk.vdi
   fi
   # Create the box
-  vagrant package --base "${VM_NAME}" --output "${VM_NAME}.box"
+  if [[ "${ORACLE_RELEASE}" =~ ^[89]$ ]]; then
+    # For the latest uek kernels (UEK7) we install kernel-uek-core which only has virtio drivers...
+    cat > Vagrantfile <<-EOF
+			Vagrant.configure("2") do |config|
+			  config.vm.provider :virtualbox do |v|
+			    v.default_nic_type = "virtio"
+			  end
+			end
+		EOF
+    vagrant package --base "${VM_NAME}" --output "${VM_NAME}.box" --vagrantfile Vagrantfile
+    rm -rf Vagrantfile .vagrant
+  else
+    vagrant package --base "${VM_NAME}" --output "${VM_NAME}.box"
+  fi
   vboxmanage unregistervm "${VM_NAME}" --delete
 }
