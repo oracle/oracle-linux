@@ -74,7 +74,7 @@ cloud_distr::serial_cfg() {
 # This will install RHCK if UEK is already there or the opposite
 # Assumes that we have a single kernel installed
 # Globals:
-#   DRACUT_CMD, KERNEL
+#   DRACUT_CMD, KERNEL, KERNEL_MODULES, UEK_RELEASE
 # Arguments:
 #   None
 # Returns:
@@ -88,36 +88,21 @@ cloud_distr::additional_kernel() {
   if [[ "${KERNEL,,}" = "uek" ]]; then
     kernel="kernel"
   else
-    kernel="kernel-uek"
-    dnf config-manager --set-enabled ol8_UEKR6
+    if [[ ${UEK_RELEASE} == 6 || ${KERNEL_MODULES,,} == "yes" ]]; then
+      kernel="kernel-uek"
+    else
+      kernel="kernel-uek-core"
+    fi
+    dnf config-manager --set-enabled "ol8_UEKR${UEK_RELEASE}"
   fi
 
   echo_message "Adding kernel: ${kernel}"
-  # Cleanup dracut config, as it is customized for the "other" kernel
-  rm /etc/dracut.conf.d/01-dracut-vm.conf
   dnf install -y ${kernel}
   kernel_version=$(rpm -q ${kernel} --qf "%{VERSION}-%{RELEASE}.%{ARCH}")
   echo_message "Installed kernel: ${kernel_version}"
 
-  # Add virtual drivers 
-  local virtio modules
-  modules=$(find "/lib/modules/${kernel_version}" -name "virtio*.ko*" -printf '%f\n')
-  while read -r module; do
-    virtio="${virtio} ${module%.ko*}"
-  done <<<"${modules}"
-
-  cat > /etc/dracut.conf.d/01-dracut-vm.conf <<-EOF
-	add_drivers+=" xen_netfront xen_blkfront "
-	add_drivers+=" ${virtio} "
-	add_drivers+=" hyperv_keyboard hv_netvsc hid_hyperv hv_utils hv_storvsc hyperv_fb "
-	add_drivers+=" ahci libahci "
-	EOF
-
   # Regenerate initrd
   ${DRACUT_CMD} -f "/boot/initramfs-${kernel_version}.img" "${kernel_version}"
-
-  # Cleanup dracut config, it is only needed for the initial build
-  rm /etc/dracut.conf.d/01-dracut-vm.conf
 
   # Ensure grub is properly setup
   grub2-mkconfig -o /boot/grub2/grub.cfg
