@@ -83,6 +83,9 @@ cloud::install_agent()
     5.15.0-*.el8uek*)
       # shellcheck disable=SC2016
       sed -i '/PATH=$PATH/a PATH="/opt/rh/gcc-toolset-11/root/usr/bin:$PATH"' /usr/sbin/rcvboxadd
+      for ga in /opt/VBoxGuestAdditions*; do
+        cp /usr/sbin/rcvboxadd "${ga}/init/vboxadd"
+      done
   esac
 
 }
