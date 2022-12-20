@@ -53,7 +53,7 @@ source "qemu" "aarch64" {
   qemuargs = concat(
     var.qemu_args,
     [
-      ["-machine", "virt-rhel8.2.0,accel=${local.accel},dump-guest-core=off,gic-version=2,pflash0=libvirt-pflash0-format"],
+      ["-machine", "virt,accel=${local.accel},dump-guest-core=off,gic-version=2,pflash0=libvirt-pflash0-format"],
       ["-cpu", local.cpu],
       [
         "-blockdev",

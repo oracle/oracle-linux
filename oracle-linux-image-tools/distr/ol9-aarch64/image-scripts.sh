@@ -98,7 +98,7 @@ logvol /      --fstype=\"xfs\"  --vgname=vg_main --size=4096 --name=lv_root --gr
 #   None
 #######################################
 distr::packer_conf() {
-  if [[ -c /dev/kvm ]]; then
+  if [[ -c /dev/kvm && $(uname -m) == "aarch64" ]]; then
     cat >>"$1" <<-EOF
 			accel = "kvm"
 		EOF
