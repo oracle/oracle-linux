@@ -12,9 +12,9 @@ The tool currently supports:
 - Distributions:
   - Oracle Linux 7 update 9 -- Slim (x86_64)
   - Oracle Linux 8 update 6 -- Slim (x86_64 and aarch64)  
-    __Note__: for aarch64, only Generic and OCI clouds are supported
+    __Note__: for aarch64, only Generic, OCI and UTM clouds are supported
   - Oracle Linux 9 update 0 -- Slim (x86_64 and aarch64)  
-    __Note__: for aarch64, only Generic and OCI clouds are supported
+    __Note__: for aarch64, only Generic, OCI and UTM clouds are supported
 - Clouds:
   - Microsoft Azure cloud  
     Target packages: WALinuxAgent  
@@ -35,6 +35,10 @@ The tool currently supports:
   - Vagrant (libvirt provider)  
     Target packages: nfs-utils  
     Image format: box
+  - UTM ([UTM for macOS](https://mac.getutm.app/))  
+    Target packages: none  
+    Image format: utm  
+    __Note__: only for aarch64 distributions
   - Generic (No cloud setup)  
     Target packages: none  
     Image format: VirtualBox OVA or QCOW2 (depending on the builder used)
