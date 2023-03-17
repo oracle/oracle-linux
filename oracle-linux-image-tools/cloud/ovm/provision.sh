@@ -103,8 +103,8 @@ cloud::install_vmapilibxenstore()
       python-simplejson \
       xenstoreprovider \
       libxenstore
-  elif [[ "${ORACLE_RELEASE}" = "8" ]]; then
-    dnf install --enablerepo ol8_addons -y \
+  elif [[ "${ORACLE_RELEASE}" =~ ^(8|9)$ ]]; then
+    dnf install --enablerepo "ol${ORACLE_RELEASE}_addons" -y \
       libovmapi \
       libovmapi-devel \
       ovmd \
