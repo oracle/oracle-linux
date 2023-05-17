@@ -11,9 +11,9 @@ The tool currently supports:
 
 - Distributions:
   - Oracle Linux 7 update 9 -- Slim (x86_64)
-  - Oracle Linux 8 update 6 -- Slim (x86_64 and aarch64)  
+  - Oracle Linux 8 update 7 -- Slim (x86_64 and aarch64)  
     __Note__: for aarch64, only Generic, OCI and UTM clouds are supported
-  - Oracle Linux 9 update 0 -- Slim (x86_64 and aarch64)  
+  - Oracle Linux 9 update 2 -- Slim (x86_64 and aarch64)  
     __Note__: for aarch64, only Generic, OCI and UTM clouds are supported
 - Clouds:
   - Microsoft Azure cloud  
@@ -96,7 +96,7 @@ In that case, you will have to provide an URL to an installation tree and option
 Example for an Oracle Linux 9 using the UEK boot ISO:
 
 ```Shell
-ISO_URL="https://yum.oracle.com/ISOS/OracleLinux/OL9/u0/x86_64/OracleLinux-R9-U0-x86_64-boot-uek.iso"
+ISO_URL="https://yum.oracle.com/ISOS/OracleLinux/OL9/u2/x86_64/OracleLinux-R9-U2-x86_64-dvd.iso"
 REPO_URL="https://yum.oracle.com/repo/OracleLinux/OL9/baseos/latest/x86_64"
 REPO[AppStream]="https://yum.oracle.com/repo/OracleLinux/OL9/appstream/x86_64"
 REPO[ol9_UEKR7]="https://yum.oracle.com/repo/OracleLinux/OL9/UEKR7/x86_64"
