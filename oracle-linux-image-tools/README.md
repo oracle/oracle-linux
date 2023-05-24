@@ -11,7 +11,7 @@ The tool currently supports:
 
 - Distributions:
   - Oracle Linux 7 update 9 -- Slim (x86_64)
-  - Oracle Linux 8 update 7 -- Slim (x86_64 and aarch64)  
+  - Oracle Linux 8 update 8 -- Slim (x86_64 and aarch64)  
     __Note__: for aarch64, only Generic, OCI and UTM clouds are supported
   - Oracle Linux 9 update 2 -- Slim (x86_64 and aarch64)  
     __Note__: for aarch64, only Generic, OCI and UTM clouds are supported
