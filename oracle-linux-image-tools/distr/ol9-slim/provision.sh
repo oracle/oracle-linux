@@ -230,6 +230,7 @@ distr::cleanup() {
   echo_message "Dnf cleanup"
   dnf -q repolist > "${BUILD_INFO}/repolist.txt"
   : > /etc/dnf/vars/ociregion
+  echo "oracle.com" > /etc/dnf/vars/ocidomain
   rm -rf /var/cache/dnf/*
   rm -rf /var/lib/dnf/*
   find /etc/ -name "./*.uln-*" -exec rm -rf {} \;

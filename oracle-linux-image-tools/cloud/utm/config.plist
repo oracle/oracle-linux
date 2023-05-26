@@ -53,7 +53,7 @@
 		<true/>
 		<key>Notes</key>
 		<string>Default user/initial password: opc/opc
-Root password: locked</string>
+Root account: locked</string>
 	</dict>
 	<key>Input</key>
 	<dict>

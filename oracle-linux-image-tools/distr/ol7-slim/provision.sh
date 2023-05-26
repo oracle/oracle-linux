@@ -279,6 +279,7 @@ distr::cleanup() {
   echo_message "Yum cleanup"
   yum -q repolist > "${BUILD_INFO}/repolist.txt"
   : > /etc/yum/vars/ociregion
+  echo "oracle.com" > /etc/yum/vars/ocidomain
   rm -rf /var/cache/yum/*
   rm -rf /var/lib/yum/*
   find /etc/ -name "./*.uln-*" -exec rm -rf {} \;
