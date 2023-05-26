@@ -96,7 +96,7 @@ In that case, you will have to provide an URL to an installation tree and option
 Example for an Oracle Linux 9 using the UEK boot ISO:
 
 ```Shell
-ISO_URL="https://yum.oracle.com/ISOS/OracleLinux/OL9/u2/x86_64/OracleLinux-R9-U2-x86_64-dvd.iso"
+ISO_URL="https://yum.oracle.com/ISOS/OracleLinux/OL9/u2/x86_64/OracleLinux-R9-U2-x86_64-boot-uek.iso"
 REPO_URL="https://yum.oracle.com/repo/OracleLinux/OL9/baseos/latest/x86_64"
 REPO[AppStream]="https://yum.oracle.com/repo/OracleLinux/OL9/appstream/x86_64"
 REPO[ol9_UEKR7]="https://yum.oracle.com/repo/OracleLinux/OL9/UEKR7/x86_64"
