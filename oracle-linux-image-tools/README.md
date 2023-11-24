@@ -11,9 +11,9 @@ The tool currently supports:
 
 - Distributions:
   - Oracle Linux 7 update 9 -- Slim (x86_64)
-  - Oracle Linux 8 update 8 -- Slim (x86_64 and aarch64)  
+  - Oracle Linux 8 update 9 -- Slim (x86_64 and aarch64)  
     __Note__: for aarch64, only Generic, OCI and UTM clouds are supported
-  - Oracle Linux 9 update 2 -- Slim (x86_64 and aarch64)  
+  - Oracle Linux 9 update 3 -- Slim (x86_64 and aarch64)  
     __Note__: for aarch64, only Generic, OCI and UTM clouds are supported
 - Clouds:
   - Microsoft Azure cloud  
@@ -53,11 +53,11 @@ The build script requires a Linux environment and has been tested on Oracle Linu
    - Oracle Linux 7:  
      `yum --enablerepo=ol7_kvm_utils group install "Virtualization Host"`  
      or  
-     `yum --enablerepo=ol7_developer install VirtualBox-6.1`
+     `yum --enablerepo=ol7_developer install VirtualBox-7.0`
    - Oracle Linux 8:  
      `dnf module install virt`  
      or  
-     `dnf --enablerepo=ol8_developer install VirtualBox-6.1`
+     `dnf --enablerepo=ol8_developer install VirtualBox-7.0`
 1. Install `kpartx` and `qemu-img` to manipulate the artifacts
    - Oracle Linux 7:  
      `yum --enablerepo=ol7_kvm_utils install kpartx qemu-img`
