@@ -413,13 +413,19 @@ packer_conf() {
   local KS_CONFIG="http://{{ .HTTPIP }}:{{ .HTTPPort }}/${KS_FILE}"
   # shellcheck disable=SC2034
   local CONSOLE=""
-  local modifyvm_console=""
+  local vbox_manage=""
   local qemu_serial_console=""
   if [[ "${SERIAL_CONSOLE,,}" = "yes" ]]; then
     # shellcheck disable=SC2034
     CONSOLE=" console=tty0 console=ttyS0"
-    modifyvm_console='["modifyvm", "{{.Name}}", "--uart1", "0x3f8", 4, "--uartmode1", "file", "'"${WORKSPACE}/${VM_NAME}"'/serial-console.txt"],'
+    vbox_manage='["modifyvm", "{{.Name}}", "--uart1", "0x3f8", 4, "--uartmode1", "file", "'"${WORKSPACE}/${VM_NAME}"'/serial-console.txt"],'
     qemu_serial_console='[ "-serial", "file:'"${WORKSPACE}/${VM_NAME}"'/serial-console.txt" ]'
+  fi
+  # VirtualBox 7 requires flag to allow guest to reach host
+  if common::is_vbox ; then
+    if [[ $(vboxmanage --version) =~ ^7\. ]]; then
+      vbox_manage+='["modifyvm", "{{.Name}}", "--nat-localhostreachable1", "on"],'
+    fi
   fi
 
   cat > "${WORKSPACE}/${VM_NAME}.pkrvars.hcl" <<-EOF
@@ -437,7 +443,7 @@ packer_conf() {
 		$(eval echo -e "\"$(printf '  \\"%s\\",\\n' "${BOOT_COMMAND[@]}")\"")
 		]
 		shutdown_command      = "${SHUTDOWN_CMD}"
-		vbox_manage           = [ ${modifyvm_console} ]
+		vbox_manage           = [ ${vbox_manage} ]
 		x2apic                = "${X2APIC}"
 		${QEMU_BINARY:+qemu_binary           = ${q}$QEMU_BINARY${q}}
 		qemu_args             = [ ${qemu_serial_console} ]
