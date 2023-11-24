@@ -17,7 +17,7 @@ source "virtualbox-iso" "x86-64" {
   ssh_password           = var.ssh_password
   ssh_private_key_file   = var.ssh_private_key_file
   ssh_port               = 22
-  ssh_wait_timeout       = "30m"
+  ssh_wait_timeout       = "60m"
   http_directory         = local.http_directory
   boot_wait              = "20s"
   boot_command           = var.boot_command
