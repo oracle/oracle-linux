@@ -2,7 +2,7 @@
 #
 # Common scripts for vagrant provisioners
 #
-# Copyright (c) 2020, 2022 Oracle and/or its affiliates.
+# Copyright (c) 2020, 2024 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -12,7 +12,7 @@
 #######################################
 # Configure Vagrant instance
 # Globals:
-#   ORACLE_RELEASE, UEK_RELEASE
+#   DRACUT_CMD, ORACLE_RELEASE, UEK_RELEASE, YUM_VERBOSE
 # Arguments:
 #   None
 # Returns:
@@ -20,7 +20,7 @@
 #######################################
 vagrant::config()
 {
-  echo_message "Configure Vagrant"
+  common::echo_message "Configure Vagrant"
   # Add vagrant user
   /usr/sbin/groupadd vagrant
   /usr/sbin/useradd vagrant -g vagrant -G wheel
@@ -58,12 +58,7 @@ vagrant::config()
 OPTIONS="-u0"
 EOF
 
-  # Default insecure vagrant key
-  mkdir -p /home/vagrant/.ssh
-  chmod 0700 /home/vagrant/.ssh
-  echo "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key" >> /home/vagrant/.ssh/authorized_keys
-  chmod 600 /home/vagrant/.ssh/authorized_keys
-  chown -R vagrant:vagrant /home/vagrant/.ssh
+  # Default insecure vagrant key is inserted by virt-sysprep
 
   # Fix for issue #76, regular users can gain admin privileges via su
   ex -s /etc/pam.d/su <<'EOF'
@@ -90,7 +85,7 @@ EOF
 
   # Blacklist the floppy module to avoid probing timeouts
   echo blacklist floppy > /etc/modprobe.d/nofloppy.conf
-  chcon -u system_u -r object_r -t modules_conf_t /etc/modprobe.d/nofloppy.conf
+  chcon system_u:object_r:modules_conf_t:s0 /etc/modprobe.d/nofloppy.conf
 
   # Customize the initramfs
   if [[ "${ORACLE_RELEASE}" != "9" && "${UEK_RELEASE}" != "7" ]]; then
@@ -102,9 +97,9 @@ EOF
   echo 'omit_drivers+=" floppy "' > /etc/dracut.conf.d/nofloppy.conf
   restorecon /etc/dracut.conf.d/nofloppy.conf
   # Regenerate initrd
-  local current_kernel
-  current_kernel=$(uname -r)
-  ${DRACUT_CMD} -f "/boot/initramfs-${current_kernel}.img" "${current_kernel}"
+  local default_kernel
+  default_kernel=$(common::default_kernel)
+  ${DRACUT_CMD} -f "/boot/initramfs-${default_kernel}.img" "${default_kernel}"
 
   # Disabling firewalld on vagrant boxes
   if [[ "${ORACLE_RELEASE}" = "6" ]]; then
@@ -113,7 +108,7 @@ EOF
     service ip6tables stop
     chkconfig  ip6tables off
   else
-    systemctl disable firewalld --now
+    systemctl disable firewalld
   fi
 
   # Install additional release packages and enable repos
@@ -161,7 +156,7 @@ For additional packages, updates, documentation and community help, see:
 #######################################
 # Cleanup module
 # Globals:
-#   ORACLE_RELEASE RESCUE_KERNEL
+#   RESCUE_KERNEL
 # Arguments:
 #   None
 # Returns:

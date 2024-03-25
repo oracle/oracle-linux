@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Packer provisioning script for OVM on OL8
+# Provisioning script for OVM on OL8
 #
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2020, 2024 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -24,7 +24,7 @@
 #   None
 #######################################
 cloud_distr::serial_cfg() {
-  cat > /usr/lib/systemd/system/serial_console.service <<-EOF
+  cat > /usr/lib/systemd/system/serial_console.service <<-'EOF'
 	#  This file is part of systemd.
 	#
 	#  systemd is free software; you can redistribute it and/or modify it
@@ -96,10 +96,10 @@ cloud_distr::additional_kernel() {
     dnf config-manager --set-enabled "ol8_UEKR${UEK_RELEASE}"
   fi
 
-  echo_message "Adding kernel: ${kernel}"
+  common::echo_message "Adding kernel: ${kernel}"
   dnf install -y ${kernel}
   kernel_version=$(rpm -q ${kernel} --qf "%{VERSION}-%{RELEASE}.%{ARCH}")
-  echo_message "Installed kernel: ${kernel_version}"
+  common::echo_message "Installed kernel: ${kernel_version}"
 
   # Regenerate initrd
   ${DRACUT_CMD} -f "/boot/initramfs-${kernel_version}.img" "${kernel_version}"

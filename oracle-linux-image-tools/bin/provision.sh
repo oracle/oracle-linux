@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC1090
 #
-# Packer main provisioning script
+# Main provisioning script
 #
-# Copyright (c) 2019, 2022 Oracle and/or its affiliates.
+# Copyright (c) 2019, 2024 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl.
 #
@@ -18,39 +18,15 @@
 set -e
 
 # Constants
-readonly PACKER_FILES="/tmp/packer_files"
-readonly ENV_FILE="${PACKER_FILES}/env.properties"
+readonly PROVISION_DIR="/tmp/provision.d"
+readonly ENV_FILE="${PROVISION_DIR}/env.properties"
 # shellcheck disable=SC2034
 readonly YUM_VERBOSE="-d1"
 
 #######################################
-# Echo header / message convenience functions
-# Globals:
-#   None
-# Arguments:
-#   None
-# Returns:
-#   None
-#######################################
-echo_header() {
-  echo "=== $* ==="
-}
-
-echo_message() {
-  echo "--- $* ---"
-}
-
-echo_error() {
-  echo "--- $* ---" >&2
-  exit 1
-}
-
-#######################################
 # Load environment variables and provisioning scripts
 # Globals:
-#   ENV_FILE
-#   PACKER_FILES
-#   PROXY_URL
+#   ENV_FILE, PROVISION_DIR, PROXY_URL
 #   Loaded environment files...
 # Arguments:
 #   None
@@ -71,14 +47,9 @@ load_env() {
     export sftp_proxy="${PROXY_URL}"
   fi
 
-  for dir in \
-    "${PACKER_FILES}/distr" \
-    "${PACKER_FILES}/cloud" \
-    "${PACKER_FILES}/cloud/distr" \
-    "${PACKER_FILES}/custom"
-  do
-    if [[ -r "${dir}/provision.sh" ]]; then
-      source "${dir}/provision.sh"
+  for dir in distr cloud cloud/distr custom; do
+    if [[ -r "${PROVISION_DIR}/${dir}/provision.sh" ]]; then
+      source "${PROVISION_DIR}/${dir}/provision.sh"
     fi
   done
 }
@@ -87,53 +58,39 @@ load_env() {
 # provision
 #######################################
 provision () {
-  echo_header "Load environment"
+  common::echo_header "Load environment"
   load_env
   if [[ "$(type -t distr::provision)" = 'function' ]]; then
-    echo_header "Run distribution provisioner"
+    common::echo_header "Run distribution provisioner"
     distr::provision
   fi
   if [[ "$(type -t cloud::provision)" = 'function' ]]; then
-    echo_header "Run cloud provisioner"
+    common::echo_header "Run cloud provisioner"
     cloud::provision
   fi
   if [[ "$(type -t cloud_distr::provision)" = 'function' ]]; then
-    echo_header "Run cloud distribution provisioner"
+    common::echo_header "Run cloud distribution provisioner"
     cloud_distr::provision
   fi
   if [[ "$(type -t custom::provision)" = 'function' ]]; then
-    echo_header "Run custom provisioner"
+    common::echo_header "Run custom provisioner"
     custom::provision
   fi
   if [[ "$(type -t custom::cleanup)" = 'function' ]]; then
-    echo_header "Run custom cleanup"
+    common::echo_header "Run custom cleanup"
     custom::cleanup
   fi
   if [[ "$(type -t cloud_distr::cleanup)" = 'function' ]]; then
-    echo_header "Run cloud distribution cleanup"
+    common::echo_header "Run cloud distribution cleanup"
     cloud_distr::cleanup
   fi
   if [[ "$(type -t cloud::cleanup)" = 'function' ]]; then
-    echo_header "Run cloud cleanup"
+    common::echo_header "Run cloud cleanup"
     cloud::cleanup
   fi
   if [[ "$(type -t distr::cleanup)" = 'function' ]]; then
-    echo_header "Run distribution cleanup"
+    common::echo_header "Run distribution cleanup"
     distr::cleanup
-  fi
-}
-
-#######################################
-# seal
-#######################################
-seal () {
-  echo_header "Load environment"
-  load_env
-  if [[ "$(type -t distr::seal)" = 'function' ]]; then
-    echo_header "Seal VM image"
-    distr::seal
-  else
-    echo_message "No seal function defined"
   fi
 }
 
@@ -141,20 +98,8 @@ seal () {
 # Main
 #######################################
 main () {
-  if [[ -z ${OLIT_ACTION} ]]; then
-    echo_error "OLIT_ACTION undefined"
-  fi
-  case "${OLIT_ACTION}" in
-    provision)
-      provision
-      ;;
-    seal)
-      seal
-      ;;
-    *)
-      echo_error "Unexpected action: ${OLIT_ACTION}"
-      ;;
-  esac
+  source "${PROVISION_DIR}/provision-common.sh"
+  provision
 }
 
 main "$@"

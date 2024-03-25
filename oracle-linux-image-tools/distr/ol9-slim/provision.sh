@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Packer provisioning script for OL9
+# Provisioning script for OL9
 #
-# Copyright (c) 2022 Oracle and/or its affiliates.
+# Copyright (c) 2022, 2024 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -10,7 +10,6 @@
 # both are optional.
 #   distr::provision: provision the instance
 #   distr::cleanup: instance cleanup before shutdown
-#   distr::seal: final instance sealing
 #
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 #
@@ -33,120 +32,107 @@ distr::remove_rpms() {
 }
 
 #######################################
-# Print kickstart log
-# Globals:
-# Arguments:
-#   None
-# Returns:
-#   None
-#######################################
-distr::ks_log() {
-  if [[ -f "/root/ks-post.log" ]]; then
-    echo_message "Kickstart post log - Start"
-    cat /root/ks-post.log
-    rm /root/ks-post.log
-    echo_message "Kickstart post log - End"
-  fi
-}
-
-#######################################
 # Kernel configuration
 # Assume that we already run the latest selected kernel
 # (Asserted in the kickstart file)
 # Globals:
-#   DRACUT_CMD, KERNEL, UPDATE_TO_LATEST
+#   DRACUT_CMD, KERNEL
 # Arguments:
 #   None
 # Returns:
 #   None
 #######################################
 distr::kernel_config() {
-  local current_kernel kernel kernels old_kernel
+  local target_kernel
 
   # shellcheck disable=SC2153
-  echo_message "Configure kernel: ${KERNEL^^}"
-  echo_message "Running kernel: $(uname -r)"
+  common::echo_message "Configure kernel: ${KERNEL^^}"
 
   # Note: there is no need to force drivers in intrd as dracut-config-generic
   # is installed
 
   # Configure repos and remove old kernels
+  local kernel
   if [[ "${KERNEL,,}" = "uek" ]]; then
     kernel="kernel-uek"
+    target_kernel=$(common::latest_kernel kernel-uek)
+    common::echo_message "Target kernel: ${target_kernel}"
     dnf config-manager --set-enabled ol9_UEKR7
-    distr::remove_rpms kernel kernel-core
+    common::remove_kernels kernel
+    common::remove_kernels kernel-uek "${target_kernel}"
   else
     kernel="kernel"
-    distr::remove_rpms kernel-uek kernel-uek-core
+    target_kernel=$(common::latest_kernel kernel)
+    common::echo_message "Target kernel: ${target_kernel}"
+    common::remove_kernels kernel-uek
+    common::remove_kernels kernel "${target_kernel}"
   fi
-
-  current_kernel=$(uname -r)
-  kernels=$(rpm -q "${kernel}-core" --qf "%{VERSION}-%{RELEASE}.%{ARCH} ")
-  for old_kernel in $kernels; do
-    if [[ ${old_kernel} != "${current_kernel}" ]]; then
-      distr::remove_rpms "${kernel}-core-${old_kernel}"
-    fi
-  done
 
   # Clean dnf cache which contains odd dependencies and prevents removal
   # of kernel modules
   rm -rf /var/cache/dnf/*
   rm -rf /var/lib/dnf/*
   if [[ ${KERNEL_MODULES,,} == "no" ]]; then
-    echo_message "Removing kernel modules and linux firmware"
+    common::echo_message "Removing kernel modules and linux firmware"
     distr::remove_rpms "${kernel}-modules" linux-firmware
   else
-    echo_message "Ensure kernel modules are installed"
+    common::echo_message "Ensure kernel modules are installed"
     dnf install -y ${kernel} linux-firmware
   fi
 
   # Regenerate initrd
-  ${DRACUT_CMD} -f "/boot/initramfs-${current_kernel}.img" "${current_kernel}"
+  ${DRACUT_CMD} -f "/boot/initramfs-${target_kernel}.img" "${target_kernel}"
 
   # Ensure grub is properly setup
   grub2-mkconfig -o /boot/grub2/grub.cfg
-  grubby --set-default="/boot/vmlinuz-${current_kernel}"
+  grubby --set-default="/boot/vmlinuz-${target_kernel}"
 }
 
 #######################################
 # Common configuration
 # Globals:
-#   UPDATE_TO_LATEST, BUILD_INFO
+#   BUILD_INFO, PERMIT_ROOT_LOGIN, SELINUX, UPDATE_TO_LATEST
 # Arguments:
 #   None
 # Returns:
 #   None
 #######################################
-distr::common_cfg() {
+distr::configure() {
   local service tty
 
   # Directory to save build information
   mkdir -p "${BUILD_INFO}"
 
   # Run dnf update if flag is set to yes in image build page
-  echo_message "Update image: ${UPDATE_TO_LATEST^^}"
+  common::echo_message "Update image: ${UPDATE_TO_LATEST^^}"
   if [[ "${UPDATE_TO_LATEST,,}" = "yes" ]]; then
     dnf update -y
   elif [[ "${UPDATE_TO_LATEST,,}" = "security" ]]; then
     dnf update --security -y
   fi
 
+  common::echo_message "sshd root login policy: ${PERMIT_ROOT_LOGIN}"
+  cat > /etc/ssh/sshd_config.d/01-permitrootlogin.conf <<-EOF
+		# root login policy when using ssh. Remove this file to revert to default.
+		PermitRootLogin ${PERMIT_ROOT_LOGIN,,}
+	EOF
+
   # SSSD profile needs clients
   if authselect current -r | grep -q '^sssd'; then
-    echo_message "Installing SSSD client"
+    common::echo_message "Installing SSSD client"
     dnf install -y sssd-client
   fi
 
   # If you want to remove rsyslog and just use journald, remove this!
-  echo_message "Disabling persistent journal"
+  common::echo_message "Disabling persistent journal"
   rm -rf /var/log/journal/
 
   # setup systemd to boot to the right runlevel
-  echo_message "Setting default runlevel to multiuser text mode"
+  common::echo_message "Setting default runlevel to multiuser text mode"
   rm -f /etc/systemd/system/default.target
   ln -s /lib/systemd/system/multi-user.target /etc/systemd/system/default.target
 
-  echo_message "Disable services"
+  common::echo_message "Disable services"
   # NetworkManager.service
   for service in \
     kdump.service \
@@ -160,37 +146,37 @@ distr::common_cfg() {
     syslog.target
   do
     # Most of these aren't enabled, errors are expected...
-    echo_message "    ${service}"
+    common::echo_message "    ${service}"
     systemctl disable ${service} 2>&1 || true
   done
 
-  echo_message "Set rp_filter to loose mode"
+  common::echo_message "Set rp_filter to loose mode"
   echo "net.ipv4.conf.default.rp_filter = 2" >> /etc/sysctl.conf
 
-  echo_message "Set SELinux to ${SELINUX^^}"
+  common::echo_message "Set SELinux to ${SELINUX^^}"
   sed -i -e "s/^SELINUX[  ]*=.*/SELINUX=${SELINUX,,}/" /etc/selinux/config
   if [[ ${SELINUX,,} != "enforcing" ]]; then
     # Relax SELinux for the provisioning as well
     setenforce Permissive
   fi
 
-  echo_message "Clear network persistent data"
+  common::echo_message "Clear network persistent data"
   rm -f /etc/udev/rules.d/70-persistent-net.rules
 
-  echo_message "Configure dnf"
+  common::echo_message "Configure dnf"
   # bypass update kernel-uek-headers
   echo "exclude=kernel-uek-headers" >> /etc/dnf/dnf.conf
   # fix "Metadata file does not match checksum" for public-yum
   # https://forums.oracle.com/thread/2550364
   echo "http_caching=none" >> /etc/dnf/dnf.conf
 
-  echo_message "Enable login on serial console ports"
+  common::echo_message "Enable login on serial console ports"
   for tty in "hvc0" "ttyS0" "ttyS0"
   do
     grep -q "${tty}" /etc/securetty ||  echo "${tty}" >>/etc/securetty
   done
 
-  echo_message "Remove unneeded RPMs"
+  common::echo_message "Remove unneeded RPMs"
   distr::remove_rpms \
     iwl7265-firmware \
     mozjs17 \
@@ -208,157 +194,20 @@ distr::common_cfg() {
 #   None
 #######################################
 distr::provision() {
-  distr::ks_log
+  common::ks_log
   distr::kernel_config
-  distr::common_cfg
+  distr::configure
 }
 
 #######################################
 # Cleanup
 # Globals:
-#   BUILD_INFO
+#   None
 # Arguments:
 #   None
 # Returns:
 #   None
 #######################################
 distr::cleanup() {
-  echo_message "Stoppping services"
-  systemctl stop rsyslog || true
-  systemctl stop auditd || true
-
-  echo_message "Dnf cleanup"
-  dnf -q repolist > "${BUILD_INFO}/repolist.txt"
-  : > /etc/dnf/vars/ociregion
-  echo "oracle.com" > /etc/dnf/vars/ocidomain
-  rm -rf /var/cache/dnf/*
-  rm -rf /var/lib/dnf/*
-  find /etc/ -name "./*.uln-*" -exec rm -rf {} \;
-
-  # Cleanup and regenerate /etc/machine-id
-  echo_message "Reset machine id"
-  : > /etc/machine-id
-  if ! grep -q setup-machine-id /usr/lib/systemd/system/systemd-firstboot.service; then
-    sed -i -e "/^ExecStart=/s/$/ --setup-machine-id/" /usr/lib/systemd/system/systemd-firstboot.service
-  fi
-  rm -f /var/lib/systemd/random-seed
-
-  echo_message "Cleanup all log files"
-  rm -f /var/log/anaconda.* /var/log/oraclevm-template.log
-  rm -f /tmp/ks*
-  rm -f /root/install.log /root/install.log.syslog /root/anaconda-ks.cfg
-  : > /etc/resolv.conf
-  /bin/rm -f /etc/resolv.conf.*
-  /bin/rm -f /var/lib/dhclient/*
-  [ -e /var/log/acpid ] &&  : > /var/log/acpid
-  [ -e /var/log/messages ] && : > /var/log/messages
-  [ -e /var/log/btmp ] && : > /var/log/btmp
-  [ -e /var/log/grubby ] && : > /var/log/grubby
-  [ -e /var/log/secure ] &&  : > /var/log/secure
-  [ -e /var/log/wtmp ] && : > /var/log/wtmp
-  [ -e /var/log/boot.log ] &&  : > /var/log/boot.log
-  [ -e /var/log/dracut.log ] &&  : > /var/log/dracut.log
-  [ -e /var/log/tuned/tuned.log ] &&  : > /var/log/tuned/tuned.log
-  [ -e /var/log/maillog ] &&  : > /var/log/maillog
-  [ -e /var/log/lastlog ] &&  : > /var/log/lastlog
-  [ -e /var/log/dnf.log ] &&  : > /var/log/dnf.log
-  [ -e /var/log/dnf.librepo.log ] &&  : > /var/log/dnf.librepo.log
-  [ -e /var/log/dnf.rpm.log ] &&  : > /var/log/dnf.rpm.log
-  [ -e /var/log/ovm-template-config.log ] && rm -f /var/log/ovm-template-config.log
-  /bin/rm -f /var/log/audit/audit.log*
-  [ -e /var/log/audit/audit.log ] && : > /var/log/audit/audit.log
-
-  # Lock root user
-  if [[ "${LOCK_ROOT,,}" = "yes" ]]; then
-    passwd -d root
-    passwd -l root
-  fi
-  rm -f /etc/ssh/sshd_config.d/01-permitrootlogin.conf
-
-  # cleanup ssh config files
-  if [ -z "${SSH_KEY_FILE}" ]; then
-    [ -d /root/.ssh ] && /bin/rm -fr /root/.ssh
-  else
-    find /root/.ssh -type f -not -name authorized_keys -delete
-  fi
-
-  # Rebuild rpmdb to save some space
-  rpm --rebuilddb
-
-  # Remove man and info pages
-  echo_message "Exclude documentation: ${EXCLUDE_DOCS^^}"
-  if [[ "${EXCLUDE_DOCS,,}" = "minimal" ]]; then
-    rm -rf /usr/share/{man,info}
-  fi
-
-  # cleanup vnc cache files
-  if [ -d /root/.vnc ]; then
-    /bin/rm -f /root/.vnc/*.log
-    /bin/rm -f /root/.vnc/passwd
-  fi
-
-  rm -rf /var/log/cups/error_log
-  rm -rf /var/log/setroubleshoot/setroubleshootd.log
-  rm -rf /var/log/spooler
-  # cleanup bash history
-  [ -e  /root/.bash_history ] && : > /root/.bash_history
-  rm -f /root/.viminfo
-  rm -rf /.autorelabel
-  rm -rf /var/log/mail/statistics
-  rm -rf /var/log/sa/*
-  rm -rf /var/log/acpid /var/log/boot.log /var/log/cron /var/log/dmesg.* /var/log/ovm*
-  rm -rf /poweroff
-  rm -f /etc/ssh/ssh_host_*
-  rm -rf /root/*
-  rm -f /etc/udev/rules.d/70-persistent-net.rules
-  rm -f /etc/udev/rules.d/70-persistent-cd.rules
-
-  find /var/log -type f | while read -r f; do echo -ne '' > "$f"; done;
-  find /etc/ -name "*.old" -exec rm -f {} \;
-  rm -f /etc/sysconfig/network-scripts/ifcfg-enp*
-  rm -rf /lost+found/*
-  rm -rf /root/.vbox_version
-  export HISTSIZE=0
-  rm -f /var/log/ovm-template-config.log
-
-  echo_message "Save list of installed packages"
-  rpm -qa --qf "%{name}.%{arch}\n"  | sort -u > "${BUILD_INFO}/pkglist.txt"
-  rpm -qa --qf '"%{NAME}","%{EPOCHNUM}","%{VERSION}","%{RELEASE}","%{ARCH}"\n' | sort > "${BUILD_INFO}/pkglist.csv"
-  uname -r > "${BUILD_INFO}/kernel.txt"
-
-  history -c
-  swapoff -a
-}
-
-#######################################
-# Final seal of the image
-# Globals:
-#   BUILD_INFO
-# Returns:
-#   None
-#######################################
-distr::seal() {
-  echo_message "File cleanup"
-  : > /var/log/wtmp
-  : > /var/log/lastlog
-  rm -f /var/log/audit/audit.log
-  rm -f /var/log/tuned/tuned.log
-  rm -rf /root/.gemrc /root/.gem
-  rm -rf /var/spool/root /var/spool/mail/root
-  rm -rf /var/lib/NetworkManager
-  [[ -n "${BUILD_INFO}" ]] && rm -rf "${BUILD_INFO}"
-  rm -rf /var/tmp/* /tmp/*
-
-  echo_message "Relabel SELinux"
-  genhomedircon
-  fixfiles -f -F relabel
-  restorecon -R / || true
-
-  echo_message "Trim filesystem"
-  sync; sync; sync
-  for fs in /boot /; do
-    echo_message "    ${fs}"
-    dd if=/dev/zero of="${fs}"/EMPTY bs=1M >/dev/null 2>&1 || :
-    rm -f "${fs}"/EMPTY
-  done
+  common::distr_cleanup
 }

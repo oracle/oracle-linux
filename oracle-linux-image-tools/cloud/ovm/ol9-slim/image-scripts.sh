@@ -2,7 +2,7 @@
 #
 # Validate parameters
 #
-# Copyright (c) 2023 Oracle and/or its affiliates.
+# Copyright (c) 2023, 2024 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -22,6 +22,6 @@
 #   None
 #######################################
 cloud_distr::validate() {
-  [[ "${EXTRA_KERNEL,,}" =~ ^(yes)|(no)$ ]] || error "EXTRA_KERNEL must be yes or no"
+  [[ "${EXTRA_KERNEL,,}" =~ ^((yes)|(no))$ ]] || common::error "EXTRA_KERNEL must be yes or no"
   readonly EXTRA_KERNEL
 }

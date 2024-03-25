@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Packer provisioning script for OVM
+# Provisioning script for OVM
 #
-# Copyright (c) 2019,2020 Oracle and/or its affiliates.
+# Copyright (c) 2019, 2024 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -49,7 +49,7 @@ cloud::default_grub()
 #######################################
 cloud::ovm_cfg()
 {
-  echo_message "Setup network"
+  common::echo_message "Setup network"
   # simple eth0 config, again not hard-coded to the build hardware
   cat > /etc/sysconfig/network-scripts/ifcfg-eth0 <<-EOF
 	DEVICE="eth0"
@@ -62,7 +62,7 @@ cloud::ovm_cfg()
 	PERSISTENT_DHCLIENT="1"
 	EOF
 
-  echo_message 'Configure grub'
+  common::echo_message 'Configure grub'
   cloud::default_grub GRUB_TIMEOUT 10
   # GRUB_HIDDEN_MENU_QUIET: for historical reason, not used anymore...
   cloud::default_grub GRUB_HIDDEN_MENU_QUIET false
@@ -85,7 +85,7 @@ cloud::ovm_cfg()
 #######################################
 cloud::install_vmapilibxenstore()
 {
-  echo_message "Install OVM API and LibXenStore"
+  common::echo_message "Install OVM API and LibXenStore"
   if [[ "${ORACLE_RELEASE}" = "7" ]]; then
     yum install --enablerepo ol7_addons -y "${YUM_VERBOSE}" \
       libovmapi \

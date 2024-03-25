@@ -2,15 +2,13 @@
 #
 # image scripts for OL9
 #
-# Copyright (c) 2022 Oracle and/or its affiliates.
+# Copyright (c) 2022, 2024 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
 # Description: this module provides the following function:
 #   distr::validate: basic parameter validation
 #   distr::kickstart: hook for kickstart file updates
-#   distr::packer_conf: hook for packer configuration file updates
-#   distr::image_cleanup: distribution specific actions to cleanup the image
 # All functions are optional
 #
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
@@ -19,26 +17,27 @@
 #######################################
 # Validate distribution parameters
 # Globals:
-#   ROOT_FS TMP_IN_TMPFS RESCUE_KERNEL KERNEL_MODULES EXCLUDE_DOCS
+#   KERNEL_MODULES, ROOT_FS, RESCUE_KERNEL, TMP_IN_TMPFS, EXCLUDE_DOCS
 # Arguments:
 #   None
 # Returns:
 #   None
 #######################################
 distr::validate() {
-  [[ "${ROOT_FS,,}" =~ ^(xfs)|(btrfs)|(lvm)$ ]] || error "ROOT_FS must be xfs, btrfs or lvm"
-  [[ "${ROOT_FS,,}" = "btrfs" ]] && echo_message "Note that for btrfs root filesystem you need to use an UEK boot ISO"
-  [[ "${TMP_IN_TMPFS,,}" =~ ^(yes)|(no)$ ]] || error "TMP_IN_TMPFS must be yes or no"
-  [[ "${RESCUE_KERNEL,,}" =~ ^(yes)|(no)$ ]] || error "RESCUE_KERNEL must be yes or no"
-  [[ "${KERNEL_MODULES,,}" =~ ^(yes)|(no)$ ]] || error "KERNEL_MODULES must be yes or no"
-  [[ "${EXCLUDE_DOCS,,}" =~ ^(yes)|(no)|(minimal)$ ]] || error "EXCLUDE_DOCS must be yes, no or minimal"
+  [[ "${ROOT_FS,,}" =~ ^((xfs)|(btrfs)|(lvm))$ ]] || common::error "ROOT_FS must be xfs, btrfs or lvm"
+  [[ "${ROOT_FS,,}" = "btrfs" ]] && common::echo_message "Note that for btrfs root filesystem you need to use an UEK boot ISO"
+  [[ "${TMP_IN_TMPFS,,}" =~ ^((yes)|(no))$ ]] || common::error "TMP_IN_TMPFS must be yes or no"
+  [[ "${RESCUE_KERNEL,,}" =~ ^((yes)|(no))$ ]] || common::error "RESCUE_KERNEL must be yes or no"
+  [[ "${KERNEL_MODULES,,}" =~ ^((yes)|(no))$ ]] || common::error "KERNEL_MODULES must be yes or no"
+  [[ "${EXCLUDE_DOCS,,}" =~ ^((yes)|(no)|(minimal))$ ]] || common::error "EXCLUDE_DOCS must be yes, no or minimal"
   readonly ROOT_FS TMP_IN_TMPFS RESCUE_KERNEL KERNEL_MODULES EXCLUDE_DOCS
 }
 
 #######################################
 # Kickcstart fixup
 # Globals:
-#   RESCUE_KERNEL ROOT_FS
+#   AUTHSELECT, KERNEL, RESCUE_KERNEL, ROOT_FS
+#   EXCLUDE_DOCS, TMP_IN_TMPFS
 # Arguments:
 #   kickstart file name
 # Returns:
@@ -83,36 +82,5 @@ logvol /      --fstype=\"xfs\"  --vgname=vg_main --size=4096 --name=lv_root --gr
   fi
 
   # /tmp in tmpfs
-  sed -i -e "s!^TMP_IN_TMPFS=no!TMP_IN_TMPFS=$TMP_IN_TMPFS!" "${ks_file}"
+  sed -i -e "s!^TMP_IN_TMPFS=no!TMP_IN_TMPFS=${TMP_IN_TMPFS}!" "${ks_file}"
 }
-
-#######################################
-# Packer configuration
-# Globals:
-#   BUILD_INFO
-# Arguments:
-#   Packer configuration file
-# Returns:
-#   None
-#######################################
-distr::packer_conf() {
-  if [[ -n "${BUILD_INFO}" ]]; then
-    cat >>"$1" <<-EOF
-			build_info = "${BUILD_INFO}"
-		EOF
-  fi
-}
-
-#######################################
-# Cleanup actions run directly on the image
-# Globals:
-#   WORKSPACE VM_NAME BUILD_INFO
-# Arguments:
-#   root filesystem directory
-#   boot filesystem directory
-# Returns:
-#   None
-#######################################
-# distr::image_cleanup() {
-#   :
-# }

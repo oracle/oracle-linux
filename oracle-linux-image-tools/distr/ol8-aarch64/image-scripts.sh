@@ -2,14 +2,13 @@
 #
 # image scripts for OL8 - aarch64
 #
-# Copyright (c) 2021,2022 Oracle and/or its affiliates.
+# Copyright (c) 2021, 2024 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
 # Description: this module provides the following function:
 #   distr::validate: basic parameter validation
 #   distr::kickstart: hook for kickstart file updates
-#   distr::image_cleanup: distribution specific actions to cleanup the image
 # All functions are optional
 #
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
@@ -18,46 +17,29 @@
 #######################################
 # Validate distribution parameters
 # Globals:
-#   ROOT_FS TMP_IN_TMPFS UEK_RELEASE RESCUE_KERNEL ISO_LABEL LINUX_FIRMWARE KERNEL_MODULES EXCLUDE_DOCS
+#   KERNEL_MODULES, LINUX_FIRMWARE, ROOT_FS, RESCUE_KERNEL, TMP_IN_TMPFS, UEK_RELEASE, EXCLUDE_DOCS
 # Arguments:
 #   None
 # Returns:
 #   None
 #######################################
 distr::validate() {
-  [[ "${ROOT_FS,,}" =~ ^(xfs)|(btrfs)|(lvm)$ ]] || error "ROOT_FS must be xfs, btrfs or lvm"
-  [[ "${ROOT_FS,,}" = "btrfs" ]] && echo_message "Note that for btrfs root filesystem you need to use an UEK boot ISO"
-  [[ "${TMP_IN_TMPFS,,}" =~ ^(yes)|(no)$ ]] || error "TMP_IN_TMPFS must be yes or no"
-  [[ "${UEK_RELEASE}" =~ ^[67]$ ]] || error "UEK_RELEASE must be 6 or 7"
-  [[ "${RESCUE_KERNEL,,}" =~ ^(yes)|(no)$ ]] || error "RESCUE_KERNEL must be yes or no"
-  [[ -n ${ISO_LABEL} ]] || error "ISO_LABEL must be provided"
-  [[ "${LINUX_FIRMWARE,,}" =~ ^(yes)|(no)$ ]] || error "LINUX_FIRMWARE must be yes or no"
-  [[ "${KERNEL_MODULES,,}" =~ ^(yes)|(no)$ ]] || error "KERNEL_MODULES must be yes or no"
-  [[ "${EXCLUDE_DOCS,,}" =~ ^(yes)|(no)|(minimal)$ ]] || error "EXCLUDE_DOCS must be yes, no or minimal"
-  readonly ROOT_FS TMP_IN_TMPFS UEK_RELEASE RESCUE_KERNEL ISO_LABEL LINUX_FIRMWARE KERNEL_MODULES EXCLUDE_DOCS
-}
-
-#######################################
-# Packer configuration
-# Globals:
-#   None
-# Arguments:
-#   Packer configuration file
-# Returns:
-#   None
-#######################################
-distr::packer_conf() {
-  if [[ -c /dev/kvm && $(uname -m) == "aarch64" ]]; then
-    cat >>"$1" <<-EOF
-			accel                 = "kvm"
-		EOF
-  fi
+  [[ "${ROOT_FS,,}" =~ ^((xfs)|(btrfs)|(lvm))$ ]] || common::error "ROOT_FS must be xfs, btrfs or lvm"
+  [[ "${ROOT_FS,,}" = "btrfs" ]] && common::echo_message "Note that for btrfs root filesystem you need to use an UEK boot ISO"
+  [[ "${TMP_IN_TMPFS,,}" =~ ^((yes)|(no))$ ]] || common::error "TMP_IN_TMPFS must be yes or no"
+  [[ "${UEK_RELEASE}" =~ ^[67]$ ]] || common::error "UEK_RELEASE must be 6 or 7"
+  [[ "${RESCUE_KERNEL,,}" =~ ^((yes)|(no))$ ]] || common::error "RESCUE_KERNEL must be yes or no"
+  [[ "${LINUX_FIRMWARE,,}" =~ ^((yes)|(no))$ ]] || common::error "LINUX_FIRMWARE must be yes or no"
+  [[ "${KERNEL_MODULES,,}" =~ ^((yes)|(no))$ ]] || common::error "KERNEL_MODULES must be yes or no"
+  [[ "${EXCLUDE_DOCS,,}" =~ ^((yes)|(no)|(minimal))$ ]] || common::error "EXCLUDE_DOCS must be yes, no or minimal"
+  readonly ROOT_FS TMP_IN_TMPFS UEK_RELEASE RESCUE_KERNEL LINUX_FIRMWARE KERNEL_MODULES EXCLUDE_DOCS
 }
 
 #######################################
 # Kickcstart fixup
 # Globals:
-#   RESCUE_KERNEL ROOT_FS
+#   AUTHSELECT, KERNEL, RESCUE_KERNEL, ROOT_FS, UEK_RELEASE
+#   EXCLUDE_DOCS, STRIP_LOCALES, TMP_IN_TMPFS
 # Arguments:
 #   kickstart file name
 # Returns:
@@ -104,40 +86,5 @@ logvol /      --fstype=\"xfs\"  --vgname=vg_main --size=4096 --name=lv_root --gr
   fi
 
   # /tmp in tmpfs
-  sed -i -e "s!^TMP_IN_TMPFS=no!TMP_IN_TMPFS=$TMP_IN_TMPFS!" "${ks_file}"
-}
-
-#######################################
-# Cleanup actions run directly on the image
-# Globals:
-#   WORKSPACE VM_NAME BUILD_INFO
-# Arguments:
-#   root filesystem directory
-#   boot filesystem directory
-# Returns:
-#   None
-#######################################
-distr::image_cleanup() {
-  local root_fs="$1"
-  local boot_fs="$2"
-
-  # Ensure we don't blindly cleanup local host!
-  [[ -z ${root_fs} ]] && error "Undefined root filesystem"
-  [[ -z ${boot_fs} ]] && error "Undefined boot filesystem"
-
-  if [[ -n ${BUILD_INFO} && -d "${root_fs}${BUILD_INFO}" ]]; then
-    find "${root_fs}${BUILD_INFO}" -type f -exec cp {} "${WORKSPACE}/${VM_NAME}/" \;
-  fi
-
-  sudo chroot "${root_fs}" /bin/bash <<-EOF
-	: > /var/log/wtmp
-	: > /var/log/lastlog
-	rm -f /var/log/audit/audit.log
-	rm -f /var/log/tuned/tuned.log
-	rm -rf /root/.gemrc /root/.gem
-	rm -rf /var/spool/root /var/spool/mail/root
-	rm -rf /var/lib/NetworkManager
-	rm -rf /var/tmp/*
-  [[ -n "${BUILD_INFO}" ]] && rm -rf "${BUILD_INFO}"
-	EOF
+  sed -i -e "s!^TMP_IN_TMPFS=no!TMP_IN_TMPFS=${TMP_IN_TMPFS}!" "${ks_file}"
 }

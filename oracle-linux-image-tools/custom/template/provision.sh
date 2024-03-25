@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Packer provisioning script template for custom projects
+# Provisioning script template for custom projects
 #
 # Description: provision an custom image. This module provides 2 functions,
 # which are run inside the VM:
@@ -19,8 +19,8 @@
 #   None
 #######################################
 custom::provision() {
-  echo_message "Running ${FUNCNAME[0]} for ${PROJECT_NAME} (${DISTR}/${CLOUD})"
-  cat /tmp/packer_files/custom/custom.txt
+  common::echo_message "Running ${FUNCNAME[0]} for ${PROJECT_NAME} (${DISTR}/${CLOUD})"
+  cat "${PROVISION_DIR}/custom/custom.txt"
 }
 
 #######################################
@@ -33,5 +33,5 @@ custom::provision() {
 #   None
 #######################################
 custom::cleanup() {
-  echo_message "Running ${FUNCNAME[0]}"
+  common::echo_message "Running ${FUNCNAME[0]}"
 }

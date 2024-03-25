@@ -1,0 +1,206 @@
+#!/usr/bin/bash
+#
+# Copyright (C) 2022 Oracle Corp., Inc.  All rights reserved.
+#
+
+log () {
+	logger -t "${0##*/}" "$*"
+}
+
+log "oci-yum-repo-mapper service start: $(date)"
+
+function retry_command() {
+
+	retry_attempts=5
+	retry_interval_sec=2
+	while [[ "$retry_attempts" -gt 0 ]]; do
+		command_success=true
+		"$@" || { command_success=false; }
+		if [[ "$command_success" == false ]]; then
+			(( retry_attempts-- ))
+			log "Error occurred running command $@. Will retry in $retry_interval_sec seconds"
+			sleep $retry_interval_sec
+		else
+			break
+		fi
+	done
+
+	# Check if there is an issue running the command after all retry_attempts
+	if [[ "$command_success" == false ]]; then
+		log "ERROR: failed to execute command '$@' (Retried $retry_attempts times)"
+		return 1
+	fi
+}
+
+function repo_mapper_func() {
+
+        first_boot=${1}
+        mirror_yes=0
+        pubyum_yes=0
+
+        if [[ "$first_boot" == "FirstBoot" ]]; then
+                String="First Boot"
+        else
+                String="Instance Reboot or Service Restart"
+        fi
+
+        # Begin: Process OCI Regions.
+        # Possibilities:
+        #       a) yum mirror is available.
+        #       b) no yum mirror, but public yum is available
+        #       c) neither yum mirror nor public yum available.
+        if [[ -n "$imds_realm" ]]; then
+                # a) Is yum mirror responsive?
+                if curl -L -sfm 25 https://yum."${region}"."${domain}" &>/dev/null; then
+                        mirror_yes=1
+                        echo ".$region" > $ociregion_file
+                        echo "$domain" > $ocidomain_file
+                        log "$(date): $String seen: OCI realm detected: $imds_realm. Yum mirror connectivity succeeded. Overwriting $ociregion_file to: .$region. Overwriting $ocidomain_file to: $domain"
+
+                # b) No yum mirror. Is public yum accessible?
+                elif curl -L -sfm 25 https://yum.oracle.com &>/dev/null; then
+                        pubyum_yes=1
+                        echo "" > $ociregion_file
+                        echo "oracle.com" > $ocidomain_file
+			log "$(date): $String seen: OCI realm detected: $imds_realm. Yum mirror connectivity failed. Public yum connectivity succeeded. Overwriting $ociregion_file to: \"\". Overwriting $ocidomain_file to: $(cat "$ocidomain_file")"
+
+                fi
+
+                # c) If both, yum mirror and public yum did not respond
+                #    maybe service gateway not yet setup OR an outage.
+                #    Setup similar to yum mirror available scenario.
+                if [[ ("$mirror_yes" == 0) && ("$pubyum_yes" == 0) ]]; then
+                        echo ".$region" > $ociregion_file
+                        echo "$domain" > $ocidomain_file
+                        log "$(date): $String seen: OCI realm detected: $imds_realm. Yum mirror connectivity failed. Public yum connectivity failed. Overwriting $ociregion_file to: .$region. Overwriting $ocidomain_file to: $domain"
+
+                fi
+
+        # End: Process OCI Regions.
+	fi
+
+        	if [[ "$first_boot" == "FirstBoot" ]]; then
+
+        	        if [[ "$pubyum_yes" == 1 ]]; then
+        	                # Disable repos that are not available on public yum
+        	       		# Ksplice repo is not available on yum
+        	                rpm -q --quiet ksplice-release-el${ol_version} &&
+        	                  dnf config-manager --set-disabled ol${ol_version}_ksplice &>/dev/null
+
+        	        	# oci_included repo is not available on yum
+        	                rpm -q --quiet oci-included-release-el${ol_version} &&
+        	                  dnf config-manager --set-disabled ol${ol_version}_oci_included &>/dev/null
+        	        	# oci-release repo is not available on yum
+        	        	rpm -q oci-release-el${ol_version} &>/dev/null &&
+        	        	  dnf config-manager --set-disabled ol${ol_version}_oci &>/dev/null
+
+        	        else
+				# If installed, disable ksplice-uptrack-release
+        	                rpm -q --quiet ksplice-uptrack-release &&
+        	                 dnf config-manager --set-disabled ksplice-uptrack &>/dev/null
+        	        fi
+        	fi
+}
+
+region_file=/etc/dnf/vars/region
+ociregion_file=/etc/dnf/vars/ociregion
+ocidomain_file=/etc/dnf/vars/ocidomain
+ol_version=9
+
+yum_populated=/var/lib/oci-linux-config/yum_populated
+mkdir -p /var/lib/oci-linux-config
+
+# Dynamically set mirror domain and region from IMDSv2 Attributes
+if [[ -f "/sys/class/dmi/id/chassis_asset_tag" ]] && grep -q "OracleCloud.com" /sys/class/dmi/id/chassis_asset_tag; then
+	imds_domain=$(retry_command curl -H "Authorization:Bearer Oracle" -sfm 25 http://169.254.169.254/opc/v2/instance/ 2>/dev/null | jq -r '.regionInfo.realmDomainComponent')
+	imds_region=$(retry_command curl -H "Authorization:Bearer Oracle" -sfm 25 http://169.254.169.254/opc/v2/instance/ 2>/dev/null | jq -r '.regionInfo.regionIdentifier')
+	imds_realm=$(retry_command curl -H "Authorization:Bearer Oracle" -sfm 25 http://169.254.169.254/opc/v2/instance/ 2>/dev/null | jq -r '.regionInfo.realmKey')
+fi
+
+# OCI-Region
+if [[ -n "$imds_realm" ]]; then
+	domain="oci.$imds_domain"
+	region="$imds_region"
+	ociregion=".$region"
+
+# Non-OCI Region: yum.oracle.com
+else
+	domain="oracle.com"
+	region=""
+	ociregion=""
+fi
+
+# first boot
+if [[ ! -f "$yum_populated" ]]; then
+
+	echo "$region" > $region_file
+	log "First boot detected in $imds_realm realm. $region_file set to: $region"
+	log "Metadata derived values: Domain: $imds_domain, Region: $imds_region"
+
+	# Metadata service not available.
+	if [[ -z "$region" ]]; then
+		log "Null region retrieved from metadata service: $region"
+		# yum variable ociregion needs to be null to fall back to public yum repo
+		echo "" > $ociregion_file
+		log "$ociregion_file set to: \"\""
+		# yum domain ocidomain should be oracle.com to fall back to public yum repo
+		echo "oracle.com" > $ocidomain_file
+		log "$ocidomain_file set to: $(cat "$ocidomain_file")"
+
+		# Ksplice repo is not available on yum
+		rpm -q ksplice-release-el${ol_version} &>/dev/null &&
+		  dnf config-manager --set-disabled ol${ol_version}_ksplice &>/dev/null
+
+		# oci_included repo is not available on yum
+		rpm -q oci-included-release-el${ol_version} &>/dev/null &&
+		  dnf config-manager --set-disabled ol${ol_version}_oci_included &>/dev/null
+
+		# oci-release repo is not available on yum
+		rpm -q oci-release-el${ol_version} &>/dev/null &&
+		  dnf config-manager --set-disabled ol${ol_version}_oci &>/dev/null
+        
+        else
+                repo_mapper_func "FirstBoot"
+
+        fi
+
+	# /etc/yum/vars populated
+	touch "$yum_populated"
+
+# per boot
+else
+	# Do not overwrite the region variables unless the region has changed
+	# since first boot of the instance or the ociregion variable was previously
+	# null (having failed the OCI yum mirror connectivity test)
+	# Overwriting region to be null in subsequent reboots of the instance or on
+	# failure to connect to the OCI yum mirror will result in broken repo URLs
+	# if the user has enabled any OCI specific repos.
+
+	log "Instance Reboot or Service restart detected in $imds_realm realm"
+	log "Metadata derived values: Domain: $imds_domain, Region: $imds_region"
+
+	if [[ -n "$region" ]]; then
+		current_region=""
+		[[ -f "$region_file" ]] && current_region=$(cat "$region_file")
+		current_ociregion=""
+		[[ -f "$ociregion_file" ]] && current_ociregion=$(cat "$ociregion_file")
+		current_ocidomain=""
+		[[ -f "$ocidomain_file" ]] && current_ocidomain=$(cat "$ocidomain_file")
+
+		# Account for IDMSv2 metadata changes per boot
+		if [[ "$region" != "$current_region" ]] || [[ "$ociregion" != "$current_ociregion" ]] || [[ "$domain" != "$current_ocidomain" ]] || [[ -z "$current_ociregion" ]]; then
+			echo "$region" > $region_file
+			log "Service restart or instance reboot detected. Overwriting $region_file to: $region"
+
+                        # Function to determine the yum settings.
+                        repo_mapper_func "Reboot"
+		fi
+	fi
+fi
+
+# Log yum config settings.
+log "Instance set to: "
+log "   Domain: $(cat "$ocidomain_file")"
+log "   Region: $(cat "$region_file")"
+log "   Ociregion: $(cat "$ociregion_file")"
+log "oci-yum-repo-mapper service done: $(date)"

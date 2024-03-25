@@ -4,87 +4,101 @@
 
 This repository provides tools to build Oracle Linux images for cloud deployment.
 
-The images built by these tools are based on distribution flavours and target packages.
-Image building is accomplished using Packer to build images from the Oracle Linux ISO using Oracle VM VirtualBox or QEMU/KVM builders.
+__Note__: as of March 2024 the scripts have been refactored and introduce breaking changes. See [CHANGELOG](CHANGELOG.md) for details.
 
-The tool currently supports:
+The tools are architected around _distribution flavours_ and _target clouds_.
+They currently support:
 
 - Distributions:
-  - Oracle Linux 7 update 9 -- Slim (x86_64)
-  - Oracle Linux 8 update 9 -- Slim (x86_64 and aarch64)  
-    __Note__: for aarch64, only Generic, OCI and UTM clouds are supported
-  - Oracle Linux 9 update 3 -- Slim (x86_64 and aarch64)  
-    __Note__: for aarch64, only Generic, OCI and UTM clouds are supported
+  - Oracle Linux 7 update 9 -- Slim (x86_64 only)
+  - Oracle Linux 8 update 9 -- Slim (x86_64 and aarch64)
+  - Oracle Linux 9 update 3 -- Slim (x86_64 and aarch64)
 - Clouds:
-  - Microsoft Azure cloud  
+  - Microsoft Azure cloud (x86_64)  
     Target packages: WALinuxAgent  
     Image format: VHD
-  - Oracle Cloud Infrastructure (OCI)  
+  - Oracle Cloud Infrastructure (OCI) (x86_64 and aarch64)  
     Target packages: qemu-guest-agent / cloud-init  
     Image format: QCOW2  
     __Note__: no specific OCI tools are actually installed; this image can be used in any cloud-init based environment.
-  - Oracle Linux Virtualization Manager (OLVM)  
+  - Oracle Linux Virtualization Manager (OLVM) (x86_64)  
     Target packages: qemu-guest-agent / cloud-init  
     Image format: OLVM OVA
-  - Oracle VM Server (OVM)  
+  - Oracle VM Server (OVM) (x86_64)  
     Target packages: oracle-template-config + vmapi  
     Image format: OVM OVA
-  - Vagrant (VirtualBox provider - requires VirtualBox for the build)  
+  - Vagrant (VirtualBox provider) (x86_64)  
     Target packages: VirtualBox guest additions  
     Image format: box
-  - Vagrant (libvirt provider)  
+  - Vagrant (libvirt provider) (x86_64)  
     Target packages: nfs-utils  
     Image format: box
-  - UTM ([UTM for macOS](https://mac.getutm.app/))  
+  - UTM ([UTM for macOS](https://mac.getutm.app/)) (aarch64)  
     Target packages: none  
     Image format: utm  
     __Note__: only for aarch64 distributions
-  - Generic (No cloud setup)  
+  - Generic (No cloud setup) (x86_64 and aarch64)  
     Target packages: none  
     Image format: VirtualBox OVA or QCOW2 (depending on the builder used)
 
-Additional information is available in the [Building (Small) Oracle Linux Images For The Cloud](https://blogs.oracle.com/linux/post/building-small-oracle-linux-images-for-the-cloud) blog post.
+## Requirements
+
+### Overview
+
+The tools require a Linux host supporting [KVM](https://linux-kvm.org) virtualization with the following installed:
+
+- [`qemu-kvm`](http://www.qemu.org/) (Including `qemu-img`)
+- [`libvirt`](https://libvirt.org/)
+- [`virt-install`](https://virt-manager.org/)
+- [`libguestfs`](https://libguestfs.org/) (including tools)
+
+Additionally:
+
+- the host architecture must match the architecture of the target image (e.g.: an `aarch64` host is needed to build `aarch64` images)
+- the host kernel must support the filesystem used in the guest (e.g.: the host kernel must support `btrfs` to build an image with a `btrfs` filesystem)
+
+For building [HashiCorp Vagrant](https://vagrantup.com/) boxes for the libvirt provider, download the [`create_box.sh`](https://github.com/vagrant-libvirt/vagrant-libvirt/blob/master/tools/create_box.sh) third party script from the [`vagrant-libvirt`](https://github.com/vagrant-libvirt/vagrant-libvirt) project or install [Vagrant](https://vagrantup.com/) and the [`vagrant-libvirt`](https://github.com/vagrant-libvirt/vagrant-libvirt) plugin.
+
+### Oracle Linux 8
+
+```shell
+dnf module install virt
+dnf install qemu-img libguestfs-tools virt-install
+dnf install zip  # For UTM images
+```
+
+### Oracle Linux 9
+
+```shell
+dnf install libvirt qemu-kvm libguestfs
+dnf install qemu-img guestfs-tools virt-install
+dnf install zip  # For UTM images
+```
 
 ## Build instructions
 
-The build script requires a Linux environment and has been tested on Oracle Linux 7 and 8.
+The image builder does not require system privileges and should not be run as root.
 
-1. Install either QEMU or VirtualBox (VirtualBox required for Vagrant VirtualBox images):
-   - Oracle Linux 7:  
-     `yum --enablerepo=ol7_kvm_utils group install "Virtualization Host"`  
-     or  
-     `yum --enablerepo=ol7_developer install VirtualBox-7.0`
-   - Oracle Linux 8:  
-     `dnf module install virt`  
-     or  
-     `dnf --enablerepo=ol8_developer install VirtualBox-7.0`
-1. Install `kpartx` and `qemu-img` to manipulate the artifacts
-   - Oracle Linux 7:  
-     `yum --enablerepo=ol7_kvm_utils install kpartx qemu-img`
-   - Oracle Linux 8:  
-     `dnf install kpartx qemu-img`
-1. Install packer:  
-   - Oracle Linux 7:  
-     `yum --enablerepo=ol7_developer install packer`
-   - Oracle Linux 8: Download and install Packer from [HashiCorp](https://www.packer.io/downloads/)
-1. Cloud specific requirements:
-   - For `Vagrant` box (VirtualBox provider), install [HashiCorp Vagrant](https://vagrantup.com/)
-   - For `Vagrant` box (libvirt provider), download the [`create_box.sh`](https://github.com/vagrant-libvirt/vagrant-libvirt/blob/master/tools/create_box.sh) third party script from the [`vagrant-libvirt`](https://github.com/vagrant-libvirt/vagrant-libvirt) project or install [HashiCorp Vagrant](https://vagrantup.com/) and the [`vagrant-libvirt`](https://github.com/vagrant-libvirt/vagrant-libvirt) plugin
-1. Clone this repo:  
-  `git clone https://github.com/oracle/oracle-linux.git`
-1. The build script need root privileges during the build.
-  Ensure `sudo` is properly configured for your build user
+1. Clone this repo:
+
+   ```shell
+   git clone https://github.com/oracle/oracle-linux.git
+   ```
+
 1. Set up a separate workspace directory where the image will be built.
   Ensure there is enough free space in the workspace partition, the builder will need up the two times the image size.
 1. Configure your build environment in the `env.properties` file (or in a copy).  
   Minimal configuration:
     - `WORKSPACE`: path of your workspace directory
     - `ISO_URL`: location of the Oracle Linux distribution ISO
-    - `ISO_CHECKSUM`: checksum for the ISO file. As from packer 1.6.0, you can prepend the checksum type (see [packer documentation](https://www.packer.io/docs/builders/virtualbox/iso#iso_checksum))
-    - `CLOUD`: cloud target (azure, oci, olvm, ovm or none)
-    - `PACKER_BUILDER`: builder used by packer (virtualbox-iso.x86-64 or qemu.x86-64)
-1. Run the builder:  
-  `./bin/build-image.sh --env ENV_PROPERTY_FILE`
+    - `ISO_CHECKSUM`: checksum for the ISO file  
+      Checksums files are available on the [Verify Oracle Linux Downloads](https://linux.oracle.com/security/gpg/) page
+    - `CLOUD`: cloud target (azure, oci, olvm, ovm, utm, vagrant-libvirt, vagrant-virtualbox or none)
+1. Run the builder as a non-privileged user:
+
+   ```shell
+   ./bin/build-image.sh --env ENV_PROPERTY_FILE`
+   ```
 
 ## Advanced configuration
 
@@ -96,7 +110,7 @@ In that case, you will have to provide an URL to an installation tree and option
 Example for an Oracle Linux 9 using the UEK boot ISO:
 
 ```Shell
-ISO_URL="https://yum.oracle.com/ISOS/OracleLinux/OL9/u2/x86_64/OracleLinux-R9-U2-x86_64-boot-uek.iso"
+ISO_URL="https://yum.oracle.com/ISOS/OracleLinux/OL9/u3/x86_64/OracleLinux-R9-U3-x86_64-boot-uek.iso"
 REPO_URL="https://yum.oracle.com/repo/OracleLinux/OL9/baseos/latest/x86_64"
 REPO[AppStream]="https://yum.oracle.com/repo/OracleLinux/OL9/appstream/x86_64"
 REPO[ol9_UEKR7]="https://yum.oracle.com/repo/OracleLinux/OL9/UEKR7/x86_64"
@@ -127,8 +141,10 @@ For a given Oracle Linux distribution and target Cloud, the following properties
 - Local `env.properties` file (passed as parameter to the builder)
 
 Files are processed in that order.  
-Changes should be made to a local env.properties file which can override any definition made in an upstream property file.  
-Relevant parameters are documented in the distributed [`env.properties`](env.properties) file.
+Changes should be made to the local env.properties file which will override any definition made in an upstream property file.  
+Relevant parameters are documented in the distributed [`env.properties`](env.properties) sample file.
+
+![File layout and process](images/olit.png)
 
 ## Cloud specific notes
 
@@ -140,11 +156,11 @@ This can be done from the Console, or using the [Command Line Interface (CLI)](h
 ```shell
 # Upload in the Object Storage Bucket
 oci os object put -bn my_bucket \
-  --file /workspace/OL7U9_x86_64-oci-b0/OL7U9_x86_64-oci-b0.qcow
+  --file /workspace/OL7U9_x86_64-oci-b0/OL7U9_x86_64-oci-b0.qcow2
 # Import as Custom image
 oci compute image import from-object -bn my_bucket \
   --namespace my_namespace \
-  --name OL7U9_x86_64-oci-b0.qcow \
+  --name OL7U9_x86_64-oci-b0.qcow2 \
   --display-name MyImage \
   --launch-mode PARAVIRTUALIZED \
   --source-image-type QCOW2
@@ -171,7 +187,7 @@ For cloud-init support, you will need to specify `CLOUD_INIT="Yes"` in your `env
 
 The `build-image` script relies on the following directory structure:
 
-- distr: directory for all Oracle Linux distribution
+- distr: directory for all Oracle Linux distributions
   - _distribution name_
     - env.properties: distribution parameters
     - _name_-ks.cfg: kickstart file for the distribution
@@ -203,13 +219,11 @@ The builder will process the directories in the following order:
     - distr::kickstart
     - cloud_distr::kickstart
     - custom::kickstart
-1. Select a packer configuration file and customise it. The following hooks are called if defined:
-    - distr::packer_conf
-    - cloud_distr::packer_conf
-    - custom::packer_conf
-1. Stage files from the _files_ directories. These files are copied during provisioning in `/tmp/packer_files` in the VM.
-1. Run packer to provision the VM image.
-  During provisioning the `provision.sh` scripts run in the following order:
+1. Stage files from the _files_ directories. These files are copied during provisioning in `PROVISION_DIR` in the VM.
+1. Run `virt-install` to create the image as described in the kickstart file.
+1. Run `virt-customize` to actually provision the image.  
+   The optional `::customize_args` hooks in the `image_scripts.sh` files are invoked to provide additional arguments to `virt-customize`.  
+   The `provision.sh` scripts run in the following order:
     - distr::provision
     - cloud::provision
     - cloud_distr::provision
@@ -218,22 +232,13 @@ The builder will process the directories in the following order:
     - cloud_distr::cleanup
     - cloud::cleanup
     - distr::cleanup
-    - distr::seal[^1]
-1. Image cleanup: the generated image is mounted on the host and the `image-scripts` scripts are run[^1]:
-    - custom::cleanup
-    - cloud_distr::cleanup
-    - cloud::cleanup
-    - distr::cleanup
+1. Run `virt-sysprep` to _seal_ the image (final cleanup).  
+   The optional `::sysprep_args` hooks in the `image_scripts.sh` files are invoked to provide additional arguments to `virt-sysprep`.  
 1. Image packaging: the generated image is packaged in its final format.
   Only the first script found is executed:
     - custom::image_package
     - cloud_distr::image_package
     - cloud::image_package
-
-[^1]: `provision` `seal` vs. `image-scripts` `cleanup`.
-These functions have the same purpose: _seal_ the image before packaging.
-The difference is that the former runs in the VM while the latter runs on the host.
-Sealing on the host might be more efficient, but when it is not possible to mount the image disk on the host, in-VM sealing can be used. When no `image-scripts` `cleanup` are defined, no attempt will be made to mount the filesystem on the host.
 
 ## Feedback
 

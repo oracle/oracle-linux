@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
-# Packer provisioning script for OCI
+# Provisioning script for OCI
 #
-# Copyright (c) 2020 Oracle and/or its affiliates.
+# Copyright (c) 2020, 2024 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
-# Description: OVM specific provisioning. This module provides 2 functions,
+# Description: OCI specific provisioning. This module provides 2 functions,
 # both are optional.
 #   cloud::provision: provision the instance
 #   cloud::cleanup: instance cleanup before shutdown
@@ -17,7 +17,7 @@
 #######################################
 # Configure OCI instance
 # Globals:
-#   None
+#   YUM_VERBOSE
 # Arguments:
 #   None
 # Returns:
@@ -25,7 +25,7 @@
 #######################################
 cloud::config()
 {
-  echo_message "Setup network"
+  common::echo_message "Setup network"
   # simple eth0 configuration
   cat > /etc/sysconfig/network-scripts/ifcfg-eth0 <<-EOF
 	DEVICE="eth0"
@@ -37,6 +37,14 @@ cloud::config()
 	IPV6INIT="no"
 	PERSISTENT_DHCLIENT="1"
 	EOF
+
+  if [[ "${OCI_REPO_MAPPER,,}" =~ "yes"  ]]; then
+    common::echo_message "Install repo mapper scripts"
+    yum install -y "${YUM_VERBOSE}" jq
+    cp "${PROVISION_DIR}/cloud/distr/oci-yum-repo-mapper" /usr/sbin
+    cp "${PROVISION_DIR}/cloud/distr/oci-yum-repo-mapper.service" /usr/lib/systemd/system
+    systemctl enable oci-yum-repo-mapper.service
+  fi
 }
 
 #######################################
@@ -50,14 +58,14 @@ cloud::config()
 #######################################
 cloud::install_agent()
 {
-  echo_message "Install guest agent"
+  common::echo_message "Install guest agent"
   yum install -y "${YUM_VERBOSE}" qemu-guest-agent
 }
 
 #######################################
 # Install cloud-init, use CLOUD_USER if specified
 # Globals:
-#   YUM_VERBOSE
+#   CLOUD_INIT, CLOUD_USER, YUM_VERBOSE
 # Arguments:
 #   None
 # Returns:
@@ -65,7 +73,7 @@ cloud::install_agent()
 #######################################
 cloud::cloud_init()
 {
-  echo_message "Install cloud-init: ${CLOUD_INIT^^}"
+  common::echo_message "Install cloud-init: ${CLOUD_INIT^^}"
   if [[ "${CLOUD_INIT,,}" = "yes" ]]; then
     # Disable cloud-init during installation
     #   cloud-init-generator is run at install time and generates systemd
@@ -73,7 +81,7 @@ cloud::cloud_init()
     #   image mounted!
     mkdir /etc/cloud
     touch /etc/cloud/cloud-init.disabled
-    yum install -y "${YUM_VERBOSE}" cloud-init
+    yum install -y "${YUM_VERBOSE}" cloud-init cloud-utils-growpart
     rm /etc/cloud/cloud-init.disabled
     cat > /etc/cloud/cloud.cfg.d/90_ol.cfg <<-EOF
 	# Provide sensible defaults for OL - see Orabug 34821447

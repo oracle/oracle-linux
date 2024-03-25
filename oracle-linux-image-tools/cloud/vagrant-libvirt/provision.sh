@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Packer provisioning script for Vagrant-libvirt
+# Provisioning script for Vagrant-libvirt
 #
-# Copyright (c) 2020 Oracle and/or its affiliates.
+# Copyright (c) 2020, 2024 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -16,7 +16,7 @@
 
 # Load vagrant common scripts
 # shellcheck disable=SC1091
-source /tmp/packer_files/cloud/vagrant-common.sh
+source "${PROVISION_DIR}/cloud/vagrant-common.sh"
 
 #######################################
 # Configure Vagrant instance
@@ -43,7 +43,7 @@ cloud::config()
 #######################################
 cloud::install_agent()
 {
-  echo_message "Install NFS client"
+  common::echo_message "Install NFS client"
   yum install -y "${YUM_VERBOSE}" nfs-utils
 }
 
