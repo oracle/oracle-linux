@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
-# Packer provisioning script for UTM
+# Provisioning script for UTM
 #
-# Copyright (c) 2022 Oracle and/or its affiliates.
+# Copyright (c) 2022, 2024 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
-# Description: UTM specific provisioning.n
+# Description: UTM specific provisioning.
 #
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 #
@@ -14,7 +14,7 @@
 #######################################
 # Provisioning module
 # Globals:
-#   None
+#   OPC_PASSWORD
 # Arguments:
 #   None
 # Returns:
@@ -22,7 +22,7 @@
 #######################################
 cloud::provision()
 {
-  hash=$(/usr/libexec/platform-python -c "import crypt; print(crypt.crypt('${SSH_PASSWORD}', crypt.METHOD_SHA512))")
+  hash=$(/usr/libexec/platform-python -c "import crypt; print(crypt.crypt('${OPC_PASSWORD}', crypt.METHOD_SHA512))")
   useradd opc -c "Oracle Public Cloud User" -G wheel -m -p "${hash}"
   passwd -e opc
   echo "%opc ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/opc

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Packer provisioning script for Vagrant-VirtualBox
+# Provisioning script for Vagrant-VirtualBox
 #
-# Copyright (c) 2020, 2022 Oracle and/or its affiliates.
+# Copyright (c) 2020, 2024 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -16,7 +16,7 @@
 
 # Load vagrant common scripts
 # shellcheck disable=SC1091
-source /tmp/packer_files/cloud/vagrant-common.sh
+source "${PROVISION_DIR}/cloud/vagrant-common.sh"
 
 #######################################
 # Configure Vagrant instance
@@ -35,7 +35,7 @@ cloud::config()
 #######################################
 # Install Virtualbox guest agent
 # Globals:
-#   KERNEL, YUM_VERBOSE
+#   YUM_VERBOSE
 # Arguments:
 #   None
 # Returns:
@@ -43,7 +43,7 @@ cloud::config()
 #######################################
 cloud::install_agent()
 {
-  echo_message "Install guest agent"
+  common::echo_message "Install Guest Additions"
   local additions="/mnt/VBoxLinuxAdditions.run"
   yum install -y "${YUM_VERBOSE}" make gcc bzip2 tar
 
@@ -54,32 +54,36 @@ cloud::install_agent()
   fi
 
   # Orabug 34811820 for OL8 UEK7 -- for the current install
-  case $(uname -r) in
+  case $(common::default_kernel) in
     5.15.0-*.el8uek*)
       export PATH="/opt/rh/gcc-toolset-11/root/usr/bin:$PATH"
   esac
 
-  # Search for guest additions on cd devices
-  for cdrom in /dev/sr*; do
-    if mount -o ro "${cdrom}" /mnt; then
+  # Search for guest additions ISO -- it is typically labeled VBox_...
+  # Note: use "blkid -s" as "--match-tag" is not suported on OL7
+  local label
+  for label in $(/sbin/blkid -s LABEL -o value | grep VBox_); do
+    if mount -o ro LABEL="${label}" /mnt; then
       if [[ -f ${additions} ]]; then
         # Found!
         break
       else
-        echo_message "No guest additions on ${cdrom}"
+        common::echo_message "No guest additions on ${label}"
+        umount /mnt
       fi
     else
-      echo_message "No media in ${cdrom}"
+      common::echo_message "Cannot mount ${label}"
     fi
   done
 
-  [[ -f ${additions} ]] || echo_error "Guest additions not found"
+  [[ -f ${additions} ]] || common::error "Guest additions not found"
 
+  # Installation will fail when running in libguestfs environment
   sh "${additions}" || :
   umount /mnt
 
   # Orabug 34811820 for OL8 UEK7 -- for subsequent rebuilds
-  case $(uname -r) in
+  case $(common::default_kernel) in
     5.15.0-*.el8uek*)
       # shellcheck disable=SC2016
       sed -i '/PATH=$PATH/a PATH="/opt/rh/gcc-toolset-11/root/usr/bin:$PATH"' /usr/sbin/rcvboxadd
@@ -87,6 +91,12 @@ cloud::install_agent()
         cp /usr/sbin/rcvboxadd "${ga}/init/vboxadd"
       done
   esac
+
+  # Ensure modules are built for the target kernel
+  if [[ $(uname -r) != $(common::default_kernel) ]]; then
+    common::echo_message "Building Guest Additions for $(common::default_kernel)"
+    /sbin/rcvboxadd quicksetup "$(common::default_kernel)"
+  fi
 
 }
 

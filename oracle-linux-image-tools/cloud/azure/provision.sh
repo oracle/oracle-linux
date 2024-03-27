@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Packer provisioning script for Azure
+# Provisioning script for Azure
 #
-# Copyright (c) 2019 Oracle and/or its affiliates.
+# Copyright (c) 2019, 2024 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -17,7 +17,7 @@
 #######################################
 # Install the Microsoft Azure Linux Agent
 # Globals:
-#   YUM_VERBOSE
+#   ORACLE_RELEASE, RESCUE_KERNEL, YUM_VERBOSE
 # Arguments:
 #   None
 # Returns:
@@ -25,12 +25,12 @@
 #######################################
 cloud::install_WALinuxAgent()
 {
-  echo_message "Install Microsoft Azure Linux Agent"
+  common::echo_message "Install Microsoft Azure Linux Agent"
   if [[ "${ORACLE_RELEASE}" = "7" ]]; then
     yum install -y "${YUM_VERBOSE}" parted python-pyasn1 hypervkvpd
     yum install -y "${YUM_VERBOSE}" --enablerepo ol7_addons WALinuxAgent dnsmasq
     yum remove -y "${YUM_VERBOSE}" dracut-config-rescue
-  elif [[ "${ORACLE_RELEASE}" = "8" ]]; then
+  elif [[ "${ORACLE_RELEASE}" =~ ^[89]$ ]]; then
     dnf install -y parted hypervkvpd
     dnf install -y WALinuxAgent dnsmasq
     if [[ -z "${RESCUE_KERNEL}" || "${RESCUE_KERNEL,,}" = "no" ]]; then
@@ -51,7 +51,7 @@ cloud::install_WALinuxAgent()
 #######################################
 # Configuration of the Azure image
 # Globals:
-#   AZURE_DBLICENSE
+#   AZURE_DBLICENSE, ORACLE_RELEASE
 # Arguments:
 #   None
 # Returns:
@@ -59,7 +59,7 @@ cloud::install_WALinuxAgent()
 #######################################
 cloud::azure_cfg()
 {
-  echo_message "Configure networking"
+  common::echo_message "Configure networking"
   # Simple eth0 config, again not hard-coded to the build hardware
   cat > /etc/sysconfig/network-scripts/ifcfg-eth0 <<-EOF
 	DEVICE=eth0
@@ -84,22 +84,22 @@ cloud::azure_cfg()
 	SUBSYSTEM=="net", DRIVERS=="hv_pci", ACTION=="add", ENV{NM_UNMANAGED}="1"
 	EOF
 
-  echo_message "Disable unneeded services"
+  common::echo_message "Disable unneeded services"
   systemctl disable wpa_supplicant || true
   systemctl disable iptables || true
   systemctl disable ip6tables || true
-  echo_message "Enable required services"
+  common::echo_message "Enable required services"
   systemctl enable network || true
   systemctl enable dnsmasq || true
 
-  echo_message "Configure grub"
+  common::echo_message "Configure grub"
   grubby --update-kernel=ALL --args="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 net.ifnames=0"
   sed -i 's/^\(GRUB_CMDLINE_LINUX\)=".*"$/\1="console=tty1 console=ttyS0,115200n8 earlyprintk=ttyS0,115200 rootdelay=300 net.ifnames=0"/g' /etc/default/grub
   sed -i 's/^#\(ClientAliveInterval\).*$/\1 180/g' /etc/ssh/sshd_config
 
-  echo_message "Update EULA"
-  cp "/tmp/packer_files/cloud/${AZURE_DBLICENSE}" /usr/share/oraclelinux-release/EULA
-  cp "/tmp/packer_files/cloud/${AZURE_DBLICENSE}" /usr/share/eula/eula.en_US
+  common::echo_message "Update EULA"
+  cp "${PROVISION_DIR}/cloud/${AZURE_DBLICENSE}" /usr/share/oraclelinux-release/EULA
+  cp "${PROVISION_DIR}/cloud/${AZURE_DBLICENSE}" /usr/share/eula/eula.en_US
 }
 
 #######################################

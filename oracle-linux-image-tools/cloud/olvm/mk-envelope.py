@@ -99,7 +99,7 @@ def parse_args():
                         help='Image size in GB, e.g. 10')
     parser.add_argument('-i',
                         '--image',
-                        default='System.qcow',
+                        default='System.qcow2',
                         help='Image file name')
     parser.add_argument('-t',
                         '--template',
@@ -126,7 +126,7 @@ def generate_ovf(args):
     # Image capacity and size on disk
     disk_capacity = args.size * 1024 * 1024 * 1024
     file_size = stat(args.image).st_size
-    # The imported disk image will be an uncompressed qcow file
+    # The imported disk image will be an uncompressed qcow2 file
     uncompressed = args.image + ".uncompressed"
     call(["qemu-img", "convert", "-O", "qcow2", args.image, uncompressed])
     disk_size = stat(uncompressed).st_size
@@ -200,7 +200,7 @@ def generate_ovf(args):
         'ovf:diskId': disk_uuid,
         # Image size
         'ovf:capacity': str(disk_capacity),
-        # Size on disk of the uncompressed qcow file
+        # Size on disk of the uncompressed qcow2 file
         'ovf:populatedSize': str(disk_size),
         # Ref to file (should be the "id" of fileref)
         'ovf:fileRef': file_uuid,

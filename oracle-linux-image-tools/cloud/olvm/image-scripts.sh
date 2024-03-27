@@ -6,10 +6,12 @@
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
-# Description: this module provides 3 functions:
-#   cloud::validate: optional parameter validation
-#   cloud::image_cleanup: cloud specific actions to cleanup the image
-#     This function is optional
+# Description: this module provides the following functions which are run on
+# the host:
+#   cloud::validate: called at the very begining to validate project paramters
+#     (optional)
+#   cloud::customize_args: arguments to pass to virt-customize (optional)
+#   cloud::sysprep_args: arguments to pass to virt-sysprep (optional)
 #   cloud::image_package: Package the raw image for the target cloud.
 #     This function must be defined either at cloud or cloud/distribution level
 #
@@ -26,28 +28,15 @@
 #   None
 #######################################
 cloud::validate() {
-  [[ "${OLVM_TEMPLATE,,}" =~ ^(yes)|(no)$  ]]  || error "OLVM_TEMPLATE must be Yes or No"
+  [[ "${OLVM_TEMPLATE,,}" =~ ^((yes)|(no))$  ]]  || common::error "OLVM_TEMPLATE must be Yes or No"
   readonly OLVM_TEMPLATE
 }
 
 #######################################
-# Cleanup actions run directly on the image
-# Globals:
-#   None
-# Arguments:
-#   root filesystem directory
-#   boot filesystem directory
-# Returns:
-#   None
-#######################################
-# cloud::image_cleanup() {
-#   :
-# }
-
-#######################################
 # Image packaging - creates an OVA
 # Globals:
-#   CLOUD_DIR CLOUD DISTR_NAME OLVM_TEMPLATE
+#   BUILD_NUMBER, CLOUD, CLOUD_DIR, CPU_NUM, CUSTOM_SCRIPT, DISK_SIZE_GB, DISTR_NAME
+#   MEM_SIZE, OLVM_TEMPLATE, VM_NAME
 # Arguments:
 #   None
 # Returns:
@@ -60,9 +49,7 @@ cloud::image_package() {
   local build_upd="${DISTR_NAME#*U}"
   local build_upd="${build_upd%%_*}"
   local extra_args=()
-  local package_filename vmdk
-
-  common::convert_to_qcow2 System.qcow
+  local package_filename href
 
   if [[ "${OLVM_TEMPLATE,,}" = "yes" ]]; then
     extra_args+=("--template")
@@ -75,19 +62,22 @@ cloud::image_package() {
     extra_args+=("--script" "${CUSTOM_SCRIPT}")
   fi
 
+  pushd "${WORKSPACE}/${VM_NAME}" || common::error "can't cd to image directory"
   ${mk_envelope} "${extra_args[@]}" \
     -r "${build_rel}" \
     -u "${build_upd##U}" \
     -v "${BUILD_NUMBER}" \
     -s "${DISK_SIZE_GB}" \
-    -i System.qcow \
+    -i "${VM_NAME}.qcow2" \
     -c "${CPU_NUM}" \
     -m "${MEM_SIZE}" \
     >"${package_filename}.ovf"
 
-  vmdk=$(grep "ovf:href" "${package_filename}.ovf" | sed -r -e 's/.*ovf:href="([^"]+)".*/\1/')
+  href=$(grep "ovf:href" "${package_filename}.ovf" | sed -r -e 's/.*ovf:href="([^"]+)".*/\1/')
 
-  mv System.qcow "${vmdk}"
+  mv "${VM_NAME}.qcow2" "${href}"
 
-  common::make_ova "${package_filename}.ovf" "${vmdk}"
+  common::make_ova "${package_filename}.ovf" "${href}"
+
+  popd || common::error "can't pop directory"
 }

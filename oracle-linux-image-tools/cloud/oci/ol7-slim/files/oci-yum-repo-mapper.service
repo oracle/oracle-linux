@@ -1,0 +1,17 @@
+# Service config file for Oracle Yum Region Configuration.
+
+[Unit]
+Description=Oracle Cloud Infrastructure Yum Region Setting Service
+After=network-online.target
+Requires=network-online.target
+Before=cloud-config.service
+
+[Service]
+PermissionsStartOnly=True
+ExecStart=/usr/sbin/oci-yum-repo-mapper
+Type=oneshot
+RemainAfterExit=yes
+TimeoutStartSec=8min
+
+[Install]
+WantedBy=multi-user.target

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Packer provisioning script for OVM on OL7
+# Provisioning script for OVM on OL7
 #
 # Copyright (c) 2019 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
@@ -24,7 +24,7 @@
 #   None
 #######################################
 cloud_distr::serial_cfg() {
-  cat > /usr/lib/systemd/system/serial_console.service <<-EOF
+  cat > /usr/lib/systemd/system/serial_console.service <<-'EOF'
 	#  This file is part of systemd.
 	#
 	#  systemd is free software; you can redistribute it and/or modify it

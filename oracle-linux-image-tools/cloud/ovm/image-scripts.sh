@@ -2,14 +2,16 @@
 #
 # Cleanup and package image for OVM
 #
-# Copyright (c) 2019, 2022 Oracle and/or its affiliates.
+# Copyright (c) 2019, 2024 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
-# Description: this module provides 3 functions:
-#   cloud::validate: optional parameter validation
-#   cloud::image_cleanup: cloud specific actions to cleanup the image
-#     This function is optional
+# Description: this module provides the following functions which are run on
+# the host:
+#   cloud::validate: called at the very begining to validate project paramters
+#     (optional)
+#   cloud::customize_args: arguments to pass to virt-cutomize (optional)
+#   cloud::sysprep_args: arguments to pass to virt-sysprep (optional)
 #   cloud::image_package: Package the raw image for the target cloud.
 #     This function must be defined either at cloud or cloud/distribution level
 #
@@ -30,36 +32,23 @@ cloud::validate() {
 }
 
 #######################################
-# Cleanup actions run directly on the image
-# Globals:
-#   None
-# Arguments:
-#   root filesystem directory
-#   boot filesystem directory
-# Returns:
-#   None
-#######################################
-# cloud::image_cleanup() {
-#   :
-# }
-
-#######################################
 # Image packaging - creates a PVM and PVHVM OVA
 # Globals:
-#   CLOUD_DIR CLOUD DISTR_NAME IMAGE_VERSION
+#   CLOUD, CLOUD_DIR, DISK_SIZE_GB, DISTR_NAME, IMAGE_VERSION, VM_NAME
 # Arguments:
 #   None
 # Returns:
 #   None
 #######################################
 cloud::image_package() {
-  common::convert_to_vmdk System.vmdk
+  common::convert_to_vmdk "${WORKSPACE}/${VM_NAME}/System.vmdk"
 
   # Decompose Build Name into Release/update/platform
   local build_rel="${DISTR_NAME%U*}"
   local build_upd="${DISTR_NAME#*U}"
   local build_upd="${build_upd%%_*}"
 
+  pushd "${WORKSPACE}/${VM_NAME}" || common::error "can't cd to image directory"
   "${CLOUD_DIR}/${CLOUD}/mk-envelope.sh" \
     -r "${build_rel}" \
     -u "${build_upd##U}" \
@@ -69,4 +58,5 @@ cloud::image_package() {
 
   common::make_manifest "${VM_NAME}.ovf" System.vmdk >"${VM_NAME}.mf"
   common::make_ova "${VM_NAME}.ovf" "${VM_NAME}.mf" System.vmdk
+  popd || common::error "can't pop directory"
 }
