@@ -73,7 +73,7 @@ cloud::cloud_init()
     #   image mounted!
     mkdir /etc/cloud
     touch /etc/cloud/cloud-init.disabled
-    yum install -y "${YUM_VERBOSE}" cloud-init cloud-utils-growpart
+    yum install -y "${YUM_VERBOSE}" cloud-init tar cloud-utils-growpart
     rm /etc/cloud/cloud-init.disabled
     cat > /etc/cloud/cloud.cfg.d/90_ol.cfg <<-EOF
 	# Provide sensible defaults for OL - see Orabug 34821447
