@@ -1,5 +1,11 @@
 # Release Notes
 
+## March 30, 2024
+
+### Bug fixes
+
+- `cloud-init collect-logs` requires `tar`
+
 ## March, 2024
 
 Major refactoring of the scripts, reducing dependencies on third parties.
