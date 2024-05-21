@@ -486,6 +486,7 @@ image_cleanup() {
 
   virt-sysprep --delete "${BUILD_INFO}" \
     --truncate /etc/machine-id \
+    --truncate /etc/resolv.conf \
     -a "${WORKSPACE}/${VM_NAME}/${VM_NAME}.qcow2" \
     "${virt_sysprep_args[@]}"
 
