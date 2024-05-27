@@ -11,8 +11,8 @@ They currently support:
 
 - Distributions:
   - Oracle Linux 7 update 9 -- Slim (x86_64 only)
-  - Oracle Linux 8 update 9 -- Slim (x86_64 and aarch64)
-  - Oracle Linux 9 update 3 -- Slim (x86_64 and aarch64)
+  - Oracle Linux 8 update 10 -- Slim (x86_64 and aarch64)
+  - Oracle Linux 9 update 4 -- Slim (x86_64 and aarch64)
 - Clouds:
   - Microsoft Azure cloud (x86_64)  
     Target packages: WALinuxAgent  
