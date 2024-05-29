@@ -74,6 +74,7 @@ distr::kernel_config() {
   rm -rf /var/lib/dnf/*
   if [[ ${KERNEL_MODULES,,} == "no" ]]; then
     common::echo_message "Removing kernel modules and linux firmware"
+    dnf mark install "${kernel}-core"
     distr::remove_rpms "${kernel}-modules" linux-firmware
   else
     common::echo_message "Ensure kernel modules are installed"
