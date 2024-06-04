@@ -65,6 +65,7 @@ distr::kernel_config() {
 
   if [[ ${KERNEL_MODULES,,} == "no" ]]; then
     common::echo_message "Removing kernel modules and linux firmware"
+    dnf mark install kernel-uek-core
     distr::remove_rpms kernel-uek-modules linux-firmware
   else
     common::echo_message "Ensure kernel modules are installed"
