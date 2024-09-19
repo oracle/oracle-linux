@@ -196,6 +196,7 @@ load_env() {
   if [[ -z ${OS_VARIANT} ]]; then
     OS_VARIANT=$(osinfo-query os --fields=short-id vendor="Oracle America" |
       grep "ol${ORACLE_RELEASE}\." |
+      sort -V |
       tail -1 |
       sed -e 's/ //g')
   fi
