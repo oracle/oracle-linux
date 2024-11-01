@@ -129,8 +129,13 @@ cloud::image_package() {
 		Vagrant::Config.run do |config|
 		  # This Vagrantfile is auto-generated to contain the MAC address of the box.
 		  # Custom configuration should be placed in the actual \`Vagrantfile\` in this box.
-		  config.vm.base_mac = "080027D25971"
+		  config.vm.base_mac = "080027$(openssl rand -hex 3 | tr '[:lower:]' '[:upper:]')"
 		end
+
+		# Load include vagrant file if it exists after the auto-generated
+		# so it can override any of the settings
+		include_vagrantfile = File.expand_path("../include/_Vagrantfile", __FILE__)
+		load include_vagrantfile if File.exist?(include_vagrantfile)
 	EOF
 
   if [[ "${ORACLE_RELEASE}" =~ ^[89]$ ]]; then
