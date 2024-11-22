@@ -12,7 +12,7 @@ They currently support:
 - Distributions:
   - Oracle Linux 7 update 9 -- Slim (x86_64 only)
   - Oracle Linux 8 update 10 -- Slim (x86_64 and aarch64)
-  - Oracle Linux 9 update 4 -- Slim (x86_64 and aarch64)
+  - Oracle Linux 9 update 5 -- Slim (x86_64 and aarch64)
 - Clouds:
   - Microsoft Azure cloud (x86_64)  
     Target packages: WALinuxAgent  
@@ -110,7 +110,7 @@ In that case, you will have to provide an URL to an installation tree and option
 Example for an Oracle Linux 9 using the UEK boot ISO:
 
 ```Shell
-ISO_URL="https://yum.oracle.com/ISOS/OracleLinux/OL9/u4/x86_64/OracleLinux-R9-U4-x86_64-boot-uek.iso"
+ISO_URL="https://yum.oracle.com/ISOS/OracleLinux/OL9/u5/x86_64/OracleLinux-R9-U5-x86_64-boot-uek.iso"
 REPO_URL="https://yum.oracle.com/repo/OracleLinux/OL9/baseos/latest/x86_64"
 REPO[AppStream]="https://yum.oracle.com/repo/OracleLinux/OL9/appstream/x86_64"
 REPO[ol9_UEKR7]="https://yum.oracle.com/repo/OracleLinux/OL9/UEKR7/x86_64"

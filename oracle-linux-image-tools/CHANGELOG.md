@@ -1,5 +1,32 @@
 # Release Notes
 
+## November 2024
+
+### New Features
+
+- Update for OL9.5
+
+### Bug fixes
+
+- Fix regression for Vagrant Virtualbox boxes (set default NIC type to `virtio`)
+
+## September 2024
+
+### Bug fixes
+
+- Use a version-based sort on the output of osinfo-query to ensure we always use the latest available variant on the build host when creating the initial VM
+
+## May 2024
+
+### New Features
+
+- OL 8.10 & OL9.4 update
+
+### Bug fixes
+
+- Truncate `/etc/resolv.conf` in cleanup
+- Pin `kernel-uek-core` to prevent accidental removal
+
 ## March 30, 2024
 
 ### Bug fixes
