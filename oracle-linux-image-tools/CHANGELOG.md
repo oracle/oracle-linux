@@ -1,5 +1,11 @@
 # Release Notes
 
+## February 2025
+
+### New Features
+
+- aarch64 support for vagrant-virtualbox (on Apple silicon)
+
 ## November 2024
 
 ### New Features

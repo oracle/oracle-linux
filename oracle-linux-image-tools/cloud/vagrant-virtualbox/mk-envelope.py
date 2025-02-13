@@ -3,7 +3,7 @@
 """
 Generate VirtualBox OVF file.
 
-Copyright (c) 2020, 2024 Oracle and/or its affiliates.
+Copyright (c) 2020, 2025 Oracle and/or its affiliates.
 Licensed under the Universal Permissive License v 1.0 as shown at
 https://oss.oracle.com/licenses/upl
 
@@ -20,6 +20,7 @@ from xml.dom.minidom import Document
 # OS Id and type
 OS_ID = 109  # 109 is OL
 OS_TYPE = "Oracle_64"
+OS_TYPE_AARCH64 = "Oracle_arm64"
 
 
 class OvfDocument(Document):
@@ -72,16 +73,25 @@ def parse_args():
     parser.add_argument(
         "--extra-size", type=int, help="Optional extra image size in GB, e.g. 10"
     )
+    parser.add_argument("--uefi", help="UEFI firmware", action="store_true")
+    parser.add_argument(
+        "--aarch64", help="aarch64 architecture (Apple Silicon)", action="store_true"
+    )
 
     args = parser.parse_args()
 
     if not os.path.isfile(args.image):
         parser.error("Image file does not exists.")
 
-    if (args.extra_image and not args.extra_size) or (not args.extra_image and  args.extra_size):
+    if (args.extra_image and not args.extra_size) or (
+        not args.extra_image and args.extra_size
+    ):
         parser.error("Extra image and extra size must both specify or omitted")
     if args.extra_image and not os.path.isfile(args.extra_image):
         parser.error("Extra image file does not exists.")
+
+    if args.aarch64:
+        args.uefi = True
 
     return args
 
@@ -239,7 +249,7 @@ def generate_ovf(args):
     document.createOvfElement(
         "Description",
         parent=os_section,
-        text=OS_TYPE,
+        text=OS_TYPE_AARCH64 if args.aarch64 else OS_TYPE,
     )
 
     # Envelope / Virtual System / Operating System Section / OSType
@@ -249,7 +259,7 @@ def generate_ovf(args):
         attr={
             "ovf:required": "false",
         },
-        text=OS_TYPE,
+        text=OS_TYPE_AARCH64 if args.aarch64 else OS_TYPE,
     )
 
     # Envelope / Virtual System / Virtual Hardware Section
@@ -307,53 +317,71 @@ def generate_ovf(args):
         },
     )
 
-    # Envelope / Virtual System / Virtual Hardware Section / IDE Controller 0
     instance_id += 1
-    document.createOvfElement(
-        "Item",
-        parent=vh_section,
-        text_elements={
-            "rasd:Address": "0",
-            "rasd:Caption": "ideController0",
-            "rasd:Description": "IDE Controller",
-            "rasd:ElementName": "ideController0",
-            "rasd:InstanceID": str(instance_id),
-            "rasd:ResourceSubType": "PIIX4",
-            "rasd:ResourceType": "5",
-        },
-    )
+    if args.uefi:
+        # Envelope / Virtual System / Virtual Hardware Section / SCSI Controller 0
+        document.createOvfElement(
+            "Item",
+            parent=vh_section,
+            text_elements={
+                "rasd:Address": "0",
+                "rasd:Caption": "virtioSCSIController0",
+                "rasd:Description": "VirtioSCSI Controller",
+                "rasd:ElementName": "virtioSCSIController0",
+                "rasd:InstanceID": str(instance_id),
+                "rasd:ResourceSubType": "VirtioSCSI",
+                "rasd:ResourceType": "20",
+            },
+        )
+        controller_id = instance_id
+    else:
+        # Envelope / Virtual System / Virtual Hardware Section / IDE Controller 0
+        document.createOvfElement(
+            "Item",
+            parent=vh_section,
+            text_elements={
+                "rasd:Address": "0",
+                "rasd:Caption": "ideController0",
+                "rasd:Description": "IDE Controller",
+                "rasd:ElementName": "ideController0",
+                "rasd:InstanceID": str(instance_id),
+                "rasd:ResourceSubType": "PIIX4",
+                "rasd:ResourceType": "5",
+            },
+        )
 
-    # Envelope / Virtual System / Virtual Hardware Section / IDE Controller 1
-    instance_id += 1
-    document.createOvfElement(
-        "Item",
-        parent=vh_section,
-        text_elements={
-            "rasd:Address": "1",
-            "rasd:Caption": "ideController1",
-            "rasd:Description": "IDE Controller",
-            "rasd:ElementName": "ideController1",
-            "rasd:InstanceID": str(instance_id),
-            "rasd:ResourceSubType": "PIIX4",
-            "rasd:ResourceType": "5",
-        },
-    )
+        # Envelope / Virtual System / Virtual Hardware Section / IDE Controller 1
+        instance_id += 1
+        document.createOvfElement(
+            "Item",
+            parent=vh_section,
+            text_elements={
+                "rasd:Address": "1",
+                "rasd:Caption": "ideController1",
+                "rasd:Description": "IDE Controller",
+                "rasd:ElementName": "ideController1",
+                "rasd:InstanceID": str(instance_id),
+                "rasd:ResourceSubType": "PIIX4",
+                "rasd:ResourceType": "5",
+            },
+        )
 
-    # Envelope / Virtual System / Virtual Hardware Section / SATA Controller 0
-    instance_id += 1
-    document.createOvfElement(
-        "Item",
-        parent=vh_section,
-        text_elements={
-            "rasd:Address": "0",
-            "rasd:Caption": "sataController0",
-            "rasd:Description": "SATA Controller",
-            "rasd:ElementName": "sataController0",
-            "rasd:InstanceID": str(instance_id),
-            "rasd:ResourceSubType": "AHCI",
-            "rasd:ResourceType": "20",
-        },
-    )
+        # Envelope / Virtual System / Virtual Hardware Section / SATA Controller 0
+        instance_id += 1
+        document.createOvfElement(
+            "Item",
+            parent=vh_section,
+            text_elements={
+                "rasd:Address": "0",
+                "rasd:Caption": "sataController0",
+                "rasd:Description": "SATA Controller",
+                "rasd:ElementName": "sataController0",
+                "rasd:InstanceID": str(instance_id),
+                "rasd:ResourceSubType": "AHCI",
+                "rasd:ResourceType": "20",
+            },
+        )
+        controller_id = instance_id
 
     # Envelope / Virtual System / Virtual Hardware Section / Disk
     instance_id += 1
@@ -367,7 +395,7 @@ def generate_ovf(args):
             "rasd:ElementName": "disk1",
             "rasd:HostResource": f"/disk/{disk_id}1",
             "rasd:InstanceID": str(instance_id),
-            "rasd:Parent": "5",
+            "rasd:Parent": str(controller_id),
             "rasd:ResourceType": "17",
         },
     )
@@ -382,8 +410,8 @@ def generate_ovf(args):
                 "rasd:Description": "Disk Image",
                 "rasd:ElementName": "disk2",
                 "rasd:HostResource": f"/disk/{disk_id}2",
-            "rasd:InstanceID": str(instance_id),
-                "rasd:Parent": "5",
+                "rasd:InstanceID": str(instance_id),
+                "rasd:Parent": str(controller_id),
                 "rasd:ResourceType": "17",
             },
         )
@@ -409,10 +437,10 @@ def generate_ovf(args):
         parent=virtual_system,
         attr={
             "ovf:required": "false",
-            "version": "1.19-linux",
+            "version": "1.20-macosx" if args.aarch64 else "1.19-linux",
             "uuid": f"{{{machine_uuid}}}",
             "name": args.name,
-            "OSType": OS_TYPE,
+            "OSType": OS_TYPE_AARCH64 if args.aarch64 else OS_TYPE,
             "snapshotFolder": "Snapshots",
             "lastStateChange": iso_time,
         },
@@ -431,64 +459,92 @@ def generate_ovf(args):
         parent=machine_section,
     )
 
-    ms_hardware_cpu = document.createOvfElement(
-        "CPU", parent=ms_hardware, attr={"count": str(args.cpu)}
-    )
-    document.createOvfElement("PAE", parent=ms_hardware_cpu, attr={"enabled": "true"})
-    document.createOvfElement(
-        "LongMode", parent=ms_hardware_cpu, attr={"enabled": "true"}
-    )
-    document.createOvfElement(
-        "X2APIC", parent=ms_hardware_cpu, attr={"enabled": "true"}
-    )
-    document.createOvfElement(
-        "HardwareVirtExLargePages", parent=ms_hardware_cpu, attr={"enabled": "true"}
-    )
+    if not args.uefi:
+        ms_hardware_cpu = document.createOvfElement(
+            "CPU", parent=ms_hardware, attr={"count": str(args.cpu)}
+        )
+        document.createOvfElement(
+            "PAE", parent=ms_hardware_cpu, attr={"enabled": "true"}
+        )
+        document.createOvfElement(
+            "LongMode", parent=ms_hardware_cpu, attr={"enabled": "true"}
+        )
+        document.createOvfElement(
+            "X2APIC", parent=ms_hardware_cpu, attr={"enabled": "true"}
+        )
+        document.createOvfElement(
+            "HardwareVirtExLargePages", parent=ms_hardware_cpu, attr={"enabled": "true"}
+        )
 
     document.createOvfElement(
         "Memory", parent=ms_hardware, attr={"RAMSize": str(args.memory)}
     )
 
-    ms_hardware_boot = document.createOvfElement("Boot", parent=ms_hardware)
-    document.createOvfElement(
-        "Order", parent=ms_hardware_boot, attr={"position": "1", "device": "HardDisk"}
-    )
-    document.createOvfElement(
-        "Order", parent=ms_hardware_boot, attr={"position": "2", "device": "DVD"}
-    )
-    document.createOvfElement(
-        "Order", parent=ms_hardware_boot, attr={"position": "3", "device": "None"}
-    )
-    document.createOvfElement(
-        "Order", parent=ms_hardware_boot, attr={"position": "4", "device": "None"}
-    )
+    if not args.uefi:
+        ms_hardware_boot = document.createOvfElement("Boot", parent=ms_hardware)
+        document.createOvfElement(
+            "Order",
+            parent=ms_hardware_boot,
+            attr={"position": "1", "device": "HardDisk"},
+        )
+        document.createOvfElement(
+            "Order", parent=ms_hardware_boot, attr={"position": "2", "device": "DVD"}
+        )
+        document.createOvfElement(
+            "Order", parent=ms_hardware_boot, attr={"position": "3", "device": "None"}
+        )
+        document.createOvfElement(
+            "Order", parent=ms_hardware_boot, attr={"position": "4", "device": "None"}
+        )
 
-    document.createOvfElement("Display", parent=ms_hardware, attr={"VRAMSize": "4"})
+    if args.uefi:
+        document.createOvfElement(
+            "Display",
+            parent=ms_hardware,
+            attr={"controller": "QemuRamFB", "VRAMSize": "20"},
+        )
+    else:
+        document.createOvfElement("Display", parent=ms_hardware, attr={"VRAMSize": "4"})
 
-    ms_hardware_rd = document.createOvfElement(
-        "RemoteDisplay", parent=ms_hardware, attr={"enabled": "true"}
-    )
-    ms_hardware_rd_vrde = document.createOvfElement(
-        "VRDEProperties", parent=ms_hardware_rd
-    )
-    document.createOvfElement(
-        "Property",
-        parent=ms_hardware_rd_vrde,
-        attr={"name": "TCP/Address", "value": "127.0.0.1"},
-    )
-    document.createOvfElement(
-        "Property",
-        parent=ms_hardware_rd_vrde,
-        attr={"name": "TCP/Ports", "value": "5905"},
-    )
+    if not args.aarch64:
+        ms_hardware_rd = document.createOvfElement(
+            "RemoteDisplay", parent=ms_hardware, attr={"enabled": "true"}
+        )
+        ms_hardware_rd_vrde = document.createOvfElement(
+            "VRDEProperties", parent=ms_hardware_rd
+        )
+        document.createOvfElement(
+            "Property",
+            parent=ms_hardware_rd_vrde,
+            attr={"name": "TCP/Address", "value": "127.0.0.1"},
+        )
+        document.createOvfElement(
+            "Property",
+            parent=ms_hardware_rd_vrde,
+            attr={"name": "TCP/Ports", "value": "5905"},
+        )
 
-    ms_hardware_bios = document.createOvfElement("BIOS", parent=ms_hardware)
-    document.createOvfElement(
-        "IOAPIC", parent=ms_hardware_bios, attr={"enabled": "true"}
-    )
-    document.createOvfElement(
-        "SmbiosUuidLittleEndian", parent=ms_hardware_bios, attr={"enabled": "true"}
-    )
+    if args.uefi:
+        ms_hardware_uefi = document.createOvfElement(
+            "Firmware", parent=ms_hardware, attr={"type": "EFI"}
+        )
+        document.createOvfElement(
+            "IOAPIC", parent=ms_hardware_uefi, attr={"enabled": "true"}
+        )
+        document.createOvfElement(
+            "SmbiosUuidLittleEndian", parent=ms_hardware_uefi, attr={"enabled": "true"}
+        )
+        document.createOvfElement(
+            "AutoSerialNumGen", parent=ms_hardware_uefi, attr={"enabled": "true"}
+        )
+    else:
+        ms_hardware_bios = document.createOvfElement("BIOS", parent=ms_hardware)
+        document.createOvfElement(
+            "IOAPIC", parent=ms_hardware_bios, attr={"enabled": "true"}
+        )
+        document.createOvfElement(
+            "SmbiosUuidLittleEndian", parent=ms_hardware_bios, attr={"enabled": "true"}
+        )
 
     document.createOvfElement(
         "NAT",
@@ -514,32 +570,46 @@ def generate_ovf(args):
     ms_hardware_storage = document.createOvfElement(
         "StorageControllers", parent=ms_hardware
     )
-    document.createOvfElement(
-        "StorageController",
-        parent=ms_hardware_storage,
-        attr={
-            "name": "IDE Controller",
-            "type": "PIIX4",
-            "PortCount": "2",
-            "useHostIOCache": "true",
-            "Bootable": "true",
-        },
-    )
-    ms_hardware_storage_sata = document.createOvfElement(
-        "StorageController",
-        parent=ms_hardware_storage,
-        attr={
-            "name": "SATA Controller",
-            "type": "AHCI",
-            "PortCount": "2" if args.extra_image else "1",
-            "useHostIOCache": "false",
-            "Bootable": "true",
-            "IDE0MasterEmulationPort": "0",
-            "IDE0SlaveEmulationPort": "1",
-            "IDE1MasterEmulationPort": "2",
-            "IDE1SlaveEmulationPort": "3",
-        },
-    )
+    if args.uefi:
+        ms_hardware_storage_controller = document.createOvfElement(
+            "StorageController",
+            parent=ms_hardware_storage,
+            attr={
+                "name": "VirtioSCSI",
+                "type": "VirtioSCSI",
+                "PortCount": "2" if args.extra_image else "1",
+                "useHostIOCache": "false",
+                "Bootable": "true",
+            },
+        )
+    else:
+        document.createOvfElement(
+            "StorageController",
+            parent=ms_hardware_storage,
+            attr={
+                "name": "IDE Controller",
+                "type": "PIIX4",
+                "PortCount": "2",
+                "useHostIOCache": "true",
+                "Bootable": "true",
+            },
+        )
+        ms_hardware_storage_controller = document.createOvfElement(
+            "StorageController",
+            parent=ms_hardware_storage,
+            attr={
+                "name": "SATA Controller",
+                "type": "AHCI",
+                "PortCount": "2" if args.extra_image else "1",
+                "useHostIOCache": "false",
+                "Bootable": "true",
+                "IDE0MasterEmulationPort": "0",
+                "IDE0SlaveEmulationPort": "1",
+                "IDE1MasterEmulationPort": "2",
+                "IDE1SlaveEmulationPort": "3",
+            },
+        )
+
     document.createOvfElement(
         "Image",
         attr={"uuid": f"{{{disk_uuid}}}"},
@@ -551,7 +621,7 @@ def generate_ovf(args):
                 "port": "0",
                 "device": "0",
             },
-            parent=ms_hardware_storage_sata,
+            parent=ms_hardware_storage_controller,
         ),
     )
     if args.extra_image:
@@ -566,8 +636,21 @@ def generate_ovf(args):
                     "port": "1",
                     "device": "0",
                 },
-                parent=ms_hardware_storage_sata,
+                parent=ms_hardware_storage_controller,
             ),
+        )
+
+    if args.aarch64:
+        # Envelope / Virtual System / Machine Section / Platform
+        ms_platform = document.createOvfElement(
+            "Platform", parent=machine_section, attr={"architecture": "ARM"}
+        )
+        document.createOvfElement("RTC", parent=ms_platform, attr={"localOrUTC": "UTC"})
+        document.createOvfElement(
+            "Chipset", parent=ms_platform, attr={"type": "ARMv8Virtual"}
+        )
+        document.createOvfElement(
+            "CPU", parent=ms_platform, attr={"count": str(args.cpu)}
         )
 
     return document.toprettyxml(indent="  ")

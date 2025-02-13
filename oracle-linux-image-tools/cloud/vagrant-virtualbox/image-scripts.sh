@@ -2,13 +2,13 @@
 #
 # Cleanup and package image for the "vagrant-virtualbox" image
 #
-# Copyright (c) 2020, 2024 Oracle and/or its affiliates.
+# Copyright (c) 2020, 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
 # Description: this module provides the following functions which are run on
 # the host:
-#   cloud::validate: called at the very begining to validate project parameters
+#   cloud::validate: called at the very beginning to validate project parameters
 #     (optional)
 #   cloud::customize_args: arguments to pass to virt-customize (optional)
 #   cloud::sysprep_args: arguments to pass to virt-sysprep (optional)
@@ -38,7 +38,7 @@ cloud::validate() {
   [[ -z "${VAGRANT_GUEST_ADDITIONS_SHA256}" ]] && common::error "missing VirtualBox GA ISO checksum"
   [[ ${#VAGRANT_GUEST_ADDITIONS_SHA256} -eq 64  ]] || common::error "VAGRANT_GUEST_ADDITIONS_SHA256 must be SHA256"
   readonly VAGRANT_GUEST_ADDITIONS_URL VAGRANT_GUEST_ADDITIONS_SHA256
-  # Retriece GA during validation to "fail fast"
+  # Retrieve GA during validation to "fail fast"
   declare -g VAGRANT_GUEST_ADDITIONS_PATH
   common::retrieve_iso "${VAGRANT_GUEST_ADDITIONS_URL}" "${VAGRANT_GUEST_ADDITIONS_SHA256}" VAGRANT_GUEST_ADDITIONS_PATH
   readonly VAGRANT_GUEST_ADDITIONS_PATH
@@ -98,6 +98,7 @@ cloud::image_package() {
   local cpu="${VAGRANT_VIRTUALBOX_CPU_NUM:-$CPU_NUM}"
   local memory="${VAGRANT_VIRTUALBOX_MEM_SIZE:-$MEM_SIZE}"
   local -a extra_disk=()
+  local -a mk_envelope_params=()
   local -a file_list=(
     ./Vagrantfile
     ./box-disk001.vmdk
@@ -112,9 +113,14 @@ cloud::image_package() {
     file_list+=(./box-disk002.vmdk)
   fi
 
+  if [[ ${DISTR_NAME} =~ aarch64$ ]]; then
+    mk_envelope_params+=( --aarch64 )
+  fi 
+
   ${mk_envelope} --name "${VM_NAME}" --cpu "${cpu}" --memory "${memory}" \
     --image "${WORKSPACE}/${VM_NAME}/box-disk001.vmdk" --size "${DISK_SIZE_GB}" \
-    "${extra_disk[@]}" > "${WORKSPACE}/${VM_NAME}/box.ovf"
+    "${extra_disk[@]}" \
+    "${mk_envelope_params[@]}" > "${WORKSPACE}/${VM_NAME}/box.ovf"
   
   # Fix vmdk header
   local disk_uuid

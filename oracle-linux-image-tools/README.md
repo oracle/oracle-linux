@@ -27,7 +27,7 @@ They currently support:
   - Oracle VM Server (OVM) (x86_64)  
     Target packages: oracle-template-config + vmapi  
     Image format: OVM OVA
-  - Vagrant (VirtualBox provider) (x86_64)  
+  - Vagrant (VirtualBox provider) (x86_64 and aarch64)  
     Target packages: VirtualBox guest additions  
     Image format: box
   - Vagrant (libvirt provider) (x86_64)  
