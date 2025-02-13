@@ -2,9 +2,21 @@
 
 ## February 2025
 
+Note: OL7 Premier Support ended on 31 December 2024, scripts will only be maintained for OL8 and newer.
+
 ### New Features
 
 - aarch64 support for vagrant-virtualbox (on Apple silicon)
+- UEFI support for x86_64.  
+  `BOOT_MODE` can be set to `bios`, `uefi` or `hybrid`. In hybrid mode the image is compatible with both Legacy BIOS and UEFI
+
+### Changes
+
+- The partition layout is now [GPT](https://en.wikipedia.org/wiki/GUID_Partition_Table) for all images
+
+### Refactor
+
+- The partitioning in the _kickstart_ files is generated dynamically in the `%pre` section
 
 ## November 2024
 
@@ -66,7 +78,7 @@ As of this release, we have:
 
 Notable code changes:
 
-- Drop support for [VirtualBox](https://www.virtualbox.org/) as **builder** (you can still create Vagrant VirtualBox **images**)
+- Drop support for [VirtualBox](https://www.virtualbox.org/) as __builder__ (you can still create Vagrant VirtualBox __images__)
 - `image-scripts.sh` `::seal()` functions obsolete; code moved to `provision.sh` `::cleanup()` functions.
   We don't need anymore a separate _offline_ cleanup as `virt-customize` doesn't actually run the built VM.
 - Simplify `provision.sh` `::cleanup()` functions as most parts are now handled by `virt-sysprep` operations.

@@ -10,7 +10,7 @@ The tools are architected around _distribution flavours_ and _target clouds_.
 They currently support:
 
 - Distributions:
-  - Oracle Linux 7 update 9 -- Slim (x86_64 only)
+  - Oracle Linux 7 update 9 -- Slim (x86_64 only; deprecated)
   - Oracle Linux 8 update 10 -- Slim (x86_64 and aarch64)
   - Oracle Linux 9 update 5 -- Slim (x86_64 and aarch64)
 - Clouds:
