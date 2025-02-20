@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Common functions for provisionning the VM
+# Common functions for provisioning the VM
 #
-# Copyright (c) 2024 Oracle and/or its affiliates.
+# Copyright (c) 2024, 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl.
 #
@@ -114,7 +114,7 @@ common::remove_kernels() {
 #   None
 #######################################
 common::distr_cleanup() {
-  common::echo_message "Stoppping services"
+  common::echo_message "Stopping services"
   systemctl stop rsyslog || true
   systemctl stop auditd || true
 

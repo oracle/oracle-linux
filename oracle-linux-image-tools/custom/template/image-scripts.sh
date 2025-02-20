@@ -4,9 +4,9 @@
 #
 # Description: this module provides the following functions which are run on
 # the host:
-#   custom::validate: called at the very begining to validate project paramters
+#   custom::validate: called at the very beginning to validate project parameters
 #   custom::kickstart: allow changes in the kickstart file
-#   custom::customize_args: arguments to pass to virt-cutomize (optional)
+#   custom::customize_args: arguments to pass to virt-customize (optional)
 #   custom::image_package: package image in final format (override the cloud
 #     image_package function!)
 # All functions are optional
@@ -29,7 +29,7 @@ custom::validate() {
 }
 
 #######################################
-# Kickcstart fixup
+# Kickstart fixup
 # Globals:
 #   All build parameters are available
 # Arguments:
@@ -45,8 +45,8 @@ custom::kickstart() {
 
 #######################################
 # Image packaging
-#   Warning: when this function is defined it will orverride the cloud
-#   image_package fuction!
+#   Warning: when this function is defined it will override the cloud
+#   image_package function!
 #   You most probably do not need to implement this function.
 #   See cloud image_package function for examples.
 # Globals:

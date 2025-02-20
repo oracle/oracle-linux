@@ -2,13 +2,13 @@
 #
 # Cleanup and package image for the "None" image
 #
-# Copyright (c) 2022, 2024 Oracle and/or its affiliates.
+# Copyright (c) 2022, 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
 # Description: this module provides the following functions which are run on
 # the host:
-#   cloud::validate: called at the very begining to validate project parameters
+#   cloud::validate: called at the very beginning to validate project parameters
 #     (optional)
 #   cloud::customize_args: arguments to pass to virt-customize (optional)
 #   cloud::sysprep_args: arguments to pass to virt-sysprep (optional)
@@ -34,7 +34,7 @@ cloud::validate() {
 
 #######################################
 # Image packaging: 
-#   For VistualBox we convert back to VMDK and re-create the OVA file
+#   For VirtualBox we convert back to VMDK and re-create the OVA file
 #   For qemu we convert to a qcow2 file
 # Globals:
 #   CLOUD, CLOUD_DIR, VM_NAME

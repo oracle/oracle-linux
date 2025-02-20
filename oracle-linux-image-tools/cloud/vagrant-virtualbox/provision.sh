@@ -65,7 +65,7 @@ cloud::install_agent()
   esac
 
   # Search for guest additions ISO -- it is typically labeled VBox_...
-  # Note: use "blkid -s" as "--match-tag" is not suported on OL7
+  # Note: use "blkid -s" as "--match-tag" is not supported on OL7
   local label
   for label in $(/sbin/blkid -s LABEL -o value | grep VBox_); do
     if mount -o ro LABEL="${label}" /mnt; then
