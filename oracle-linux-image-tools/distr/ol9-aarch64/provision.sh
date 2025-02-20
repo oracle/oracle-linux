@@ -76,7 +76,7 @@ distr::kernel_config() {
   ${DRACUT_CMD} -f "/boot/initramfs-${target_kernel}.img" "${target_kernel}"
 
   # Ensure grub is properly setup
-  grub2-mkconfig -o /etc/grub2-efi.cfg
+  grub2-mkconfig -o /etc/grub2-efi.cfg --update-bls-cmdline
   grubby --set-default="/boot/vmlinuz-${target_kernel}"
 }
 

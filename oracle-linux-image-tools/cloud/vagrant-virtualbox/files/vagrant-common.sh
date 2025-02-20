@@ -2,7 +2,7 @@
 #
 # Common scripts for vagrant provisioners
 #
-# Copyright (c) 2020, 2024 Oracle and/or its affiliates.
+# Copyright (c) 2020, 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -80,7 +80,11 @@ EOF
     sed -i 's/^timeout=[0-9]\+$/timeout=1/' /boot/grub/grub.conf
   else
     sed -i 's/^GRUB_TIMEOUT=[0-9]\+$/GRUB_TIMEOUT=1/' /etc/default/grub
-    grub2-mkconfig -o /boot/grub2/grub.cfg
+    if [[ $(grub2-mkconfig --help) =~ '--update-bls-cmdline' ]]; then
+      grub2-mkconfig -o /boot/grub2/grub.cfg --update-bls-cmdline
+    else
+      grub2-mkconfig -o /boot/grub2/grub.cfg
+    fi
   fi
 
   # Blacklist the floppy module to avoid probing timeouts

@@ -2,7 +2,7 @@
 #
 # Provisioning script for OVM on OL9
 #
-# Copyright (c) 2023, 2024 Oracle and/or its affiliates.
+# Copyright (c) 2023, 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -105,7 +105,7 @@ cloud_distr::additional_kernel() {
   ${DRACUT_CMD} -f "/boot/initramfs-${kernel_version}.img" "${kernel_version}"
 
   # Ensure grub is properly setup
-  grub2-mkconfig -o /boot/grub2/grub.cfg
+  grub2-mkconfig -o /boot/grub2/grub.cfg --update-bls-cmdline
 }
 
 #######################################
