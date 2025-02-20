@@ -189,6 +189,9 @@ load_env() {
 
   [[ "${SERIAL_CONSOLE,,}" =~ ^((yes)|(no))$ ]] || common::error "SERIAL_CONSOLE must be yes or no"
   readonly SERIAL_CONSOLE
+  [[ "${SERIAL_CONSOLE_RUNTIME,,}" =~ ^((yes)|(no))$ ]] || common::error "SERIAL_CONSOLE_RUNTIME must be yes or no"
+  readonly SERIAL_CONSOLE_RUNTIME
+
 
   [[ "${BOOT_MODE,,}" =~ ^((bios)|(uefi)|(hybrid))$ ]] || common::error "BOOT_MODE must be bios, uefi or hybrid"
   readonly BOOT_MODE
