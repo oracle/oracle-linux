@@ -26,7 +26,7 @@ OS_ID = {
     'OL6': 5002,
     'OL7': 5003,
     'OL8': 5006,
-    'OL9': 5006,  # Use OL8 ID for now, to support older OLVM versions
+    'OL9': 5007,
 }
 
 
