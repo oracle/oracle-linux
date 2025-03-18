@@ -1,18 +1,25 @@
 # Release Notes
 
-## February 2025
+## March 2025
 
-Note: OL7 Premier Support ended on 31 December 2024, scripts will only be maintained for OL8 and newer.
+Note: OL7 Premier Support ended on 31 December 2024, scripts will only be maintained for the OL8 and newer images.
 
 ### New Features
 
 - aarch64 support for vagrant-virtualbox (on Apple silicon)
 - UEFI support for x86_64.  
   `BOOT_MODE` can be set to `bios`, `uefi` or `hybrid`. In hybrid mode the image is compatible with both Legacy BIOS and UEFI
+- new `SERIAL_CONSOLE_RUNTIME` build parameter to configure serial console in the generated image
 
 ### Changes
 
 - The partition layout is now [GPT](https://en.wikipedia.org/wiki/GUID_Partition_Table) for all images
+- Install the audit package (allow SELinux auditing)
+
+### Bug fixes
+
+- OL9: update BLS files when grub config is updated
+- OLVM OL9 templates have now the correct OS id (was set to OL8 for compatibility reason)
 
 ### Refactor
 
