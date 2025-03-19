@@ -2,7 +2,7 @@
 #
 # Provisioning script for OL9 - aarch64
 #
-# Copyright (c) 2022, 2024 Oracle and/or its affiliates.
+# Copyright (c) 2022, 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -76,7 +76,7 @@ distr::kernel_config() {
   ${DRACUT_CMD} -f "/boot/initramfs-${target_kernel}.img" "${target_kernel}"
 
   # Ensure grub is properly setup
-  grub2-mkconfig -o /etc/grub2-efi.cfg
+  grub2-mkconfig -o /etc/grub2-efi.cfg --update-bls-cmdline
   grubby --set-default="/boot/vmlinuz-${target_kernel}"
 }
 
@@ -120,7 +120,7 @@ distr::configure() {
   rm -rf /var/log/journal/
 
   # setup systemd to boot to the right runlevel
-  common::echo_message "Setting default runlevel to multiuser text mode"
+  common::echo_message "Setting default runlevel to multi-user text mode"
   rm -f /etc/systemd/system/default.target
   ln -s /lib/systemd/system/multi-user.target /etc/systemd/system/default.target
 

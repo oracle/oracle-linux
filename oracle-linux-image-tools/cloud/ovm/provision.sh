@@ -2,7 +2,7 @@
 #
 # Provisioning script for OVM
 #
-# Copyright (c) 2019, 2024 Oracle and/or its affiliates.
+# Copyright (c) 2019, 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -71,7 +71,11 @@ cloud::ovm_cfg()
   cloud::default_grub GRUB_TERMINAL '"serial console"'
 
   #Regenerate grub.cfg
-  grub2-mkconfig -o /boot/grub2/grub.cfg
+  if [[ $(grub2-mkconfig --help) =~ '--update-bls-cmdline' ]]; then
+    grub2-mkconfig -o /boot/grub2/grub.cfg --update-bls-cmdline
+  else
+    grub2-mkconfig -o /boot/grub2/grub.cfg
+  fi
 }
 
 #######################################

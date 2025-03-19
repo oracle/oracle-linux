@@ -3,7 +3,7 @@
 #
 # Create minimal Oracle Linux images
 #
-# Copyright (c) 2019, 2024 Oracle and/or its affiliates.
+# Copyright (c) 2019, 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl.
 #
@@ -189,8 +189,11 @@ load_env() {
 
   [[ "${SERIAL_CONSOLE,,}" =~ ^((yes)|(no))$ ]] || common::error "SERIAL_CONSOLE must be yes or no"
   readonly SERIAL_CONSOLE
+  [[ "${SERIAL_CONSOLE_RUNTIME,,}" =~ ^((yes)|(no))$ ]] || common::error "SERIAL_CONSOLE_RUNTIME must be yes or no"
+  readonly SERIAL_CONSOLE_RUNTIME
 
-  [[ "${BOOT_MODE,,}" =~ ^((bios)|(uefi))$ ]] || common::error "BOOT_MODE must be bios or uefi"
+
+  [[ "${BOOT_MODE,,}" =~ ^((bios)|(uefi)|(hybrid))$ ]] || common::error "BOOT_MODE must be bios, uefi or hybrid"
   readonly BOOT_MODE
 
   if [[ -z ${OS_VARIANT} ]]; then
@@ -263,7 +266,7 @@ stage_files() {
     [[ -r "${env_file}" ]] && cat "${env_file}" >> "${GLOBAL_ENV_FILE}"
   done
 
-  # Main provisionning script
+  # Main provisioning script
   cp "${BIN_DIR}/provision.sh" "${provision_path}/"
   cp "${BIN_DIR}/provision-common.sh" "${provision_path}/"
 
@@ -317,6 +320,8 @@ stage_kickstart() {
 
   cp "${DISTR_DIR}/${DISTR}/"*-ks.cfg "${ks_path}"
 
+  # This shouldn't be necessary with the current partitioning method, but we
+  # leave it for backward compatibility (OL7)
   if [[ "${SETUP_SWAP,,}" = "no" ]]; then
     sed -i -e '/^part swap /d' "${ks_path}"
   fi
@@ -368,14 +373,14 @@ image_create() {
   ISO_LABEL=$(file "${ISO_PATH}" | sed -e "s/.* '\(.*\)' .*/\1/"  -e 's/ /\\x20/g')
 
   declare -ga virt_install_args
-  # Set Serial conole
+  # Set Serial console
   if [[ "${SERIAL_CONSOLE,,}" = "yes" ]]; then
     BOOT_COMMAND+=( "${BOOT_COMMAND_SERIAL_CONSOLE[@]}" )
   else
     virt_install_args+=(--wait "${INSTALL_WAIT_TIME}" --noautoconsole)
   fi
 
-  if [[ ${BOOT_MODE,,} == uefi ]]; then
+  if [[ ${BOOT_MODE,,} != bios ]]; then
     virt_install_args+=(--boot uefi)
   fi
 
@@ -403,7 +408,7 @@ image_create() {
 }
 
 #######################################
-# Customize Oracle Linux: run provisionning scripts
+# Customize Oracle Linux: run provisioning scripts
 # Uses libguestfs to update the ${WORKSPACE}/${VM_NAME}/${VM_NAME}.qcow2
 # Globals:
 #   BUILD_INFO, MEM_SIZE, PROVISION_DIR, PROVISION_SCRIPT, SELINUX, VM_NAME, WORKSPACE

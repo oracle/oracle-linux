@@ -2,7 +2,7 @@
 #
 # Provisioning script for OL8
 #
-# Copyright (c) 2019, 2024 Oracle and/or its affiliates.
+# Copyright (c) 2019, 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -141,7 +141,7 @@ distr::configure() {
   rm -rf /var/log/journal/
 
   # setup systemd to boot to the right runlevel
-  common::echo_message "Setting default runlevel to multiuser text mode"
+  common::echo_message "Setting default runlevel to multi-user text mode"
   rm -f /etc/systemd/system/default.target
   ln -s /lib/systemd/system/multi-user.target /etc/systemd/system/default.target
 
@@ -189,7 +189,25 @@ distr::configure() {
     grep -q "${tty}" /etc/securetty ||  echo "${tty}" >>/etc/securetty
   done
 
-  common::echo_message "Remove unneeded RPMs"
+  common::echo_message "Enable serial console: ${SERIAL_CONSOLE_RUNTIME^^}"
+  if [[ "${SERIAL_CONSOLE_RUNTIME,,}" = "yes" ]]; then
+    if ! grep "^GRUB_CMDLINE_LINUX.*console=ttyS0" /etc/default/grub; then
+      # Only update if not already configured
+      sed -i \
+        -e 's/^\(GRUB_CMDLINE_LINUX=.*console=tty0\)/\1 console=ttyS0,115200n8/' \
+        -e '/^GRUB_TERMINAL/d' \
+        -e '/^GRUB_SERIAL_COMMAND/d' \
+        /etc/default/grub
+      cat >> /etc/default/grub <<-EOF
+				GRUB_TERMINAL="serial console"
+				GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"
+			EOF
+      grub2-mkconfig -o /boot/grub2/grub.cfg
+    fi
+    systemctl enable serial-getty@ttyS0.service
+  fi
+
+common::echo_message "Remove unneeded RPMs"
   distr::remove_rpms \
     iwl7265-firmware \
     mozjs17 \

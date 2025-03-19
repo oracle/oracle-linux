@@ -2,7 +2,7 @@
 #
 # image scripts for OL9 - aarch64 
 #
-# Copyright (c) 2022, 2024 Oracle and/or its affiliates.
+# Copyright (c) 2022, 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -34,7 +34,7 @@ distr::validate() {
 }
 
 #######################################
-# Kickcstart fixup
+# Kickstart fixup
 # Globals:
 #   AUTHSELECT, KERNEL, RESCUE_KERNEL, ROOT_FS
 #   EXCLUDE_DOCS, TMP_IN_TMPFS
@@ -46,26 +46,9 @@ distr::validate() {
 distr::kickstart() {
   local ks_file="$1"
 
-  local btrfs="\
-part btrfs.01 --fstype=\"btrfs\"  --ondisk=sda --size=4096 --grow\n\
-btrfs none  --label=btrfs_vol --data=single btrfs.01\n\
-btrfs /     --subvol --name=root LABEL=btrfs_vol\n\
-btrfs /boot --subvol --name=boot LABEL=btrfs_vol\n\
-btrfs /home --subvol --name=home LABEL=btrfs_vol\
-"
-  local lvm="\
-part pv.01 --ondisk=sda --size=4096 --grow\n\
-volgroup vg_main pv.01\n\
-logvol swap   --fstype=\"swap\" --vgname=vg_main --size=4096 --name=lv_swap\n\
-logvol /      --fstype=\"xfs\"  --vgname=vg_main --size=4096 --name=lv_root --grow\
-"
-
-  # Kickstart file is populated for xfs
-  if [[ "${ROOT_FS,,}" = "btrfs" ]]; then
-    sed -i -e '/^part \/boot /d' -e 's!^part / .*$!'"${btrfs}"'!' "${ks_file}"
-  elif [[ "${ROOT_FS,,}" = "lvm" ]]; then
-    sed -i -e '/^part swap/d' -e 's!^part / .*$!'"${lvm}"'!' "${ks_file}"
-  fi
+  # Pass partitioning variables
+  sed -i -e 's!^ROOT_FS=.*$!ROOT_FS='"${ROOT_FS}"'!' "${ks_file}"
+  sed -i -e 's!^SETUP_SWAP=.*$!SETUP_SWAP='"${SETUP_SWAP}"'!' "${ks_file}"
 
   # Pass kernel and rescue kernel selections
   sed -i -e 's!^KERNEL=.*$!KERNEL='"${KERNEL}"'!' "${ks_file}"

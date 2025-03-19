@@ -1,5 +1,57 @@
 # Release Notes
 
+## March 2025
+
+Note: OL7 Premier Support ended on 31 December 2024, scripts will only be maintained for the OL8 and newer images.
+
+### New Features
+
+- aarch64 support for vagrant-virtualbox (on Apple silicon)
+- UEFI support for x86_64.  
+  `BOOT_MODE` can be set to `bios`, `uefi` or `hybrid`. In hybrid mode the image is compatible with both Legacy BIOS and UEFI
+- new `SERIAL_CONSOLE_RUNTIME` build parameter to configure serial console in the generated image
+
+### Changes
+
+- The partition layout is now [GPT](https://en.wikipedia.org/wiki/GUID_Partition_Table) for all images
+- Install the audit package (allow SELinux auditing)
+
+### Bug fixes
+
+- OL9: update BLS files when grub config is updated
+- OLVM OL9 templates have now the correct OS id (was set to OL8 for compatibility reason)
+
+### Refactor
+
+- The partitioning in the _kickstart_ files is generated dynamically in the `%pre` section
+
+## November 2024
+
+### New Features
+
+- Update for OL9.5
+
+### Bug fixes
+
+- Fix regression for Vagrant Virtualbox boxes (set default NIC type to `virtio`)
+
+## September 2024
+
+### Bug fixes
+
+- Use a version-based sort on the output of osinfo-query to ensure we always use the latest available variant on the build host when creating the initial VM
+
+## May 2024
+
+### New Features
+
+- OL 8.10 & OL9.4 update
+
+### Bug fixes
+
+- Truncate `/etc/resolv.conf` in cleanup
+- Pin `kernel-uek-core` to prevent accidental removal
+
 ## March 30, 2024
 
 ### Bug fixes
@@ -33,7 +85,7 @@ As of this release, we have:
 
 Notable code changes:
 
-- Drop support for [VirtualBox](https://www.virtualbox.org/) as **builder** (you can still create Vagrant VirtualBox **images**)
+- Drop support for [VirtualBox](https://www.virtualbox.org/) as __builder__ (you can still create Vagrant VirtualBox __images__)
 - `image-scripts.sh` `::seal()` functions obsolete; code moved to `provision.sh` `::cleanup()` functions.
   We don't need anymore a separate _offline_ cleanup as `virt-customize` doesn't actually run the built VM.
 - Simplify `provision.sh` `::cleanup()` functions as most parts are now handled by `virt-sysprep` operations.

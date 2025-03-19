@@ -2,7 +2,7 @@
 #
 # Provisioning script for Vagrant-VirtualBox
 #
-# Copyright (c) 2020, 2024 Oracle and/or its affiliates.
+# Copyright (c) 2020, 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -44,7 +44,12 @@ cloud::config()
 cloud::install_agent()
 {
   common::echo_message "Install Guest Additions"
-  local additions="/mnt/VBoxLinuxAdditions.run"
+  local additions
+  if [[ $(uname -i) == "aarch64" ]]; then
+    additions="/mnt/VBoxLinuxAdditions-arm64.run"
+  else
+    additions="/mnt/VBoxLinuxAdditions.run"
+  fi
   yum install -y "${YUM_VERBOSE}" make gcc bzip2 tar
 
   if [[ "${KERNEL,,}" = "uek" ]]; then
@@ -60,7 +65,7 @@ cloud::install_agent()
   esac
 
   # Search for guest additions ISO -- it is typically labeled VBox_...
-  # Note: use "blkid -s" as "--match-tag" is not suported on OL7
+  # Note: use "blkid -s" as "--match-tag" is not supported on OL7
   local label
   for label in $(/sbin/blkid -s LABEL -o value | grep VBox_); do
     if mount -o ro LABEL="${label}" /mnt; then
