@@ -367,10 +367,9 @@ stage_kickstart() {
 image_create() {
   common::echo_header "Install Oracle Linux"
 
-  # retrieve disk label -- alternatively: isoinfo -d -i
-  local ISO_LABEL
-  # shellcheck disable=SC2034,SC2153
-  ISO_LABEL=$(file "${ISO_PATH}" | sed -e "s/.* '\(.*\)' .*/\1/"  -e 's/ /\\x20/g')
+  # retrieve disk label
+  # shellcheck disable=SC2034
+  ISO_LABEL="${ISO_LABEL:-$(file -L "${ISO_PATH}" | sed -e "s/.* '\(.*\)' .*/\1/" -e 's/ /\\x20/g')}"
 
   declare -ga virt_install_args
   # Set Serial console
