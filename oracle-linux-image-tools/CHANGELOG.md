@@ -1,5 +1,11 @@
 # Release Notes
 
+## August 2025
+
+### Bug fixes
+
+- Fixed issue when `ISO_URL` is referring to a file (#196, contributed by @retekdk)
+
 ## March 2025
 
 Note: OL7 Premier Support ended on 31 December 2024, scripts will only be maintained for the OL8 and newer images.
