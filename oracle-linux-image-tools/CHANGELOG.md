@@ -9,6 +9,8 @@
 ### Bug fixes
 
 - Fixed issue when `ISO_URL` is referring to a file (#196, contributed by @retekdk)
+- Vagrant: correctly set target kernel in motd, refactor installation of the
+  VirtualBox guest additions
 
 ## March 2025
 

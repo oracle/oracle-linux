@@ -144,7 +144,7 @@ EOF
 
   # Add login banner
   echo "
-Welcome to Oracle Linux Server release $(grep ^VERSION= /etc/os-release | grep -o "[0-9].[0-9]\+") (GNU/Linux $(uname -r))
+Welcome to Oracle Linux Server release $(grep ^VERSION= /etc/os-release | grep -o "[0-9].[0-9]\+") (GNU/Linux $(common::default_kernel))
 
 The Oracle Linux End-User License Agreement can be viewed here:
 
