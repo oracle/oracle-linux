@@ -2,6 +2,10 @@
 
 ## August 2025
 
+### New Features
+
+- Update for OL9U6, support for UEK8
+
 ### Bug fixes
 
 - Fixed issue when `ISO_URL` is referring to a file (#196, contributed by @retekdk)

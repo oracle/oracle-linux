@@ -27,6 +27,7 @@ distr::validate() {
   [[ "${ROOT_FS,,}" =~ ^((xfs)|(btrfs)|(lvm))$ ]] || common::error "ROOT_FS must be xfs, btrfs or lvm"
   [[ "${ROOT_FS,,}" = "btrfs" ]] && common::echo_message "Note that for btrfs root filesystem you need to use an UEK boot ISO"
   [[ "${TMP_IN_TMPFS,,}" =~ ^((yes)|(no))$ ]] || common::error "TMP_IN_TMPFS must be yes or no"
+  [[ "${UEK_RELEASE}" =~ ^(7|8)$ ]] || common::error "UEK_RELEASE must be 7 or 8"
   [[ "${RESCUE_KERNEL,,}" =~ ^((yes)|(no))$ ]] || common::error "RESCUE_KERNEL must be yes or no"
   [[ "${KERNEL_MODULES,,}" =~ ^((yes)|(no))$ ]] || common::error "KERNEL_MODULES must be yes or no"
   [[ "${EXCLUDE_DOCS,,}" =~ ^((yes)|(no)|(minimal))$ ]] || common::error "EXCLUDE_DOCS must be yes, no or minimal"
@@ -53,6 +54,7 @@ distr::kickstart() {
 
   # Pass kernel and rescue kernel selections
   sed -i -e 's!^KERNEL=.*$!KERNEL='"${KERNEL}"'!' "${ks_file}"
+  sed -i -e 's!^UEK_RELEASE=.*$!UEK_RELEASE='"${UEK_RELEASE}"'!' "${ks_file}"
   sed -i -e 's!^RESCUE_KERNEL=.*$!RESCUE_KERNEL='"${RESCUE_KERNEL}"'!' "${ks_file}"
 
   # Override authselect if needed

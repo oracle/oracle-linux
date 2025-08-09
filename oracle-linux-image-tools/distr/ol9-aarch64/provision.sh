@@ -53,9 +53,10 @@ distr::kernel_config() {
   # is installed
 
   # Configure repos and remove old kernels
-  target_kernel=$(common::latest_kernel kernel-uek)
+  target_kernel=$(common::default_kernel)
   common::echo_message "Target kernel: ${target_kernel}"
-  dnf config-manager --set-enabled ol9_UEKR7
+  dnf config-manager --set-disabled ol9_UEKR\* || :
+  dnf config-manager --set-enabled "ol9_UEKR${UEK_RELEASE}"
   common::remove_kernels kernel-uek "${target_kernel}"
 
   # Clean dnf cache which contains odd dependencies and prevents removal
