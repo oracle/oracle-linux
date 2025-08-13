@@ -95,7 +95,7 @@ cloud::sysprep_args() {
 #######################################
 cloud::image_package() {
   local mk_envelope="${CLOUD_DIR}/${CLOUD}/mk-envelope.py"
-  local cpu="${VAGRANT_VIRTUALBOX_CPU_NUM:-$CPU_NUM}"
+  local cpu="${VAGRANT_VIRTUALBOX_CPU_NUM:-${CPU_NUM%%,*}}"
   local memory="${VAGRANT_VIRTUALBOX_MEM_SIZE:-$MEM_SIZE}"
   local -a extra_disk=()
   local -a mk_envelope_params=()
@@ -144,7 +144,7 @@ cloud::image_package() {
 		load include_vagrantfile if File.exist?(include_vagrantfile)
 	EOF
 
-  if [[ "${ORACLE_RELEASE}" =~ ^[89]$ ]]; then
+  if [[ "${ORACLE_RELEASE}" =~ ^(8|9|(10))$ ]]; then
     # For the latest uek kernels (UEK7) we install kernel-uek-core which only has virtio drivers...
     mkdir "${WORKSPACE}/${VM_NAME}/include"
     cat > "${WORKSPACE}/${VM_NAME}/include/_Vagrantfile" <<-EOF

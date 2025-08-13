@@ -6,6 +6,10 @@
 
 - Update for OL9U6, support for UEK8
 
+### Changes
+
+- `CPU_NUM` now accepts topology information using the `virt-install` syntax: `VCPUS[,maxvcpus=MAX][,sockets=#][,cores=#][,threads=#]`
+
 ### Bug fixes
 
 - Fixed issue when `ISO_URL` is referring to a file (#196, contributed by @retekdk)

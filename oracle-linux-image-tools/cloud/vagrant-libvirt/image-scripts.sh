@@ -60,7 +60,7 @@ cloud::sysprep_args() {
 #   None
 #######################################
 cloud::image_package() {
-  local cpus="${VAGRANT_LIBVIRT_CPU_NUM:-$CPU_NUM}"
+  local cpus="${VAGRANT_LIBVIRT_CPU_NUM:-${CPU_NUM%%,*}}"
   local memory="${VAGRANT_LIBVIRT_MEM_SIZE:-$MEM_SIZE}"
 
   pushd "${WORKSPACE}/${VM_NAME}" || common::error "can't cd to image directory"

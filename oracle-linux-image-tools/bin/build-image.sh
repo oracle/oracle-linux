@@ -394,7 +394,7 @@ image_create() {
 
   # shellcheck disable=SC2294
  virt-install --os-type linux --os-variant "${OS_VARIANT}" --name "${VM_NAME}" \
-    --cpus "${CPU_NUM}" --memory "${MEM_SIZE}" \
+    --vcpus "${CPU_NUM}" --memory "${MEM_SIZE}" \
     --controller "scsi,model=virtio-scsi" \
     --disk "path=${WORKSPACE}/${VM_NAME}/${VM_NAME}.qcow2,size=${DISK_SIZE_GB},bus=scsi,cache=unsafe" \
     --network default \
