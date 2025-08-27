@@ -54,7 +54,7 @@ cloud::install_agent()
     fi
   fi
   local additions
-  if [[ $(uname -i) == "aarch64" ]]; then
+  if [[ $(uname -m) == "aarch64" ]]; then
     additions="/mnt/VBoxLinuxAdditions-arm64.run"
   else
     additions="/mnt/VBoxLinuxAdditions.run"

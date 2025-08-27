@@ -18,6 +18,7 @@
 - Fixed issue when `ISO_URL` is referring to a file (#196, contributed by @retekdk)
 - Vagrant: correctly set target kernel in motd, refactor installation of the
   VirtualBox guest additions
+- use `uname -m` instead of `uname -i` which is deprecated
 
 ## March 2025
 
