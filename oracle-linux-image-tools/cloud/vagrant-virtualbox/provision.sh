@@ -44,6 +44,15 @@ cloud::config()
 cloud::install_agent()
 {
   common::echo_message "Install Guest Additions"
+  if [[ ${VAGRANT_GUEST_ADDITIONS_KERNEL,,} == "yes" ]]; then
+    common::echo_message "Checking for existing kernel modules"
+    local target_kernel
+    target_kernel=$(common::default_kernel)
+    if [[ $(find "/lib/modules/${target_kernel}/" -name "vboxguest.ko*" -print -quit) ]]; then
+      common::echo_message "Found guest additions, skipping install"
+      return
+    fi
+  fi
   local additions
   if [[ $(uname -i) == "aarch64" ]]; then
     additions="/mnt/VBoxLinuxAdditions-arm64.run"

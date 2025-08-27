@@ -37,7 +37,8 @@ cloud::validate() {
   [[ ${VAGRANT_GUEST_ADDITIONS_URL%%:*} =~ ^((https?)|(file))$ ]] || common::error "invalid VirtualBox GA ISO URL: ${VAGRANT_GUEST_ADDITIONS_URL}"
   [[ -z "${VAGRANT_GUEST_ADDITIONS_SHA256}" ]] && common::error "missing VirtualBox GA ISO checksum"
   [[ ${#VAGRANT_GUEST_ADDITIONS_SHA256} -eq 64  ]] || common::error "VAGRANT_GUEST_ADDITIONS_SHA256 must be SHA256"
-  readonly VAGRANT_GUEST_ADDITIONS_URL VAGRANT_GUEST_ADDITIONS_SHA256
+  [[ ${VAGRANT_GUEST_ADDITIONS_KERNEL,,} =~ ^((yes)|(no))$ ]] || common::error "VAGRANT_GUEST_ADDITIONS_KERNEL must be Yes or No"
+  readonly VAGRANT_GUEST_ADDITIONS_URL VAGRANT_GUEST_ADDITIONS_SHA256 VAGRANT_GUEST_ADDITIONS_KERNEL
   # Retrieve GA during validation to "fail fast"
   declare -g VAGRANT_GUEST_ADDITIONS_PATH
   common::retrieve_iso "${VAGRANT_GUEST_ADDITIONS_URL}" "${VAGRANT_GUEST_ADDITIONS_SHA256}" VAGRANT_GUEST_ADDITIONS_PATH
