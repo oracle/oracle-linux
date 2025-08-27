@@ -44,12 +44,6 @@ vagrant::config()
 		EOF
   fi
 
-  # For OL9 re-enable SHA1 as the vagrant embedded ssh client insists to use
-  # SHA1 for RSA keys -- See hashicorp/vagrant#12344
-  if [[ "${ORACLE_RELEASE}" = "9" ]]; then
-    /bin/update-crypto-policies --set DEFAULT:SHA1
-  fi
-
   cat >>/etc/sysconfig/sshd <<EOF
 
 # Decrease connection time by preventing reverse DNS lookups
@@ -92,8 +86,11 @@ EOF
   chcon system_u:object_r:modules_conf_t:s0 /etc/modprobe.d/nofloppy.conf
 
   # Customize the initramfs
-  if [[ "${ORACLE_RELEASE}" != "9" && "${UEK_RELEASE}" != "7" ]]; then
+  local default_kernel
+  default_kernel=$(common::default_kernel)
+  if [[ $(find "/lib/modules/${default_kernel}/" -name "mptspi.ko*" -print -quit) ]]; then
     # Enable VMware PVSCSI support for VMware Fusion guests.
+    # It is unlikely that we need this, but leave it for backwards compatibility
     echo 'add_drivers+=" mptspi "' > /etc/dracut.conf.d/vmware-fusion-drivers.conf
     restorecon /etc/dracut.conf.d/vmware-fusion-drivers.conf
   fi
@@ -101,8 +98,6 @@ EOF
   echo 'omit_drivers+=" floppy "' > /etc/dracut.conf.d/nofloppy.conf
   restorecon /etc/dracut.conf.d/nofloppy.conf
   # Regenerate initrd
-  local default_kernel
-  default_kernel=$(common::default_kernel)
   ${DRACUT_CMD} -f "/boot/initramfs-${default_kernel}.img" "${default_kernel}"
 
   # Disabling firewalld on vagrant boxes

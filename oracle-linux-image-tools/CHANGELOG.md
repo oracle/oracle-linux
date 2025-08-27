@@ -12,6 +12,7 @@
 
 - `CPU_NUM` now accepts topology information using the `virt-install` syntax: `VCPUS[,maxvcpus=MAX][,sockets=#][,cores=#][,threads=#]`
 - Vagrant VirtualBox: set display controller to `VMSVGA` (`VBoxVGA` being deprecated)
+- Vagrant: remove/cleanup old dependencies
 
 ### Bug fixes
 
