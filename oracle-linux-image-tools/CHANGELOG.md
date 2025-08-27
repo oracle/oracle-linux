@@ -5,6 +5,7 @@
 ### New Features
 
 - Update for OL9U6, support for UEK8
+- Update for OL10U0
 - Vagrant VirtualBox: if `VAGRANT_GUEST_ADDITIONS_KERNEL` is set to `yes`, do not install the VirtualBox Guest Additions
   if the kernel already support these (UEK kernel). Default is `no` for backwards compatibility
 

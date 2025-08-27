@@ -30,7 +30,7 @@ vagrant::config()
   sed -i "s/^.*requiretty/#Defaults requiretty/" /etc/sudoers
 
   # sshd: disable password authentication and DNS checks
-  if [[ "${ORACLE_RELEASE}" = "9" ]]; then
+  if [[ "${ORACLE_RELEASE}" =~ ^(9|10)$ ]]; then
     cat > /etc/ssh/sshd_config.d/90-vagrant.conf <<-EOF
 			PasswordAuthentication no
 			UseDNS no
@@ -130,16 +130,14 @@ EOF
       yum-config-manager --enable  ol7_developer_EPEL >/dev/null
     elif [[ "${ORACLE_RELEASE}" = "6" ]]; then
       yum install -y "${YUM_VERBOSE}" oraclelinux-developer-release-el6
-    elif  [[ "${ORACLE_RELEASE}" = "8" ]]; then
-      dnf install -y oracle-epel-release-el8
-    elif  [[ "${ORACLE_RELEASE}" = "9" ]]; then
-      dnf install -y oracle-epel-release-el9
+    elif  [[ "${ORACLE_RELEASE}" =~ ^(8|9|10)$ ]]; then
+      dnf install -y "oracle-epel-release-el${ORACLE_RELEASE}"
     fi
   fi
 
   # Add login banner
   echo "
-Welcome to Oracle Linux Server release $(grep ^VERSION= /etc/os-release | grep -o "[0-9].[0-9]\+") (GNU/Linux $(common::default_kernel))
+Welcome to Oracle Linux Server release $(grep ^VERSION= /etc/os-release | grep -o "[0-9]\+.[0-9]\+") (GNU/Linux $(common::default_kernel))
 
 The Oracle Linux End-User License Agreement can be viewed here:
 

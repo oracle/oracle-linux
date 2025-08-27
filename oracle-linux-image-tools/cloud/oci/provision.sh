@@ -2,7 +2,7 @@
 #
 # Provisioning script for OCI
 #
-# Copyright (c) 2020, 2024 Oracle and/or its affiliates.
+# Copyright (c) 2020, 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -26,18 +26,20 @@
 cloud::config()
 {
   common::echo_message "Setup network"
-  # simple eth0 configuration
-  cat > /etc/sysconfig/network-scripts/ifcfg-eth0 <<-EOF
-	DEVICE="eth0"
-	BOOTPROTO="dhcp"
-	ONBOOT="yes"
-	TYPE="Ethernet"
-	USERCTL="yes"
-	PEERDNS="yes"
-	IPV6INIT="no"
-	PERSISTENT_DHCLIENT="1"
-	EOF
-
+  if [[ -d /etc/sysconfig/network-scripts ]]; then
+    # simple eth0 configuration
+    cat > /etc/sysconfig/network-scripts/ifcfg-eth0 <<-EOF
+		DEVICE="eth0"
+		BOOTPROTO="dhcp"
+		ONBOOT="yes"
+		TYPE="Ethernet"
+		USERCTL="yes"
+		PEERDNS="yes"
+		IPV6INIT="no"
+		PERSISTENT_DHCLIENT="1"
+		EOF
+  fi
+  
   if [[ "${OCI_REPO_MAPPER,,}" =~ "yes"  ]]; then
     common::echo_message "Install repo mapper scripts"
     yum install -y "${YUM_VERBOSE}" jq

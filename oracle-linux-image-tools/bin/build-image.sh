@@ -159,8 +159,8 @@ load_env() {
   local distr_name
   # Note: OL7 media have space in the label which needs to be escaped
   # shellcheck disable=SC2001
-  distr_name=$(sed -e 's/^.*OracleLinux-R\([[:digit:]]\)-U\([[:digit:]]\+\)\(-Server\)\?-\([^-]\+\)\(-dvd\)\?\(-[[:digit:]]\+\)\?\.iso$/OL\1U\2_\4/' <<< "${ISO_URL}")
-  if [[ $distr_name =~ ^OL[6789]U ]]; then
+  distr_name=$(sed -e 's/^.*OracleLinux-R\([[:digit:]]\+\)-U\([[:digit:]]\+\)\(-Server\)\?-\([^-]\+\)\(-dvd\)\?\(-[[:digit:]]\+\)\?\.iso$/OL\1U\2_\4/' <<< "${ISO_URL}")
+  if [[ $distr_name =~ ^OL(6|7|8|9|(10))U ]]; then
     DISTR_NAME="${distr_name}"
   fi
 

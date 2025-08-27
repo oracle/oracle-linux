@@ -27,16 +27,18 @@ cloud::config()
 {
   common::echo_message "Setup network"
   # simple eth0 configuration
-  cat > /etc/sysconfig/network-scripts/ifcfg-eth0 <<-EOF
-	DEVICE="eth0"
-	BOOTPROTO="dhcp"
-	ONBOOT="yes"
-	TYPE="Ethernet"
-	USERCTL="yes"
-	PEERDNS="yes"
-	IPV6INIT="no"
-	PERSISTENT_DHCLIENT="1"
-	EOF
+  if [[ -d /etc/sysconfig/network-scripts ]]; then
+    cat > /etc/sysconfig/network-scripts/ifcfg-eth0 <<-EOF
+		DEVICE="eth0"
+		BOOTPROTO="dhcp"
+		ONBOOT="yes"
+		TYPE="Ethernet"
+		USERCTL="yes"
+		PEERDNS="yes"
+		IPV6INIT="no"
+		PERSISTENT_DHCLIENT="1"
+		EOF
+  fi
 }
 
 #######################################
