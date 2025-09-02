@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# image scripts for OL9
+# image scripts for OL10 - aarch64
 #
-# Copyright (c) 2022, 2025 Oracle and/or its affiliates.
+# Copyright (c) 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -48,7 +48,6 @@ distr::kickstart() {
   local ks_file="$1"
 
   # Pass partitioning variables
-  sed -i -e 's!^BOOT_MODE=.*$!BOOT_MODE='"${BOOT_MODE}"'!' "${ks_file}"
   sed -i -e 's!^ROOT_FS=.*$!ROOT_FS='"${ROOT_FS}"'!' "${ks_file}"
   sed -i -e 's!^SETUP_SWAP=.*$!SETUP_SWAP='"${SETUP_SWAP}"'!' "${ks_file}"
 

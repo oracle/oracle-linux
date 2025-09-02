@@ -504,7 +504,11 @@ def generate_ovf(args):
             attr={"controller": "QemuRamFB", "VRAMSize": "20"},
         )
     else:
-        document.createOvfElement("Display", parent=ms_hardware, attr={"VRAMSize": "4"})
+        document.createOvfElement(
+            "Display",
+            parent=ms_hardware,
+            attr={"controller": "VMSVGA", "VRAMSize": "8"},
+        )
 
     if not args.aarch64:
         ms_hardware_rd = document.createOvfElement(

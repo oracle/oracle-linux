@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Provisioning script for OL9 - aarch64
+# Provisioning script for OL10 - aarch64
 #
-# Copyright (c) 2022, 2025 Oracle and/or its affiliates.
+# Copyright (c) 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -55,19 +55,21 @@ distr::kernel_config() {
   # Configure repos and remove old kernels
   target_kernel=$(common::default_kernel)
   common::echo_message "Target kernel: ${target_kernel}"
-  dnf config-manager --set-disabled ol9_UEKR\* || :
-  dnf config-manager --set-enabled "ol9_UEKR${UEK_RELEASE}"
+  dnf config-manager --set-disabled ol10_UEKR\* || :
+  dnf config-manager --set-enabled "ol10_UEKR${UEK_RELEASE}"
+  common::remove_kernels kernel
   common::remove_kernels kernel-uek "${target_kernel}"
 
   # Clean dnf cache which contains odd dependencies and prevents removal
   # of kernel modules
   rm -rf /var/cache/dnf/*
   rm -rf /var/lib/dnf/*
-
   if [[ ${KERNEL_MODULES,,} == "no" ]]; then
     common::echo_message "Removing kernel modules and linux firmware"
     dnf mark install kernel-uek-core
+    echo "exclude=kernel-uek-core" >> /etc/dnf/dnf.conf
     distr::remove_rpms kernel-uek-modules linux-firmware
+    sed -i '/^exclude=/d' /etc/dnf/dnf.conf
   else
     common::echo_message "Ensure kernel modules are installed"
     dnf install -y kernel-uek linux-firmware
@@ -126,17 +128,9 @@ distr::configure() {
   ln -s /lib/systemd/system/multi-user.target /etc/systemd/system/default.target
 
   common::echo_message "Disable services"
-  # NetworkManager.service
+  # shellcheck disable=SC2043
   for service in \
-    kdump.service \
-    ntpd.service \
-    ntpdate.service \
-    plymouth-quit-wait.service \
-    plymouth-start.service \
-    rhnsd.service \
-    sendmail.service \
-    sntp.service \
-    syslog.target
+    kdump.service
   do
     # Most of these aren't enabled, errors are expected...
     common::echo_message "    ${service}"
@@ -165,11 +159,8 @@ distr::configure() {
 
   common::echo_message "Remove unneeded RPMs"
   distr::remove_rpms \
-    iwl7265-firmware \
-    mozjs17 \
     polkit \
-    polkit-pkla-compat \
-    microcode_ctl
+    polkit-pkla-compat
 }
 
 #######################################

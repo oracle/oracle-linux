@@ -43,7 +43,7 @@ distr::remove_rpms() {
 #   None
 #######################################
 distr::kernel_config() {
-  local target_kernel
+  local kernel target_kernel
 
   # shellcheck disable=SC2153
   common::echo_message "Configure kernel: ${KERNEL^^}"
@@ -52,18 +52,16 @@ distr::kernel_config() {
   # is installed
 
   # Configure repos and remove old kernels
-  local kernel
+  target_kernel=$(common::default_kernel)
+  common::echo_message "Target kernel: ${target_kernel}"
   if [[ "${KERNEL,,}" = "uek" ]]; then
     kernel="kernel-uek"
-    target_kernel=$(common::latest_kernel kernel-uek)
-    common::echo_message "Target kernel: ${target_kernel}"
-    dnf config-manager --set-enabled ol9_UEKR7
+    dnf config-manager --set-disabled ol9_UEKR\* || :
+    dnf config-manager --set-enabled "ol9_UEKR${UEK_RELEASE}"
     common::remove_kernels kernel
     common::remove_kernels kernel-uek "${target_kernel}"
   else
     kernel="kernel"
-    target_kernel=$(common::latest_kernel kernel)
-    common::echo_message "Target kernel: ${target_kernel}"
     common::remove_kernels kernel-uek
     common::remove_kernels kernel "${target_kernel}"
   fi

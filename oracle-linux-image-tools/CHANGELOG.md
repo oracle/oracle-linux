@@ -1,5 +1,27 @@
 # Release Notes
 
+## August 2025
+
+### New Features
+
+- Update for OL9U6, support for UEK8
+- Update for OL10U0
+- Vagrant VirtualBox: if `VAGRANT_GUEST_ADDITIONS_KERNEL` is set to `yes`, do not install the VirtualBox Guest Additions
+  if the kernel already support these (UEK kernel). Default is `no` for backwards compatibility
+
+### Changes
+
+- `CPU_NUM` now accepts topology information using the `virt-install` syntax: `VCPUS[,maxvcpus=MAX][,sockets=#][,cores=#][,threads=#]`
+- Vagrant VirtualBox: set display controller to `VMSVGA` (`VBoxVGA` being deprecated)
+- Vagrant: remove/cleanup old dependencies
+
+### Bug fixes
+
+- Fixed issue when `ISO_URL` is referring to a file (#196, contributed by @retekdk)
+- Vagrant: correctly set target kernel in motd, refactor installation of the
+  VirtualBox guest additions
+- use `uname -m` instead of `uname -i` which is deprecated
+
 ## March 2025
 
 Note: OL7 Premier Support ended on 31 December 2024, scripts will only be maintained for the OL8 and newer images.

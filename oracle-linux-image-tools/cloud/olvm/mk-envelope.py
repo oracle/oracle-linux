@@ -3,7 +3,7 @@
 """
 Generate OLVM compatible OVF file.
 
-Copyright (c) 2020, 2022 Oracle and/or its affiliates.
+Copyright (c) 2020, 2025 Oracle and/or its affiliates.
 Licensed under the Universal Permissive License v 1.0 as shown at
 https://oss.oracle.com/licenses/upl
 
@@ -27,6 +27,7 @@ OS_ID = {
     'OL7': 5003,
     'OL8': 5006,
     'OL9': 5007,
+    'OL10': 5007,
 }
 
 

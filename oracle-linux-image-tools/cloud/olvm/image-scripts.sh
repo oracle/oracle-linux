@@ -69,7 +69,7 @@ cloud::image_package() {
     -v "${BUILD_NUMBER}" \
     -s "${DISK_SIZE_GB}" \
     -i "${VM_NAME}.qcow2" \
-    -c "${CPU_NUM}" \
+    -c "${CPU_NUM%%,*}" \
     -m "${MEM_SIZE}" \
     >"${package_filename}.ovf"
 

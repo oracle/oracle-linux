@@ -30,7 +30,7 @@ vagrant::config()
   sed -i "s/^.*requiretty/#Defaults requiretty/" /etc/sudoers
 
   # sshd: disable password authentication and DNS checks
-  if [[ "${ORACLE_RELEASE}" = "9" ]]; then
+  if [[ "${ORACLE_RELEASE}" =~ ^(9|10)$ ]]; then
     cat > /etc/ssh/sshd_config.d/90-vagrant.conf <<-EOF
 			PasswordAuthentication no
 			UseDNS no
@@ -42,12 +42,6 @@ vagrant::config()
 			:update
 			:quit
 		EOF
-  fi
-
-  # For OL9 re-enable SHA1 as the vagrant embedded ssh client insists to use
-  # SHA1 for RSA keys -- See hashicorp/vagrant#12344
-  if [[ "${ORACLE_RELEASE}" = "9" ]]; then
-    /bin/update-crypto-policies --set DEFAULT:SHA1
   fi
 
   cat >>/etc/sysconfig/sshd <<EOF
@@ -92,8 +86,11 @@ EOF
   chcon system_u:object_r:modules_conf_t:s0 /etc/modprobe.d/nofloppy.conf
 
   # Customize the initramfs
-  if [[ "${ORACLE_RELEASE}" != "9" && "${UEK_RELEASE}" != "7" ]]; then
+  local default_kernel
+  default_kernel=$(common::default_kernel)
+  if [[ $(find "/lib/modules/${default_kernel}/" -name "mptspi.ko*" -print -quit) ]]; then
     # Enable VMware PVSCSI support for VMware Fusion guests.
+    # It is unlikely that we need this, but leave it for backwards compatibility
     echo 'add_drivers+=" mptspi "' > /etc/dracut.conf.d/vmware-fusion-drivers.conf
     restorecon /etc/dracut.conf.d/vmware-fusion-drivers.conf
   fi
@@ -101,8 +98,6 @@ EOF
   echo 'omit_drivers+=" floppy "' > /etc/dracut.conf.d/nofloppy.conf
   restorecon /etc/dracut.conf.d/nofloppy.conf
   # Regenerate initrd
-  local default_kernel
-  default_kernel=$(common::default_kernel)
   ${DRACUT_CMD} -f "/boot/initramfs-${default_kernel}.img" "${default_kernel}"
 
   # Disabling firewalld on vagrant boxes
@@ -135,16 +130,14 @@ EOF
       yum-config-manager --enable  ol7_developer_EPEL >/dev/null
     elif [[ "${ORACLE_RELEASE}" = "6" ]]; then
       yum install -y "${YUM_VERBOSE}" oraclelinux-developer-release-el6
-    elif  [[ "${ORACLE_RELEASE}" = "8" ]]; then
-      dnf install -y oracle-epel-release-el8
-    elif  [[ "${ORACLE_RELEASE}" = "9" ]]; then
-      dnf install -y oracle-epel-release-el9
+    elif  [[ "${ORACLE_RELEASE}" =~ ^(8|9|10)$ ]]; then
+      dnf install -y "oracle-epel-release-el${ORACLE_RELEASE}"
     fi
   fi
 
   # Add login banner
   echo "
-Welcome to Oracle Linux Server release $(grep ^VERSION= /etc/os-release | grep -o "[0-9].[0-9]\+") (GNU/Linux $(uname -r))
+Welcome to Oracle Linux Server release $(grep ^VERSION= /etc/os-release | grep -o "[0-9]\+.[0-9]\+") (GNU/Linux $(common::default_kernel))
 
 The Oracle Linux End-User License Agreement can be viewed here:
 

@@ -44,6 +44,8 @@ common::ks_log() {
     cat /root/ks-post.log
     rm /root/ks-post.log
     common::echo_message "Kickstart post log - End"
+  else
+    common::echo_message "No Kickstart post log found"
   fi
 }
 

@@ -159,8 +159,8 @@ load_env() {
   local distr_name
   # Note: OL7 media have space in the label which needs to be escaped
   # shellcheck disable=SC2001
-  distr_name=$(sed -e 's/^.*OracleLinux-R\([[:digit:]]\)-U\([[:digit:]]\+\)\(-Server\)\?-\([^-]\+\)\(-dvd\)\?\(-[[:digit:]]\+\)\?\.iso$/OL\1U\2_\4/' <<< "${ISO_URL}")
-  if [[ $distr_name =~ ^OL[6789]U ]]; then
+  distr_name=$(sed -e 's/^.*OracleLinux-R\([[:digit:]]\+\)-U\([[:digit:]]\+\)\(-Server\)\?-\([^-]\+\)\(-dvd\)\?\(-[[:digit:]]\+\)\?\.iso$/OL\1U\2_\4/' <<< "${ISO_URL}")
+  if [[ $distr_name =~ ^OL(6|7|8|9|(10))U ]]; then
     DISTR_NAME="${distr_name}"
   fi
 
@@ -357,7 +357,7 @@ stage_kickstart() {
 # OL installed based on the generated kickstart file.
 # Globals:
 # BOOT_COMMAND, BOOT_COMMAND_SERIAL_CONSOLE, BOOT_LOCATION, BOOT_MODE
-# CPU_NUM, DISK_SIZE_MB, ISO_CHECKSUM, ISO_PATH, KS_FILE
+# CPU_NUM, DISK_SIZE_MB, ISO_CHECKSUM, ISO_LABEL, ISO_PATH, KS_FILE
 # MEM_SIZE, SERIAL_CONSOLE, VM_NAME, WORKSPACE
 # Arguments:
 #   None
@@ -393,15 +393,15 @@ image_create() {
   fi
 
   # shellcheck disable=SC2294
- virt-install --os-type linux --os-variant "${OS_VARIANT}" --name "${VM_NAME}" \
-    --cpus "${CPU_NUM}" --memory "${MEM_SIZE}" \
+  virt-install --os-type linux --os-variant "${OS_VARIANT}" --name "${VM_NAME}" \
+    --vcpus "${CPU_NUM}" --memory "${MEM_SIZE}" \
     --controller "scsi,model=virtio-scsi" \
     --disk "path=${WORKSPACE}/${VM_NAME}/${VM_NAME}.qcow2,size=${DISK_SIZE_GB},bus=scsi,cache=unsafe" \
     --network default \
     --graphics none \
     --location "${iso_path}${location}" \
-    --initrd-inject="${WORKSPACE}/${VM_NAME}/${KS_FILE}" \
-    --extra-args="$(eval echo "${BOOT_COMMAND[@]}")" \
+    --initrd-inject "${WORKSPACE}/${VM_NAME}/${KS_FILE}" \
+    --extra-args "$(eval echo "${BOOT_COMMAND[@]}")" \
     --transient \
     "${virt_install_args[@]}"
 }

@@ -44,8 +44,17 @@ cloud::config()
 cloud::install_agent()
 {
   common::echo_message "Install Guest Additions"
+  if [[ ${VAGRANT_GUEST_ADDITIONS_KERNEL,,} == "yes" ]]; then
+    common::echo_message "Checking for existing kernel modules"
+    local target_kernel
+    target_kernel=$(common::default_kernel)
+    if [[ $(find "/lib/modules/${target_kernel}/" -name "vboxguest.ko*" -print -quit) ]]; then
+      common::echo_message "Found guest additions, skipping install"
+      return
+    fi
+  fi
   local additions
-  if [[ $(uname -i) == "aarch64" ]]; then
+  if [[ $(uname -m) == "aarch64" ]]; then
     additions="/mnt/VBoxLinuxAdditions-arm64.run"
   else
     additions="/mnt/VBoxLinuxAdditions.run"
@@ -57,12 +66,6 @@ cloud::install_agent()
   else
     yum install -y "${YUM_VERBOSE}" kernel-devel
   fi
-
-  # Orabug 34811820 for OL8 UEK7 -- for the current install
-  case $(common::default_kernel) in
-    5.15.0-*.el8uek*)
-      export PATH="/opt/rh/gcc-toolset-11/root/usr/bin:$PATH"
-  esac
 
   # Search for guest additions ISO -- it is typically labeled VBox_...
   # Note: use "blkid -s" as "--match-tag" is not supported on OL7
@@ -83,26 +86,28 @@ cloud::install_agent()
 
   [[ -f ${additions} ]] || common::error "Guest additions not found"
 
-  # Installation will fail when running in libguestfs environment
+  # Fake uname to build the kernel modules
+  local default_kernel
+  default_kernel=$(common::default_kernel)
+  mv /usr/bin/uname /usr/bin/uname.orig
+  cat > /usr/bin/uname <<-EOF
+		#!/usr/bin/bash
+		if [[ \$1 == "-r" ]]; then
+		  echo "${default_kernel}"
+		else
+		  /usr/bin/uname.orig "\$@"
+		fi
+	EOF
+  chmod 0755 /usr/bin/uname
+  chcon --reference=/usr/bin/uname.orig /usr/bin/uname
+
+  # Installation might fail when running in libguestfs environment
   sh "${additions}" || :
   umount /mnt
 
-  # Orabug 34811820 for OL8 UEK7 -- for subsequent rebuilds
-  case $(common::default_kernel) in
-    5.15.0-*.el8uek*)
-      # shellcheck disable=SC2016
-      sed -i '/PATH=$PATH/a PATH="/opt/rh/gcc-toolset-11/root/usr/bin:$PATH"' /usr/sbin/rcvboxadd
-      for ga in /opt/VBoxGuestAdditions*; do
-        cp /usr/sbin/rcvboxadd "${ga}/init/vboxadd"
-      done
-  esac
-
-  # Ensure modules are built for the target kernel
-  if [[ $(uname -r) != $(common::default_kernel) ]]; then
-    common::echo_message "Building Guest Additions for $(common::default_kernel)"
-    /sbin/rcvboxadd quicksetup "$(common::default_kernel)"
-  fi
-
+  # Restore uname
+  rm /usr/bin/uname
+  mv /usr/bin/uname.orig /usr/bin/uname
 }
 
 #######################################

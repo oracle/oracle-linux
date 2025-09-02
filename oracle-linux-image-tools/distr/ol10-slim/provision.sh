@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Provisioning script for OL9 - aarch64
+# Provisioning script for OL10
 #
-# Copyright (c) 2022, 2025 Oracle and/or its affiliates.
+# Copyright (c) 2025 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at
 # https://oss.oracle.com/licenses/upl
 #
@@ -10,7 +10,6 @@
 # both are optional.
 #   distr::provision: provision the instance
 #   distr::cleanup: instance cleanup before shutdown
-#   distr::seal: final instance sealing
 #
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 #
@@ -44,7 +43,7 @@ distr::remove_rpms() {
 #   None
 #######################################
 distr::kernel_config() {
-  local target_kernel
+  local kernel target_kernel
 
   # shellcheck disable=SC2153
   common::echo_message "Configure kernel: ${KERNEL^^}"
@@ -55,29 +54,38 @@ distr::kernel_config() {
   # Configure repos and remove old kernels
   target_kernel=$(common::default_kernel)
   common::echo_message "Target kernel: ${target_kernel}"
-  dnf config-manager --set-disabled ol9_UEKR\* || :
-  dnf config-manager --set-enabled "ol9_UEKR${UEK_RELEASE}"
-  common::remove_kernels kernel-uek "${target_kernel}"
+  if [[ "${KERNEL,,}" = "uek" ]]; then
+    kernel="kernel-uek"
+    dnf config-manager --set-disabled ol10_UEKR\* || :
+    dnf config-manager --set-enabled "ol10_UEKR${UEK_RELEASE}"
+    common::remove_kernels kernel
+    common::remove_kernels kernel-uek "${target_kernel}"
+  else
+    kernel="kernel"
+    common::remove_kernels kernel-uek
+    common::remove_kernels kernel "${target_kernel}"
+  fi
 
   # Clean dnf cache which contains odd dependencies and prevents removal
   # of kernel modules
   rm -rf /var/cache/dnf/*
   rm -rf /var/lib/dnf/*
-
   if [[ ${KERNEL_MODULES,,} == "no" ]]; then
     common::echo_message "Removing kernel modules and linux firmware"
-    dnf mark install kernel-uek-core
-    distr::remove_rpms kernel-uek-modules linux-firmware
+    dnf mark install "${kernel}-core"
+    echo "exclude=${kernel}-core" >> /etc/dnf/dnf.conf
+    distr::remove_rpms "${kernel}-modules" linux-firmware
+    sed -i '/^exclude=/d' /etc/dnf/dnf.conf
   else
     common::echo_message "Ensure kernel modules are installed"
-    dnf install -y kernel-uek linux-firmware
+    dnf install -y ${kernel} linux-firmware
   fi
 
   # Regenerate initrd
   ${DRACUT_CMD} -f "/boot/initramfs-${target_kernel}.img" "${target_kernel}"
 
   # Ensure grub is properly setup
-  grub2-mkconfig -o /etc/grub2-efi.cfg --update-bls-cmdline
+  grub2-mkconfig -o /boot/grub2/grub.cfg --update-bls-cmdline
   grubby --set-default="/boot/vmlinuz-${target_kernel}"
 }
 
@@ -91,7 +99,7 @@ distr::kernel_config() {
 #   None
 #######################################
 distr::configure() {
-  local service
+  local service tty
 
   # Directory to save build information
   mkdir -p "${BUILD_INFO}"
@@ -126,17 +134,9 @@ distr::configure() {
   ln -s /lib/systemd/system/multi-user.target /etc/systemd/system/default.target
 
   common::echo_message "Disable services"
-  # NetworkManager.service
+  # shellcheck disable=SC2043
   for service in \
-    kdump.service \
-    ntpd.service \
-    ntpdate.service \
-    plymouth-quit-wait.service \
-    plymouth-start.service \
-    rhnsd.service \
-    sendmail.service \
-    sntp.service \
-    syslog.target
+    kdump.service
   do
     # Most of these aren't enabled, errors are expected...
     common::echo_message "    ${service}"
@@ -163,13 +163,34 @@ distr::configure() {
   # https://forums.oracle.com/thread/2550364
   echo "http_caching=none" >> /etc/dnf/dnf.conf
 
+  common::echo_message "Enable login on serial console ports"
+  for tty in "hvc0" "ttyS0" "ttyS0"
+  do
+    grep -q "${tty}" /etc/securetty ||  echo "${tty}" >>/etc/securetty
+  done
+
+  common::echo_message "Enable serial console: ${SERIAL_CONSOLE_RUNTIME^^}"
+  if [[ "${SERIAL_CONSOLE_RUNTIME,,}" = "yes" ]]; then
+    if ! grep "^GRUB_CMDLINE_LINUX.*console=ttyS0" /etc/default/grub; then
+      # Only update if not already configured
+      sed -i \
+        -e 's/^\(GRUB_CMDLINE_LINUX=.*console=tty0\)/\1 console=ttyS0,115200n8/' \
+        -e '/^GRUB_TERMINAL/d' \
+        -e '/^GRUB_SERIAL_COMMAND/d' \
+        /etc/default/grub
+      cat >> /etc/default/grub <<-EOF
+				GRUB_TERMINAL="serial console"
+				GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"
+			EOF
+      grub2-mkconfig -o /boot/grub2/grub.cfg --update-bls-cmdline
+    fi
+    systemctl enable serial-getty@ttyS0.service
+  fi
+
   common::echo_message "Remove unneeded RPMs"
   distr::remove_rpms \
-    iwl7265-firmware \
-    mozjs17 \
     polkit \
-    polkit-pkla-compat \
-    microcode_ctl
+    polkit-pkla-compat
 }
 
 #######################################
